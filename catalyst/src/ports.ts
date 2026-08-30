@@ -2,6 +2,7 @@ import type {
   CallbackOutboxRecord,
   CreatorCallbackEvent,
   PublicationRequestRecord,
+  PublicIndexRecord,
   PublishedPointer,
   PublishedVersion,
   RequestStatus
@@ -35,6 +36,9 @@ export interface PublicationStore {
   getPointer(articleUuid: string): Promise<PublishedPointer | null>;
   listPointers(): Promise<PublishedPointer[]>;
   compareAndSwapPointer(expected: PublishedPointer | null, next: PublishedPointer): Promise<boolean>;
+  upsertPublicIndex(record: PublicIndexRecord): Promise<void>;
+  getPublicIndexBySlug(slug: string): Promise<PublicIndexRecord | null>;
+  listPublicIndex(): Promise<PublicIndexRecord[]>;
   enqueueCallback(event: CreatorCallbackEvent): Promise<CallbackOutboxRecord>;
   getCallback(eventId: string): Promise<CallbackOutboxRecord | null>;
   markCallbackDelivered(eventId: string): Promise<void>;

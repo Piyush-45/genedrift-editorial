@@ -93,6 +93,11 @@ and returns only records whose serving state is Published. This first version
 scans current pointers and objects; build a maintained compact public index before
 claiming or benchmarking a large Catalyst catalog such as 1,800 posts.
 
+Follow-up on 2026-08-30: that compact index is implemented locally in AppSail
+`0.4.0`, with automatic publish/retract maintenance, authoritative pointer checks
+for detail, and an authenticated rebuild route. The deployed Development service
+is still `0.3.1`; provision/rebuild/deploy and live evidence remain required.
+
 Before author and taxonomy pages, extend the published snapshot/index with an
 author display snapshot and stable category/tag slugs. Do not expose OAuth,
 Creator, Data Store, HMAC, or administrative credentials to the browser.

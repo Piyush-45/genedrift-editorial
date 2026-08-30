@@ -1,5 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
-import type { CallbackOutboxRecord, CreatorCallbackEvent, PublicationRequestRecord, PublishedPointer, PublishedVersion, RequestStatus } from "../domain";
+import type { CallbackOutboxRecord, CreatorCallbackEvent, PublicationRequestRecord, PublicIndexRecord, PublishedPointer, PublishedVersion, RequestStatus } from "../domain";
 import { PublicationError } from "../errors";
 import type { CreatorCallbackClient, CreatorMediaSource, ImmutableObjectStore, NewPublicationRequest, PublicationAuthority, PublicationScheduler, PublicationStore } from "../ports";
 import type { PublicationHandoff } from "../domain";
@@ -14,7 +14,8 @@ const TABLES = {
   pointers: "GD_Published_Pointers",
   attempts: "GD_Publication_Attempts",
   callbacks: "GD_Callback_Outbox",
-  nonces: "GD_Request_Nonces"
+  nonces: "GD_Request_Nonces",
+  publicIndex: "GD_Public_Index"
 } as const;
 
 function sql(value: string | number | null): string {
@@ -99,6 +100,78 @@ function callbackFromRow(row: Row): CallbackOutboxRecord {
     deliveryAttemptCount: numeric(row.Delivery_Attempt_Count),
     nextDeliveryAt: nullable(row.Next_Delivery_At),
     lastDeliveryError: nullable(row.Last_Delivery_Error)
+  };
+}
+
+function jsonArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value !== "string" || !value) return [];
+  const parsed = JSON.parse(value) as unknown;
+  if (!Array.isArray(parsed)) throw new PublicationError("Public index tags are invalid", "PUBLIC_INDEX_INVALID", false, 500);
+  return parsed.map(String);
+}
+
+function jsonObject<T>(value: unknown): T | null {
+  if (value == null || value === "") return null;
+  if (typeof value === "object") return value as T;
+  return JSON.parse(String(value)) as T;
+}
+
+function publicIndexFromRow(row: Row): PublicIndexRecord {
+  return {
+    articleUuid: String(row.Article_UUID),
+    publicationId: String(row.Publication_ID),
+    revisionUuid: String(row.Revision_UUID),
+    revisionNumber: numeric(row.Revision_Number),
+    contentHash: String(row.Content_Hash),
+    objectId: String(row.Object_ID),
+    publishedAt: String(row.Published_At),
+    pointerVersion: numeric(row.Pointer_Version),
+    servingStatus: row.Serving_Status === "Retracted" ? "Retracted" : "Published",
+    slug: String(row.Slug),
+    title: String(row.Title),
+    excerpt: String(row.Excerpt ?? ""),
+    seoTitle: String(row.SEO_Title ?? ""),
+    seoDescription: String(row.SEO_Description ?? ""),
+    primaryCategory: String(row.Primary_Category ?? ""),
+    tags: jsonArray(row.Tags_JSON),
+    searchText: String(row.Search_Text ?? ""),
+    readingTimeMinutes: numeric(row.Reading_Time_Minutes),
+    featuredMedia: jsonObject<PublicIndexRecord["featuredMedia"]>(row.Featured_Media_JSON),
+    robotsDirective: row.Robots_Directive,
+    retractedAt: nullable(row.Retracted_At),
+    retractionReason: nullable(row.Retraction_Reason),
+    replacementPath: nullable(row.Replacement_Path),
+    updatedAt: String(row.Updated_At)
+  };
+}
+
+function publicIndexRow(record: PublicIndexRecord): Row {
+  return {
+    Article_UUID: record.articleUuid,
+    Publication_ID: record.publicationId,
+    Revision_UUID: record.revisionUuid,
+    Revision_Number: record.revisionNumber,
+    Content_Hash: record.contentHash,
+    Object_ID: record.objectId,
+    Published_At: record.publishedAt,
+    Pointer_Version: record.pointerVersion,
+    Serving_Status: record.servingStatus,
+    Slug: record.slug,
+    Title: record.title,
+    Excerpt: record.excerpt,
+    SEO_Title: record.seoTitle,
+    SEO_Description: record.seoDescription,
+    Primary_Category: record.primaryCategory,
+    Tags_JSON: JSON.stringify(record.tags),
+    Search_Text: record.searchText,
+    Reading_Time_Minutes: record.readingTimeMinutes,
+    Featured_Media_JSON: record.featuredMedia ? JSON.stringify(record.featuredMedia) : null,
+    Robots_Directive: record.robotsDirective,
+    Retracted_At: record.retractedAt,
+    Retraction_Reason: record.retractionReason,
+    Replacement_Path: record.replacementPath,
+    Updated_At: record.updatedAt
   };
 }
 
@@ -329,6 +402,47 @@ export class CatalystPublicationStore implements PublicationStore {
     }, `Article_UUID = ${sql(next.articleUuid)} AND Publication_ID = ${sql(expected.publicationId)} AND Pointer_Version = ${expected.pointerVersion}`);
     const current = await this.getPointer(next.articleUuid);
     return current?.publicationId === next.publicationId && current.pointerVersion === next.pointerVersion;
+  }
+
+  async upsertPublicIndex(record: PublicIndexRecord): Promise<void> {
+    const existing = (await this.query(TABLES.publicIndex, `Article_UUID = ${sql(record.articleUuid)}`))[0];
+    if (!existing) {
+      try {
+        await this.table(TABLES.publicIndex).insertRow(publicIndexRow(record));
+        return;
+      } catch (error) {
+        const raced = (await this.query(TABLES.publicIndex, `Article_UUID = ${sql(record.articleUuid)}`).catch(() => []))[0];
+        if (!raced) throw error;
+      }
+    }
+    const current = (await this.query(TABLES.publicIndex, `Article_UUID = ${sql(record.articleUuid)}`))[0];
+    if (!current) throw new PublicationError("Public index row disappeared during update", "PUBLIC_INDEX_WRITE_FAILED", true, 503);
+    const currentVersion = numeric(current.Pointer_Version);
+    if (currentVersion > record.pointerVersion) return;
+    if (currentVersion === record.pointerVersion && String(current.Publication_ID) !== record.publicationId) {
+      throw new PublicationError("Public index pointer version contains different content", "PUBLIC_INDEX_CONFLICT", false, 409);
+    }
+    await this.update(
+      TABLES.publicIndex,
+      publicIndexRow(record),
+      `Article_UUID = ${sql(record.articleUuid)} AND Pointer_Version <= ${record.pointerVersion}`
+    );
+  }
+
+  async getPublicIndexBySlug(slug: string): Promise<PublicIndexRecord | null> {
+    const rows = await this.query(TABLES.publicIndex, `Slug = ${sql(slug)}`);
+    if (rows.length > 1) {
+      throw new PublicationError("Multiple current articles use the same public slug", "PUBLIC_SLUG_CONFLICT", false, 409);
+    }
+    return rows[0] ? publicIndexFromRow(rows[0]) : null;
+  }
+
+  async listPublicIndex(): Promise<PublicIndexRecord[]> {
+    const rows: PublicIndexRecord[] = [];
+    for await (const row of this.table(TABLES.publicIndex).getIterableRows()) {
+      rows.push(publicIndexFromRow(row));
+    }
+    return rows;
   }
 
   async enqueueCallback(event: CreatorCallbackEvent): Promise<CallbackOutboxRecord> {

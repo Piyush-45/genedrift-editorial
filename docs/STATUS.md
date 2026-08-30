@@ -12,8 +12,9 @@ review decisions, N+1 changes-requested loop, role-aware dashboard, shared queue
 and regulated two-reviewer approval path have passed live Creator testing. The
 clean no-media Catalyst immediate-publish case has also passed in Development;
 the current focus is completing the remaining Catalyst promotion matrix.
-The reported Creator cleanup remains explicitly unverified because no fresh DS
-export or negative role-test evidence is available.
+The reported Creator cleanup remains explicitly unverified. The live Application
+IDE exposed the export action, but the browser session did not produce a saved DS
+file for audit, and no separate-role negative test evidence is available.
 
 The live dashboard now locks publication actions synchronously and derives
 queued/processing state from Creator Publishing Health, so accepted work cannot
@@ -143,6 +144,14 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
   Reviewer+Publisher user: the dashboard exposed publishing work, the Publish
   action succeeded, the ready-to-publish queue cleared for both Harshu and Admin,
   and Recent Activity/Audit Events recorded the published revisions.
+- A fresh Creator Audit Events inspection captured a later complete Catalyst
+  publish-to-retract loop for article
+  `ART-022254fb3b8ade6547c08e54b3c79187`: the publish callback moved Approved to
+  Published at 23:49:05 on 2026-08-29, followed by retraction job
+  `471741000000056044` and callback
+  `callback_36498adcbe77a6b2f2a48614bc45ddbc221e7f0c`, which moved Published to
+  Unpublished at 23:49:44. This closes positive Creator audit evidence for that
+  later loop only; it does not replace the fresh DS or negative-role gates.
 - Creator permission/profile and data-sharing setup guidance is prepared in
   `creator/PERMISSION_SHARING_SETUP.md`. It is not live verified.
 - Notification handoffs are implemented locally for submission, claim, review
@@ -235,6 +244,18 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
   five-second must-revalidate detail cache, and `no-store` retraction responses.
   Configure `PUBLIC_SITE_BASE_URL` before testing sitemap/RSS. Artifact SHA-256:
   `13018639a290a6366c0c348e191d97ac9907ab158cf3b339301f831c619573f6`.
+- AppSail `0.4.0` is implemented locally with compact `GD_Public_Index` rows.
+  Publish/retract workers repair the index before success; list/search/feed
+  routes read compact rows, and detail verifies the current pointer before
+  loading one immutable object. An authenticated rebuild route migrates existing
+  pointers. All 29 Catalyst tests pass. The seventh table is not provisioned and
+  `0.4.0` is not deployed or live verified. Prepared ZIP SHA-256:
+  `fc3fec70f8aafd5e7a4a6405be8988dd5df02d2bc2897758f3393babb7821d06`.
+- Deterministic scale tools now provide 1,800 visible synthetic articles plus a
+  410 case, a matching local API, staged k6 read profiles, and a performance
+  report template. Local homepage, deep-page correction, filters, detail,
+  retraction/noindex, 390px long-title, and console checks passed. This is local
+  catalog UX evidence, not Catalyst/Vercel capacity evidence.
 - The dashboard package with adaptive five-second active-job refresh,
   45-second idle refresh, hidden-tab pause, in-flight request deduplication,
   and last-updated/error feedback is uploaded and live verified through the
@@ -276,7 +297,8 @@ Move from review workflow into production readiness:
 - Production-grade notification delivery tracking and richer dashboard analytics
 - Catalyst end-to-end Development verification and production promotion
 - Draft preview boundary (separate from approved publication)
-- Maintained public index for larger catalogs (the current read API scans pointers)
+- Live provisioning, rebuild, deployment, and benchmark evidence for the locally
+  implemented maintained public index
 - Host-level HTTP 410 enforcement/redirect UX for retracted frontend pages
 - Final public frontend branding, deployment, analytics/consent, and launch QA
 - Client-account integration and migration

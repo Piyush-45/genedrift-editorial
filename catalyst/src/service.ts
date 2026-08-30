@@ -5,6 +5,7 @@ import { publishMediaAssets } from "./media";
 import { retryAt } from "./retry";
 import { contentHashForHandoff, buildPublishedDocument, validateDocumentChecksum, validateMediaReferences } from "./snapshot";
 import { deterministicId, newLeaseToken, sha256Hex } from "./security";
+import { buildPublicIndexRecord } from "./publicContent";
 
 interface ApprovedSnapshot {
   handoff: PublicationHandoff;
@@ -111,6 +112,8 @@ export class PublishingService {
       if (handoff.action === "retract") {
         const retractedAt = now.toISOString();
         const pointer = await this.retractPointer(handoff, requestId, retractedAt);
+        const document = await this.objects.getPublicJson<CanonicalPublishedDocument>(pointer.objectId);
+        await this.store.upsertPublicIndex(buildPublicIndexRecord(pointer, document));
         await this.store.markRequestSucceeded(requestId, leaseToken, claimed.attemptCount, pointer.publicationId, retractedAt);
         await this.queueAndAttemptCallback(this.callbackFor(claimed, "Succeeded", {
           publicationId: pointer.publicationId,
@@ -142,7 +145,7 @@ export class PublishingService {
         publishedAt
       });
 
-      await this.advancePointer({
+      const pointer = await this.advancePointer({
         articleUuid: version.articleUuid,
         publicationId: version.publicationId,
         revisionUuid: version.revisionUuid,
@@ -157,6 +160,7 @@ export class PublishingService {
         retractionEventId: null,
         replacementPath: null
       });
+      await this.store.upsertPublicIndex(buildPublicIndexRecord(pointer, document));
 
       await this.store.markRequestSucceeded(requestId, leaseToken, claimed.attemptCount, publicationId, publishedAt);
       await this.queueAndAttemptCallback(this.callbackFor(claimed, "Succeeded", {
@@ -217,10 +221,10 @@ export class PublishingService {
     return (await this.store.getCallback(eventId))!;
   }
 
-  private async advancePointer(candidate: PublishedPointer): Promise<void> {
+  private async advancePointer(candidate: PublishedPointer): Promise<PublishedPointer> {
     for (let attempt = 0; attempt < this.options.pointerCasAttempts; attempt += 1) {
       const current = await this.store.getPointer(candidate.articleUuid);
-      if (current?.publicationId === candidate.publicationId) return;
+      if (current?.publicationId === candidate.publicationId) return current;
       if (current && current.revisionNumber > candidate.revisionNumber) {
         throw new PublicationError("A newer revision is already published", "STALE_REVISION", false, 409);
       }
@@ -228,7 +232,7 @@ export class PublishingService {
         throw new PublicationError("The same revision number already points to different content", "REVISION_CONTENT_CONFLICT", false, 409);
       }
       const next = { ...candidate, pointerVersion: (current?.pointerVersion ?? 0) + 1 };
-      if (await this.store.compareAndSwapPointer(current, next)) return;
+      if (await this.store.compareAndSwapPointer(current, next)) return next;
     }
     throw new PublicationError("Published pointer was concurrently updated", "POINTER_CONTENTION", true, 409);
   }

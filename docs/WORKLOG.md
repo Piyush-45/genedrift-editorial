@@ -1,5 +1,44 @@
 # Work Log
 
+## 2026-08-30 - Maintained public index and scale-test tooling implemented locally
+
+- Created the repository's first preservation checkpoint, commit `da11492`,
+  before starting the next implementation phase.
+- Implemented AppSail `0.4.0` with compact `GD_Public_Index` rows. Publish and
+  retract workers update the index after pointer CAS and before success;
+  list/search/facets/feeds no longer load every immutable article object.
+- Slug detail verifies the compact row against the authoritative pointer and
+  loads exactly one immutable document. Added an authenticated rebuild route for
+  existing catalogs and documented the seventh table and rollout order.
+- Expanded the Catalyst suite to 29 passing tests, including compact-list reads,
+  one-object detail, index rebuild, and stale-index rejection.
+- Built and integrity-checked
+  `genedrift-catalyst-appsail-dev-v0.4.0.zip`; SHA-256
+  `fc3fec70f8aafd5e7a4a6405be8988dd5df02d2bc2897758f3393babb7821d06`.
+- Added a deterministic 1,800-visible-article fixture plus retracted case, local
+  public API, staged k6 read suite, and performance-report template.
+- Made frontend sitemap generation request-time so transient Development API
+  limits cannot fail or freeze a build. Out-of-range archive pages now redirect
+  to the last valid filtered page.
+- Local fixture build and browser checks passed for homepage, deep-page
+  correction, search/filter, article detail, retraction/noindex, 390px long-title
+  layout without overflow, and zero console warnings/errors.
+- Opened the signed-in Creator Application IDE and located its DS Export action,
+  but the browser did not produce a saved file. A fresh DS audit therefore
+  remains pending. The app-access view also did not provide separate Publisher
+  and Admin test identities, so the negative role matrix remains pending.
+- Captured a complete positive Creator audit loop for
+  `ART-022254fb3b8ade6547c08e54b3c79187`: Catalyst Published at 23:49:05 and
+  Catalyst Retracted at 23:49:44 on 2026-08-29, including retraction job
+  `471741000000056044` and callback
+  `callback_36498adcbe77a6b2f2a48614bc45ddbc221e7f0c`.
+- Staged a clean 24-file frontend upload in Vercel as
+  `genedrift-vercel-preview-0.4`. Deployment is intentionally waiting for
+  explicit confirmation because it creates a publicly reachable project.
+- `0.4.0` remains local: provisioning/rebuild/deployment/live tests are pending.
+  Vercel Preview and fresh Creator DS/negative-role evidence are also pending, so
+  the integration remains unverified.
+
 ## 2026-08-30 - Continuity checkpoint synchronized
 
 - Reconciled the handoff, status, and product checkpoint with the live adaptive

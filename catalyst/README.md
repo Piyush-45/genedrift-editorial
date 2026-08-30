@@ -29,8 +29,9 @@ part of this phase.
 The service supports publish, schedule, and retract handoffs. Retraction changes
 only the versioned serving pointer and preserves immutable snapshots, versions,
 article JSON, and media. The positive immediate retraction path is live verified
-in Development. Version `0.3.1` adds the public read API described below; it is
-locally tested and awaits Development deployment.
+in Development. Version `0.4.0` adds the maintained public index described below.
+The deployed Development service remains `0.3.1` until the new table is
+provisioned, rebuilt, and live verified.
 
 These are application-level immutability guarantees. Restrict Catalyst console,
 Data Store, and Stratus delete/update privileges to the deployment operators;
@@ -52,6 +53,7 @@ do not grant the runtime or editorial users general mutation access.
 - Private worker targets:
   - `POST /internal/jobs/publish`
   - `POST /internal/jobs/callback`
+  - `POST /internal/maintenance/rebuild-public-index`
 
 Reference: [Catalyst AppSail managed Node runtimes](https://docs.catalyst.zoho.com/en/serverless/help/appsail/catalyst-managed-runtimes/key-concepts/)
 and [Express/npm AppSail setup](https://docs.catalyst.zoho.com/en/serverless/help/appsail/help-guides/nodejs.md/express-npm/).
@@ -64,13 +66,14 @@ npm run typecheck
 npm test
 ```
 
-## Public read API (`0.3.1`)
+## Public read API (`0.4.0`)
 
-The read API derives every response from `GD_Published_Pointers` plus the
-pointer's immutable public Stratus document. It never reads Creator drafts,
-review records, private snapshots, or historical versions. A pointer is served
-only when its state is `Published`; a retracted slug returns HTTP 410 with its
-retraction timestamp, reason, and optional replacement path.
+The read API derives lists, search, facets, feeds, and slug discovery from the
+compact `GD_Public_Index`. Publish and retract workers update that row
+idempotently after the authoritative pointer compare-and-swap and before the job
+can succeed. Article detail verifies the index against the current pointer and
+loads exactly one immutable public Stratus document. It never reads Creator
+drafts, review records, private snapshots, or historical versions.
 
 `GET /v1/public/articles` supports `page` (default 1), `limit` (default 20,
 maximum 50), `q`, `category`, and `tag`. It returns summaries, pagination, and
@@ -83,11 +86,11 @@ responses are `no-store`, and list/taxonomy feeds never permit stale-while-
 revalidate serving.
 
 The sitemap and RSS routes include only `Index Follow` articles and require
-`PUBLIC_SITE_BASE_URL`. The initial implementation reads the current pointer set
-and its immutable objects, which is deliberately simple and strongly aligned
-with the serving authority. Before the catalog becomes large, add a maintained
-public index/read model to avoid scanning all current objects for filtered lists
-and slug resolution.
+`PUBLIC_SITE_BASE_URL`. The authenticated rebuild route migrates existing rows
+from authoritative current pointers and their immutable objects. Normal
+publish/retract traffic maintains the index automatically. The adapter pages
+through compact rows, so a 1,800-item list/search test no longer loads 1,800
+article objects.
 
 ## Data Store schema
 
@@ -165,6 +168,40 @@ Add these serving-state columns before deploying AppSail `0.2.0`. Existing
 pointer rows must be backfilled to `Serving_Status = Published`. Retraction uses
 the same CAS predicate, increments `Pointer_Version`, and never updates the
 immutable version or Stratus object.
+
+### `GD_Public_Index`
+
+| Column | Type | Constraint |
+|---|---|---|
+| `Article_UUID` | VARCHAR(128) | unique, required |
+| `Publication_ID` | VARCHAR(64) | required |
+| `Revision_UUID` | VARCHAR(128) | required |
+| `Revision_Number` | BIGINT | required |
+| `Content_Hash` | VARCHAR(64) | required |
+| `Object_ID` | VARCHAR(255) | required |
+| `Published_At` | VARCHAR(40) | required, indexed |
+| `Pointer_Version` | BIGINT | required |
+| `Serving_Status` | VARCHAR(20) | required, indexed |
+| `Slug` | VARCHAR(180) | unique, required, indexed |
+| `Title` | VARCHAR(250) | required |
+| `Excerpt` | TEXT | nullable |
+| `SEO_Title` | VARCHAR(250) | nullable |
+| `SEO_Description` | TEXT | nullable |
+| `Primary_Category` | VARCHAR(250) | nullable, indexed |
+| `Tags_JSON` | TEXT | required |
+| `Search_Text` | TEXT | required |
+| `Reading_Time_Minutes` | BIGINT | required |
+| `Featured_Media_JSON` | TEXT | nullable |
+| `Robots_Directive` | VARCHAR(30) | required |
+| `Retracted_At` | VARCHAR(40) | nullable |
+| `Retraction_Reason` | TEXT | nullable |
+| `Replacement_Path` | VARCHAR(255) | nullable |
+| `Updated_At` | VARCHAR(40) | required |
+
+Create this table before deploying `0.4.0`. After deployment, invoke the
+authenticated rebuild route once, confirm its count matches current pointers,
+and repeat list/detail/410 verification. Do not expose its write permissions or
+the maintenance route to browser clients.
 
 ### `GD_Publication_Attempts`
 

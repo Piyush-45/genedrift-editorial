@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 import { getArticles } from "@/lib/api";
 
+// Keep sitemap generation request-time so a transient Development API limit
+// cannot make an otherwise valid Vercel build fail or freeze an old catalog.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const first = await getArticles({ page: 1, limit: 50 });

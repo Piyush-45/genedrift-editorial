@@ -5,3 +5,4 @@ catalyst/dist/
 catalyst/.env
 editor-widget/zet/app/
 editor-widget/zet/dist/
+tools/catalog/generated/

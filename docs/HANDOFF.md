@@ -44,10 +44,11 @@ replacement for that local completion path is now installed in Creator
 Development. Permission and sharing setup guidance is prepared locally.
 Notification handoffs and direct Built-in Email delivery are live verified.
 The reported Creator cleanup could not be freshly validated. The only local DS
-export is still the previously audited `GeneDrift_Editorial_Platform-4.ds`, and
-the signed-in Creator page was unavailable under the administrator browser
-policy. A fresh export plus separate negative role tests are still mandatory;
-see `docs/CREATOR_CHECKPOINT_VALIDATION_2026-08-26.md`.
+export is still the previously audited `GeneDrift_Editorial_Platform-4.ds`.
+The live Application IDE now exposes its Export action in the signed-in browser,
+but that browser session did not yield a saved DS file for audit. A fresh export
+plus separate negative role tests are still mandatory; see
+`docs/CREATOR_CHECKPOINT_VALIDATION_2026-08-26.md`.
 
 The Catalyst publishing boundary is now implemented locally. It includes signed
 replay-protected handoff, immutable snapshots and published versions, a
@@ -109,8 +110,13 @@ The positive immediate retract path is now live: article
 `ART-767af2ab02d5961458d3dd6a7ba584d1` completed Unpublish once with HTTP 200,
 Creator shows it under Retracted Articles as Unpublished, and Catalyst retained
 the immutable publication while advancing the pointer to version 2 and
-`Serving_Status = Retracted`. Capture the matching Creator audit event next;
-negative role tests and the remaining matrix are not yet complete.
+`Serving_Status = Retracted`. A later article,
+`ART-022254fb3b8ade6547c08e54b3c79187`, now provides the complete Creator-side
+audit packet: Catalyst Published at 23:49:05 and Catalyst Retracted at 23:49:44
+on 2026-08-29, with retraction job `471741000000056044` and callback
+`callback_36498adcbe77a6b2f2a48614bc45ddbc221e7f0c`. Treat this as positive audit
+evidence for the later loop, not a substitute for negative role tests or the
+remaining matrix.
 
 AppSail `0.3.1` now contains the public read boundary needed before Next.js:
 published-only listing/search/filter/pagination, slug resolution, taxonomy,
@@ -125,6 +131,16 @@ detail cache, and `no-store` 410 responses. Configure `PUBLIC_SITE_BASE_URL` to
 complete sitemap/RSS verification. For larger catalogs, replace the current
 pointer object scan with a maintained public index.
 
+That replacement is implemented locally as AppSail `0.4.0` with
+`GD_Public_Index`. Publish/retract maintains compact rows before job success;
+list/search/facets/feeds read them, while slug detail verifies the authoritative
+pointer and fetches one immutable object. An authenticated rebuild route migrates
+existing pointers. All 29 automated tests pass. Provision the seventh table,
+deploy `0.4.0`, rebuild Development, and repeat list/detail/410/failure checks.
+The deployed service remains `0.3.1`. Prepared artifact:
+`genedrift-catalyst-appsail-dev-v0.4.0.zip`, SHA-256
+`fc3fec70f8aafd5e7a4a6405be8988dd5df02d2bc2897758f3393babb7821d06`.
+
 The first Next.js public frontend now exists in `frontend/` and passes strict
 typecheck plus the optimized production build. It provides a responsive homepage,
 searchable/filterable/paginated archive, article detail, retraction/404/service
@@ -136,10 +152,21 @@ missing/retracted, and production-origin checks. The Catalyst API already return
 true HTTP 410; the frontend page is `noindex`, but strict page-level 410 must be
 verified or enforced at the chosen host/proxy.
 
+Deterministic pre-demo scale tools now generate 1,800 visible synthetic articles
+plus one retracted case, serve the same public DTO locally, run staged k6 public
+reads, and provide a result template. Local browser checks passed, including
+390px long-title overflow and out-of-range deep-page correction. This is local
+UI/tooling evidence, not a Catalyst or Vercel capacity result.
+
 Use `docs/VERCEL_HOSTING_AND_CLIENT_MIGRATION_GUIDE.md` for the ordered Vercel
 setup, exact cross-system variable ownership, domain wiring, safe secret rotation,
 and migration from the current accounts to client-owned Creator, Catalyst, OAuth,
 Git, Vercel, and DNS accounts.
+
+A clean 24-file frontend upload is staged in the signed-in Vercel team as project
+`genedrift-vercel-preview-0.4`. It has not been deployed. The public Deploy action
+requires explicit confirmation; after the initial build, set the Development API
+base and Preview canonical origin, redeploy, and execute the Preview checklist.
 
 The notification path is now live verified. Reviewer submissions recorded
 handoffs for one and two resolved recipients. A direct Built-in Email test was
@@ -237,15 +264,17 @@ No credentials, OAuth tokens, or client secrets belong in this repository.
 
 ## Immediate Next Step
 
-1. Create a repository checkpoint and deploy `frontend/` to a Vercel Preview
-   project using the new hosting/migration guide.
+1. The first repository checkpoint now exists (`da11492`). Sign into the intended
+   Vercel team and deploy `frontend/` to a Vercel Preview using the hosting guide.
 2. Configure matching Development site/API origins and verify public homepage,
    archive, article, media, sitemap/RSS, 404, and retraction behavior.
 3. Capture the remaining scheduled/retraction audit evidence and finish the
    duplicate, second-schedule, revoked-approval, retry, stale-pointer,
    callback-outage/replay, state-conflict, and media promotion matrix.
 4. Export and audit a fresh post-cleanup DS and complete the negative role matrix.
-5. Build the client-owned Production lane only after the Development gates pass.
+5. Provision and live-verify AppSail `0.4.0` plus the public index, then run the
+   staged catalog/read-load evidence on an approved Preview target.
+6. Build the client-owned Production lane only after the Development gates pass.
 
 The exact operator order is in
 `docs/CREATOR_CATALYST_INTEGRATION_CHECKLIST.md`.
@@ -253,8 +282,8 @@ The exact operator order is in
 Before a client demonstration, follow
 `docs/PRE_CLIENT_DEMO_AND_SCALE_TEST_PLAN.md`. A local 1,800-item frontend
 fixture may demonstrate catalog UX, but a credible Catalyst catalog benchmark
-requires the maintained public index because the current public read path scans
-all pointers and article objects. Keep catalog size, read traffic, and publication
+requires live provisioning and measured evidence for the locally implemented
+public index. Keep catalog size, read traffic, and publication
 workflow throughput as three separately reported tests.
 
 The submitted revision must remain immutable. Changes Requested now creates
@@ -272,7 +301,6 @@ approved.
 
 ## Continuity Warning
 
-The repository currently has no committed baseline. The files and documentation
-survive a chat or session ending, but there is no reliable version history until
-the project is committed. Create a checkpoint commit before the next major
-implementation phase.
+The first baseline checkpoint is commit `da11492`. Preserve it and the current
+uncommitted `0.4.0`/scale-tool work; do not reset or overwrite either while the
+live Development matrix remains incomplete.

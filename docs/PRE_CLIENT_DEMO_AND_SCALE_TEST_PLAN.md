@@ -104,8 +104,10 @@ data, a cleanup plan, request limits, and cost monitoring. Never stress Creator,
 Catalyst Production, Vercel Production, or a client account without explicit
 authorization.
 
-## 5. Recommended next engineering task
+## 5. Current engineering checkpoint
 
-Build the maintained public index, a deterministic 1,800-article data generator,
-a read-only k6 suite, and a small performance-report template. Then run the
-catalog test and traffic stages above before the client presentation.
+The maintained public index, deterministic 1,800-article generator, matching
+fixture API, read-only k6 suite, and performance-report template are implemented
+locally. They still require `GD_Public_Index` provisioning, AppSail `0.4.0`
+deployment/rebuild, a Vercel Preview, and measured runs on an approved target.
+Do not convert local fixture success into a Catalyst or Vercel scale claim.

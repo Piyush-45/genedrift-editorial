@@ -179,6 +179,33 @@ export interface PublishedPointer {
   replacementPath: string | null;
 }
 
+export interface PublicIndexRecord {
+  articleUuid: string;
+  publicationId: string;
+  revisionUuid: string;
+  revisionNumber: number;
+  contentHash: string;
+  objectId: string;
+  publishedAt: string;
+  pointerVersion: number;
+  servingStatus: PublishedPointer["servingStatus"];
+  slug: string;
+  title: string;
+  excerpt: string;
+  seoTitle: string;
+  seoDescription: string;
+  primaryCategory: string;
+  tags: string[];
+  searchText: string;
+  readingTimeMinutes: number;
+  featuredMedia: Omit<PublishedMediaAsset, "creatorRecordId"> | null;
+  robotsDirective: PublicationHandoff["revision"]["robotsDirective"];
+  retractedAt: string | null;
+  retractionReason: string | null;
+  replacementPath: string | null;
+  updatedAt: string;
+}
+
 export type CallbackStatus = "Processing" | "Retrying" | "Succeeded" | "Failed";
 
 export interface CreatorCallbackEvent {

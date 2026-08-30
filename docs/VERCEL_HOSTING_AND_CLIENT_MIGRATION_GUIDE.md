@@ -72,11 +72,12 @@ for each lane.
 
 ### A. Prepare the repository
 
-The current repository has not yet been committed. Before Vercel:
+The first repository checkpoint is commit `da11492`. Before Vercel:
 
 1. Create a private repository owned by the client or the client's organization.
-2. Create a checkpoint commit containing the reviewed GeneDrift source.
-3. Push it to the private repository.
+2. Review the current work after that checkpoint and create the deployment
+   commit when the intended Preview source is accepted.
+3. Push the commits to the private repository.
 4. Confirm `.env.local`, tokens, secrets, Creator exports containing sensitive
    data, `node_modules`, and `.next` are not committed.
 5. Keep `frontend/.env.example`; it contains names/placeholders, not secrets.

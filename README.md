@@ -27,3 +27,7 @@ The operator-ready installation order is in
 The beginner-friendly Vercel setup, environment wiring, and migration to
 client-owned accounts is in
 `docs/VERCEL_HOSTING_AND_CLIENT_MIGRATION_GUIDE.md`.
+
+Synthetic catalog and public-read test tools are under `tools/`. They can
+generate and serve a deterministic 1,800-article fixture locally and provide a
+staged k6 suite without carrying Creator or Catalyst credentials.

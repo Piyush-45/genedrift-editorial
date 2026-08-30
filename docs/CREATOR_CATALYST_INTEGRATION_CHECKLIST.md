@@ -44,10 +44,12 @@ verified from repository tests alone.
   `PutObject` or `DeleteObject`.
 - [ ] Keep bucket versioning disabled, enable encryption, and copy the exact
   public bucket URL shown in the console.
-- [ ] Create all six Data Store tables from `catalyst/README.md`, including the
+- [ ] Create all seven Data Store tables from `catalyst/README.md`, including the
   255-character object-key columns.
 - [ ] Add the `0.2.0` serving-state columns to `GD_Published_Pointers` and
   backfill existing rows to `Serving_Status = Published` before deployment.
+- [ ] Create `GD_Public_Index`, deploy AppSail `0.4.0`, call the authenticated
+  rebuild route once, and verify its count equals the current pointer count.
 - [ ] Restrict insert/update/delete permissions as described in the setup guide.
 
 ## 4. Provision AppSail and scheduling

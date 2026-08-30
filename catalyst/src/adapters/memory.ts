@@ -1,4 +1,4 @@
-import type { CallbackOutboxRecord, CreatorCallbackEvent, PublicationRequestRecord, PublishedPointer, PublishedVersion, RequestStatus } from "../domain";
+import type { CallbackOutboxRecord, CreatorCallbackEvent, PublicationRequestRecord, PublicIndexRecord, PublishedPointer, PublishedVersion, RequestStatus } from "../domain";
 import type { CreatorCallbackClient, CreatorMediaSource, ImmutableObjectStore, NewPublicationRequest, PublicationAuthority, PublicationScheduler, PublicationStore } from "../ports";
 import type { PublicationHandoff } from "../domain";
 
@@ -12,6 +12,7 @@ export class MemoryPublicationStore implements PublicationStore {
   readonly nonces = new Map<string, string>();
   readonly versions = new Map<string, PublishedVersion>();
   readonly pointers = new Map<string, PublishedPointer>();
+  readonly publicIndex = new Map<string, PublicIndexRecord>();
   readonly callbackOutbox = new Map<string, CallbackOutboxRecord>();
 
   async claimNonce(nonce: string, expiresAt: string): Promise<boolean> {
@@ -139,6 +140,24 @@ export class MemoryPublicationStore implements PublicationStore {
     return true;
   }
 
+  async upsertPublicIndex(record: PublicIndexRecord): Promise<void> {
+    const current = this.publicIndex.get(record.articleUuid);
+    if (current && current.pointerVersion > record.pointerVersion) return;
+    this.publicIndex.set(record.articleUuid, clone(record));
+  }
+
+  async getPublicIndexBySlug(slug: string): Promise<PublicIndexRecord | null> {
+    const matches = [...this.publicIndex.values()].filter((record) => record.slug === slug);
+    if (matches.length > 1) {
+      throw new Error(`Duplicate public slug ${slug}`);
+    }
+    return matches[0] ? clone(matches[0]) : null;
+  }
+
+  async listPublicIndex(): Promise<PublicIndexRecord[]> {
+    return [...this.publicIndex.values()].map(clone);
+  }
+
   async enqueueCallback(event: CreatorCallbackEvent): Promise<CallbackOutboxRecord> {
     const existing = this.callbackOutbox.get(event.eventId);
     if (existing) return clone(existing);
@@ -205,6 +224,7 @@ export class MemoryObjectStore implements ImmutableObjectStore {
   readonly objects = new Map<string, unknown>();
   readonly publicUrls = new Map<string, string>();
   failPuts = 0;
+  publicJsonReads = 0;
 
   async putPrivateJson(objectKey: string, value: unknown): Promise<string> {
     if (this.failPuts > 0) {
@@ -236,6 +256,7 @@ export class MemoryObjectStore implements ImmutableObjectStore {
   }
 
   async getPublicJson<T>(objectKey: string): Promise<T> {
+    this.publicJsonReads += 1;
     return this.getPrivateJson<T>(objectKey);
   }
 

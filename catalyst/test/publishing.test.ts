@@ -115,7 +115,9 @@ test("public content lists and resolves only current published pointers", async 
   await h.service.processPublication(second.request.requestId);
 
   const publicContent = new PublicContentService(h.store, h.objects);
+  const readsBeforeList = h.objects.publicJsonReads;
   const page = await publicContent.list({ page: 1, limit: 1 });
+  assert.equal(h.objects.publicJsonReads, readsBeforeList, "list reads only compact public-index rows");
   assert.equal(page.pagination.total, 2);
   assert.equal(page.articles.length, 1);
   assert.deepEqual(page.facets.categories, ["Industry", "Regulatory Affairs"]);
@@ -125,6 +127,7 @@ test("public content lists and resolves only current published pointers", async 
   assert.equal(filtered.articles[0].slug, "second-public-article");
 
   const resolved = await publicContent.resolveSlug("article-revision-1");
+  assert.equal(h.objects.publicJsonReads, readsBeforeList + 1, "detail reads exactly one immutable object");
   assert.equal(resolved.status, "published");
   if (resolved.status === "published") {
     assert.equal(resolved.article.article.uuid, "article-uuid-0001");
@@ -132,6 +135,19 @@ test("public content lists and resolves only current published pointers", async 
     assert.doesNotMatch(JSON.stringify(resolved.article), /creatorRecordId|approvedRevisionId|editorDocument/);
   }
   assert.deepEqual(await publicContent.resolveSlug("draft-never-published"), { status: "missing" });
+});
+
+test("rebuilds the maintained public index from authoritative pointers and immutable objects", async () => {
+  const h = harness();
+  const accepted = await h.service.acceptHandoff(handoff());
+  await h.service.processPublication(accepted.request.requestId);
+  h.store.publicIndex.clear();
+
+  const publicContent = new PublicContentService(h.store, h.objects);
+  assert.equal((await publicContent.list({ page: 1, limit: 20 })).pagination.total, 0);
+  assert.equal(await publicContent.rebuildIndex(), 1);
+  assert.equal((await publicContent.list({ page: 1, limit: 20 })).pagination.total, 1);
+  assert.equal((await publicContent.resolveSlug("article-revision-1")).status, "published");
 });
 
 test("public content removes retracted pointers from lists and returns retraction metadata by slug", async () => {
@@ -152,17 +168,17 @@ test("public content removes retracted pointers from lists and returns retractio
   }
 });
 
-test("public content rejects pointer and immutable object identity drift", async () => {
+test("public detail rejects public-index and immutable object identity drift", async () => {
   const h = harness();
   const accepted = await h.service.acceptHandoff(handoff());
   await h.service.processPublication(accepted.request.requestId);
-  const pointer = h.store.pointers.get("article-uuid-0001")!;
-  pointer.contentHash = "0".repeat(64);
+  const indexed = h.store.publicIndex.get("article-uuid-0001")!;
+  indexed.contentHash = "0".repeat(64);
 
   const publicContent = new PublicContentService(h.store, h.objects);
-  await assert.rejects(() => publicContent.list({ page: 1, limit: 20 }), (error: unknown) => {
+  await assert.rejects(() => publicContent.resolveSlug("article-revision-1"), (error: unknown) => {
     const failure = asPublicationError(error);
-    return failure.code === "PUBLIC_CONTENT_IDENTITY_MISMATCH" && failure.httpStatus === 500;
+    return failure.code === "PUBLIC_INDEX_STALE" && failure.httpStatus === 503;
   });
 });
 

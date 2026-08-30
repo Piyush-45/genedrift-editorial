@@ -11,7 +11,7 @@ import { sha256Hex, verifyRequestSignature } from "./security";
 
 type RawRequest = Request & { rawBody?: Buffer };
 
-const SERVICE_VERSION = "0.3.1";
+const SERVICE_VERSION = "0.4.0";
 const SCHEDULER_PAYLOAD_VERSION = 4;
 const app = express();
 app.disable("x-powered-by");
@@ -366,6 +366,20 @@ app.post("/internal/jobs/callback", async (req, res, next) => {
     if (!eventId) throw new PublicationError("eventId is required", "EVENT_ID_REQUIRED", false, 400);
     const result = await service.processCallback(eventId);
     res.status(200).json({ ok: true, eventId, deliveryStatus: result.deliveryStatus, deliveryAttemptCount: result.deliveryAttemptCount });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/internal/maintenance/rebuild-public-index", async (req, res, next) => {
+  try {
+    const env = loadEnvironment();
+    if (!secureEquals(req.header("x-genedrift-internal-secret"), env.INTERNAL_JOB_SECRET)) {
+      throw new PublicationError("Internal maintenance authentication failed", "INTERNAL_AUTH_FAILED", false, 401);
+    }
+    const { publicContent } = createService(req);
+    const indexed = await publicContent.rebuildIndex();
+    res.status(200).json({ ok: true, indexed });
   } catch (error) {
     next(error);
   }

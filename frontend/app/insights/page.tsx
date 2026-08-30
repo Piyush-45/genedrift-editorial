@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { ArticleCard } from "@/components/article-card";
 import { ArticleFilters } from "@/components/article-filters";
 import { Pagination } from "@/components/pagination";
@@ -23,6 +24,14 @@ export default async function InsightsPage({ searchParams }: Props) {
   const requestedPage = Number.parseInt(value(params.page), 10);
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const data = await getArticles({ page, limit: 12, query, category, tag });
+  if (data.pagination.totalPages > 0 && page > data.pagination.totalPages) {
+    const corrected = new URLSearchParams();
+    corrected.set("page", String(data.pagination.totalPages));
+    if (query) corrected.set("q", query);
+    if (category) corrected.set("category", category);
+    if (tag) corrected.set("tag", tag);
+    redirect(`/insights?${corrected}`);
+  }
 
   return (
     <main className="shell archive-page">

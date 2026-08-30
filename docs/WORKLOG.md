@@ -33,11 +33,20 @@
   `471741000000056044` and callback
   `callback_36498adcbe77a6b2f2a48614bc45ddbc221e7f0c`.
 - Staged a clean 24-file frontend upload in Vercel as
-  `genedrift-vercel-preview-0.4`. Deployment is intentionally waiting for
-  explicit confirmation because it creates a publicly reachable project.
-- `0.4.0` remains local: provisioning/rebuild/deployment/live tests are pending.
-  Vercel Preview and fresh Creator DS/negative-role evidence are also pending, so
-  the integration remains unverified.
+  `genedrift-vercel-preview-0.4`, then deployed it after explicit confirmation.
+  Configured the Development public API and canonical Vercel origin and completed
+  the configured redeployment at `https://genedrift-vercel-preview-04.vercel.app`.
+- Live Vercel checks passed for homepage, archive/category, detail,
+  canonical/JSON-LD, robots, sitemap, missing 404, retraction/noindex, no console
+  warnings/errors, and 390px long-title layout. The retracted Next.js page still
+  returns HTTP 200 rather than strict 410.
+- Provisioned `GD_Public_Index` and all 24 documented application columns in
+  Catalyst Development, deployed AppSail `0.4.0`, and configured
+  `PUBLIC_SITE_BASE_URL` to Vercel. `/health` reports version `0.4.0` and its
+  configuration check passes.
+- The authenticated one-time index rebuild is pending; until it runs, the new
+  index correctly returns zero list rows. Fresh Creator DS/negative-role evidence
+  also remains pending, so the integration remains unverified.
 
 ## 2026-08-30 - Continuity checkpoint synchronized
 

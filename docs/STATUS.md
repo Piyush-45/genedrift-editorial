@@ -236,20 +236,28 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
   passes strict typecheck and production build. It includes the public homepage,
   archive search/category/tag filters, pagination, article pages, retraction and
   error states, responsive styling, metadata, JSON-LD, robots, and sitemap.
-  Deployment, browser/device and Lighthouse QA, final branding/content, production
-  origin configuration, and strict page-level 410 verification remain pending.
+  Vercel project `genedrift-vercel-preview-0.4` is deployed at
+  `https://genedrift-vercel-preview-04.vercel.app` with the Development API and
+  canonical origin configured. Live homepage, archive/category, detail,
+  canonical/JSON-LD, robots, sitemap, 404, retraction/noindex, console, and 390px
+  overflow checks passed. The retracted frontend route returns HTTP 200 rather
+  than strict page-level 410. Lighthouse, final branding/content, and the
+  remaining device/accessibility matrix are pending.
 
 - Cache-hardened AppSail `0.3.1` is deployed and live verified for public
   listing, filtering/pagination, detail, taxonomy, ETag/304, HTTP 410, a
   five-second must-revalidate detail cache, and `no-store` retraction responses.
   Configure `PUBLIC_SITE_BASE_URL` before testing sitemap/RSS. Artifact SHA-256:
   `13018639a290a6366c0c348e191d97ac9907ab158cf3b339301f831c619573f6`.
-- AppSail `0.4.0` is implemented locally with compact `GD_Public_Index` rows.
+- AppSail `0.4.0` is deployed in Development with compact `GD_Public_Index` rows.
   Publish/retract workers repair the index before success; list/search/feed
   routes read compact rows, and detail verifies the current pointer before
   loading one immutable object. An authenticated rebuild route migrates existing
-  pointers. All 29 Catalyst tests pass. The seventh table is not provisioned and
-  `0.4.0` is not deployed or live verified. Prepared ZIP SHA-256:
+  pointers. All 29 Catalyst tests pass. The seventh table and its documented 24
+  application columns are provisioned; `/health` reports `0.4.0`, and
+  `PUBLIC_SITE_BASE_URL` points at Vercel. The one-time authenticated rebuild is
+  still pending, so listing currently returns zero rows and `0.4.0` is not yet
+  live verified. Prepared ZIP SHA-256:
   `fc3fec70f8aafd5e7a4a6405be8988dd5df02d2bc2897758f3393babb7821d06`.
 - Deterministic scale tools now provide 1,800 visible synthetic articles plus a
   410 case, a matching local API, staged k6 read profiles, and a performance

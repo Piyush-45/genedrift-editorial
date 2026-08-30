@@ -131,13 +131,15 @@ detail cache, and `no-store` 410 responses. Configure `PUBLIC_SITE_BASE_URL` to
 complete sitemap/RSS verification. For larger catalogs, replace the current
 pointer object scan with a maintained public index.
 
-That replacement is implemented locally as AppSail `0.4.0` with
+That replacement is deployed in Catalyst Development as AppSail `0.4.0` with
 `GD_Public_Index`. Publish/retract maintains compact rows before job success;
 list/search/facets/feeds read them, while slug detail verifies the authoritative
 pointer and fetches one immutable object. An authenticated rebuild route migrates
-existing pointers. All 29 automated tests pass. Provision the seventh table,
-deploy `0.4.0`, rebuild Development, and repeat list/detail/410/failure checks.
-The deployed service remains `0.3.1`. Prepared artifact:
+existing pointers. All 29 automated tests pass. `GD_Public_Index` and all 24
+documented application columns are provisioned, `/health` reports `0.4.0`, and
+`PUBLIC_SITE_BASE_URL` is the Vercel URL. The authenticated rebuild has not run,
+so listing currently returns zero rows. Run it before repeating
+list/detail/410/failure checks. Prepared artifact:
 `genedrift-catalyst-appsail-dev-v0.4.0.zip`, SHA-256
 `fc3fec70f8aafd5e7a4a6405be8988dd5df02d2bc2897758f3393babb7821d06`.
 
@@ -163,10 +165,14 @@ setup, exact cross-system variable ownership, domain wiring, safe secret rotatio
 and migration from the current accounts to client-owned Creator, Catalyst, OAuth,
 Git, Vercel, and DNS accounts.
 
-A clean 24-file frontend upload is staged in the signed-in Vercel team as project
-`genedrift-vercel-preview-0.4`. It has not been deployed. The public Deploy action
-requires explicit confirmation; after the initial build, set the Development API
-base and Preview canonical origin, redeploy, and execute the Preview checklist.
+A clean 24-file frontend upload is deployed in Vercel as project
+`genedrift-vercel-preview-0.4` at
+`https://genedrift-vercel-preview-04.vercel.app`. Both public environment values
+are configured and the configured redeployment is Ready. Homepage,
+archive/category, detail, canonical/JSON-LD, robots, sitemap, missing 404,
+retraction/noindex, console, and 390px overflow checks passed against the live
+Development API. The retracted frontend page still returns HTTP 200; retain this
+as an explicit strict-410 gap.
 
 The notification path is now live verified. Reviewer submissions recorded
 handoffs for one and two resolved recipients. A direct Built-in Email test was

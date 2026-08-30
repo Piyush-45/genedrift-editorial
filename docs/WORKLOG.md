@@ -44,9 +44,17 @@
   Catalyst Development, deployed AppSail `0.4.0`, and configured
   `PUBLIC_SITE_BASE_URL` to Vercel. `/health` reports version `0.4.0` and its
   configuration check passes.
-- The authenticated one-time index rebuild is pending; until it runs, the new
-  index correctly returns zero list rows. Fresh Creator DS/negative-role evidence
-  also remains pending, so the integration remains unverified.
+- With explicit approval, used the existing `INTERNAL_JOB_SECRET` for the one-time
+  rebuild without printing it or storing it in the repository. The rebuild
+  returned success and indexed nine current pointers; both mode-0600 temporary
+  bridge files were deleted immediately afterward.
+- Post-rebuild public listing returns five Published articles. Live checks pass
+  for search/filter/pagination, detail, ETag/304, sitemap, RSS, missing GET 404,
+  retracted GET 410 with `no-store`, Vercel archive rendering, and deep-page
+  correction. AppSail still answers retracted HEAD with 200, and the retracted
+  Next.js page still returns 200; retain both as explicit host/frontend gaps.
+- Fresh Creator DS/negative-role evidence and the remaining Development matrix
+  still remain pending, so the integration remains unverified.
 
 ## 2026-08-30 - Continuity checkpoint synchronized
 

@@ -137,9 +137,13 @@ list/search/facets/feeds read them, while slug detail verifies the authoritative
 pointer and fetches one immutable object. An authenticated rebuild route migrates
 existing pointers. All 29 automated tests pass. `GD_Public_Index` and all 24
 documented application columns are provisioned, `/health` reports `0.4.0`, and
-`PUBLIC_SITE_BASE_URL` is the Vercel URL. The authenticated rebuild has not run,
-so listing currently returns zero rows. Run it before repeating
-list/detail/410/failure checks. Prepared artifact:
+`PUBLIC_SITE_BASE_URL` is the Vercel URL. The authenticated one-time rebuild ran
+successfully on 2026-08-30 and indexed nine current pointers. Public listing now
+returns the five Published articles; live list/search/filter/pagination, detail,
+ETag/304, sitemap, RSS, missing 404, and retracted GET 410 checks pass. The
+retracted HEAD response is still 200 at the AppSail host even though GET is 410
+and both responses carry `no-store`; retain this as a host-level method mismatch.
+Prepared artifact:
 `genedrift-catalyst-appsail-dev-v0.4.0.zip`, SHA-256
 `fc3fec70f8aafd5e7a4a6405be8988dd5df02d2bc2897758f3393babb7821d06`.
 
@@ -270,17 +274,14 @@ No credentials, OAuth tokens, or client secrets belong in this repository.
 
 ## Immediate Next Step
 
-1. The first repository checkpoint now exists (`da11492`). Sign into the intended
-   Vercel team and deploy `frontend/` to a Vercel Preview using the hosting guide.
-2. Configure matching Development site/API origins and verify public homepage,
-   archive, article, media, sitemap/RSS, 404, and retraction behavior.
-3. Capture the remaining scheduled/retraction audit evidence and finish the
+1. Capture the remaining scheduled/retraction audit evidence and finish the
    duplicate, second-schedule, revoked-approval, retry, stale-pointer,
    callback-outage/replay, state-conflict, and media promotion matrix.
-4. Export and audit a fresh post-cleanup DS and complete the negative role matrix.
-5. Provision and live-verify AppSail `0.4.0` plus the public index, then run the
-   staged catalog/read-load evidence on an approved Preview target.
-6. Build the client-owned Production lane only after the Development gates pass.
+2. Export and audit a fresh post-cleanup DS and complete the negative role matrix.
+3. Run Lighthouse and the remaining device/accessibility checks against the live
+   Vercel Preview.
+4. Run the staged catalog/read-load evidence on an approved Preview target.
+5. Build the client-owned Production lane only after the Development gates pass.
 
 The exact operator order is in
 `docs/CREATOR_CATALYST_INTEGRATION_CHECKLIST.md`.
@@ -288,8 +289,8 @@ The exact operator order is in
 Before a client demonstration, follow
 `docs/PRE_CLIENT_DEMO_AND_SCALE_TEST_PLAN.md`. A local 1,800-item frontend
 fixture may demonstrate catalog UX, but a credible Catalyst catalog benchmark
-requires live provisioning and measured evidence for the locally implemented
-public index. Keep catalog size, read traffic, and publication
+requires measured load evidence for the now-live public index. Keep catalog
+size, read traffic, and publication
 workflow throughput as three separately reported tests.
 
 The submitted revision must remain immutable. Changes Requested now creates

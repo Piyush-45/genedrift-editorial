@@ -255,9 +255,12 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
   loading one immutable object. An authenticated rebuild route migrates existing
   pointers. All 29 Catalyst tests pass. The seventh table and its documented 24
   application columns are provisioned; `/health` reports `0.4.0`, and
-  `PUBLIC_SITE_BASE_URL` points at Vercel. The one-time authenticated rebuild is
-  still pending, so listing currently returns zero rows and `0.4.0` is not yet
-  live verified. Prepared ZIP SHA-256:
+  `PUBLIC_SITE_BASE_URL` points at Vercel. The authenticated rebuild indexed nine
+  current pointers on 2026-08-30, and public listing now returns five Published
+  articles. Live list/search/filter/pagination, detail, ETag/304, sitemap, RSS,
+  missing GET 404, and retracted GET 410 checks pass. Retracted HEAD still returns
+  200 at the AppSail host while GET is 410 and caching is `no-store`; retain this
+  as an explicit method mismatch. Prepared ZIP SHA-256:
   `fc3fec70f8aafd5e7a4a6405be8988dd5df02d2bc2897758f3393babb7821d06`.
 - Deterministic scale tools now provide 1,800 visible synthetic articles plus a
   410 case, a matching local API, staged k6 read profiles, and a performance
@@ -305,8 +308,7 @@ Move from review workflow into production readiness:
 - Production-grade notification delivery tracking and richer dashboard analytics
 - Catalyst end-to-end Development verification and production promotion
 - Draft preview boundary (separate from approved publication)
-- Live provisioning, rebuild, deployment, and benchmark evidence for the locally
-  implemented maintained public index
+- Measured Catalyst/Vercel benchmark evidence for the live maintained public index
 - Host-level HTTP 410 enforcement/redirect UX for retracted frontend pages
 - Final public frontend branding, deployment, analytics/consent, and launch QA
 - Client-account integration and migration

@@ -1,0 +1,180 @@
+// One-time idempotent seed for the validation application.
+void seed_editorial_configuration()
+{
+adminEmployeeId = 0;
+adminEmployee = Demo_Employees[Employee_Key == "DEMO-ADMIN-001"];
+if(adminEmployee.count() == 0)
+{
+	adminEmployeeId = insert into Demo_Employees
+	[
+		Employee_Key = "DEMO-ADMIN-001"
+		Display_Name = "Piyush Tyagi"
+		Work_Email = "opensourceindia22@gmail.com"
+		Creator_Username = "opensourceindia22@gmail.com"
+		Job_Title = "Platform Administrator"
+		Status = "Active"
+	];
+}
+else
+{
+	adminEmployeeId = adminEmployee.ID;
+}
+
+teamId = 0;
+editorialTeam = Demo_Teams[Team_Key == "EDITORIAL"];
+if(editorialTeam.count() == 0)
+{
+	teamId = insert into Demo_Teams
+	[
+		Team_Key = "EDITORIAL"
+		Team_Name = "Editorial Team"
+		Team_Lead = adminEmployeeId
+		Status = "Active"
+	];
+}
+else
+{
+	teamId = editorialTeam.ID;
+}
+
+membership = Demo_Team_Memberships[Employee == adminEmployeeId && Team == teamId && Active == true];
+if(membership.count() == 0)
+{
+	insert into Demo_Team_Memberships
+	[
+		Employee = adminEmployeeId
+		Team = teamId
+		Membership_Role = "Lead"
+		Active = true
+	];
+}
+
+categoryDefinitions = {
+	"CAT-REG-AFFAIRS|Regulatory Affairs|regulatory-affairs|Regulatory strategy, submissions, dossiers and authority interactions.|10",
+	"CAT-REGISTRATION|Product Registration|product-registration|Registration pathways, market authorization and local representation.|20",
+	"CAT-PV|Pharmacovigilance|pharmacovigilance|Drug safety, case processing, aggregate reporting and QPPV topics.|30",
+	"CAT-LIFECYCLE|Product Lifecycle Management|product-lifecycle-management|Post-approval changes, variations, renewals and compliance.|40",
+	"CAT-QUALITY|Quality and Compliance|quality-compliance|Quality systems, due diligence, audits and regulatory compliance.|50",
+	"CAT-INSIGHTS|Industry and Market Insights|industry-market-insights|Life-sciences policy, market and operating-model perspectives.|60"
+};
+for each categoryDefinition in categoryDefinitions
+{
+	parts = categoryDefinition.toList("|");
+	categoryKey = parts.get(0);
+	categoryRecord = Categories[Category_UUID == categoryKey];
+	if(categoryRecord.count() == 0)
+	{
+		insert into Categories
+		[
+			Category_UUID = categoryKey
+			Name = parts.get(1)
+			Slug = parts.get(2)
+			Description = parts.get(3)
+			Display_Order = parts.get(4).toLong()
+			Active = true
+		];
+	}
+}
+
+tagDefinitions = {
+	"TAG-DRUGS|Drugs|drugs",
+	"TAG-MEDICAL-DEVICES|Medical Devices|medical-devices",
+	"TAG-COSMETICS|Cosmetics|cosmetics",
+	"TAG-FOOD-SUPPLEMENTS|Food Supplements|food-supplements",
+	"TAG-DOSSIERS|Dossiers|dossiers",
+	"TAG-MAH|Market Authorization|market-authorization",
+	"TAG-QPPV|QPPV|qppv",
+	"TAG-SAFETY|Drug Safety|drug-safety"
+};
+for each tagDefinition in tagDefinitions
+{
+	parts = tagDefinition.toList("|");
+	tagKey = parts.get(0);
+	tagRecord = Tags[Tag_UUID == tagKey];
+	if(tagRecord.count() == 0)
+	{
+		insert into Tags
+		[
+			Tag_UUID = tagKey
+			Name = parts.get(1)
+			Slug = parts.get(2)
+			Active = true
+		];
+	}
+}
+
+standardPolicyId = 0;
+standardPolicy = Approval_Policies[Policy_Key == "STANDARD"];
+if(standardPolicy.count() == 0)
+{
+	standardPolicyId = insert into Approval_Policies
+	[
+		Policy_Key = "STANDARD"
+		Policy_Name = "Standard Review"
+		Description = "One eligible reviewer approval is required."
+		Required_Approval_Count = 1
+		Require_Distinct_Reviewers = true
+		Active = true
+		Is_Default = true
+	];
+}
+else
+{
+	standardPolicyId = standardPolicy.ID;
+}
+
+regulatedPolicy = Approval_Policies[Policy_Key == "REGULATED"];
+if(regulatedPolicy.count() == 0)
+{
+	insert into Approval_Policies
+	[
+		Policy_Key = "REGULATED"
+		Policy_Name = "Regulated Review"
+		Description = "Two distinct eligible reviewer approvals are required."
+		Required_Approval_Count = 2
+		Require_Distinct_Reviewers = true
+		Active = true
+		Is_Default = false
+	];
+}
+
+categoriesWithoutPolicy = Categories[Default_Approval_Policy == null];
+for each categoryRecord in categoriesWithoutPolicy
+{
+	categoryRecord.Default_Approval_Policy = standardPolicyId;
+}
+
+roleNames = {"Author","Reviewer","Publisher","Editorial Admin"};
+for each roleName in roleNames
+{
+	roleAssignment = Editorial_Role_Assignments[Employee == adminEmployeeId && Editorial_Role == roleName && Active == true];
+	if(roleAssignment.count() == 0)
+	{
+		insert into Editorial_Role_Assignments
+		[
+			Employee = adminEmployeeId
+			Editorial_Role = roleName
+			Active = true
+		];
+	}
+}
+
+settings = Site_Settings[Settings_Key == "DEFAULT"];
+if(settings.count() == 0)
+{
+	insert into Site_Settings
+	[
+		Settings_Key = "DEFAULT"
+		Site_Name = "GeneDrift"
+		Insights_Base_Path = "/insights"
+		Default_SEO_Title_Pattern = "%s | GeneDrift Insights"
+		Default_SEO_Description = "Regulatory affairs, product registration and pharmacovigilance insights from GeneDrift."
+		Publishing_Timezone = "Asia/Kolkata"
+		RSS_Enabled = true
+		Search_Enabled = true
+		Related_Articles_Enabled = true
+	];
+}
+
+info "GeneDrift editorial configuration seed completed.";
+}

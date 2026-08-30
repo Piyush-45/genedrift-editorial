@@ -1,0 +1,120 @@
+map retract_published_article(int articleId, string reason, string replacementPath)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+	publisherRole = Editorial_Role_Assignments[Employee == actor.ID && Active == true && (Editorial_Role == "Publisher" || Editorial_Role == "Editorial Admin")];
+	if(publisherRole.count() == 0)
+	{
+		result.put("message","Only an active publisher or editorial admin can retract published content.");
+		return result;
+	}
+
+	cleanReason = ifnull(reason,"").trim();
+	cleanReplacementPath = ifnull(replacementPath,"").trim();
+	if(cleanReason.length() < 3 || cleanReason.length() > 1000)
+	{
+		result.put("message","Retraction reason must be between 3 and 1000 characters.");
+		return result;
+	}
+	if(cleanReplacementPath.length() > 255 || (cleanReplacementPath != "" && (!cleanReplacementPath.startsWith("/") || cleanReplacementPath.startsWith("//"))))
+	{
+		result.put("message","Replacement path must be empty or a local path beginning with one slash.");
+		return result;
+	}
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	publishedRevisionId = ifnull(article.Published_Revision_ID,"").trim();
+	if(article.Workflow_State == "Unpublished")
+	{
+		result.put("ok",true);
+		result.put("message","Article is already retracted.");
+		result.put("articleId",article.ID);
+		result.put("articleState",article.Workflow_State);
+		return result;
+	}
+	if(article.Workflow_State != "Published" || publishedRevisionId == "")
+	{
+		result.put("message","Only the current published article can be retracted.");
+		return result;
+	}
+	revision = Article_Revisions[ID == publishedRevisionId.toLong()];
+	if(revision.count() == 0 || revision.Revision_State != "Published")
+	{
+		result.put("message","The current published revision is not available for retraction.");
+		return result;
+	}
+
+	existingOpenJob = Publication_Jobs[Article == article.ID && Revision == revision.ID && Action == "Unpublish" && (Status == "Queued" || Status == "Processing")];
+	if(existingOpenJob.count() > 0)
+	{
+		if(existingOpenJob.Status == "Queued")
+		{
+			return thisapp.handoff_publication_to_catalyst(existingOpenJob.ID);
+		}
+		result.put("ok",true);
+		result.put("message","Catalyst is already processing this retraction.");
+		result.put("articleId",article.ID);
+		result.put("revisionId",revision.ID);
+		result.put("jobId",existingOpenJob.ID);
+		return result;
+	}
+
+	publishedEpoch = zoho.currenttime.toLong();
+	if(article.Last_Published_At != null)
+	{
+		publishedEpoch = article.Last_Published_At.toLong();
+	}
+	idempotencyKey = "RET-" + article.Article_UUID + "-" + revision.Revision_UUID + "-" + publishedEpoch;
+	jobId = insert into Publication_Jobs
+	[
+		Idempotency_Key = idempotencyKey
+		Article = article.ID
+		Revision = revision.ID
+		Action = "Unpublish"
+		Status = "Queued"
+		Attempt_Count = 0
+		Requested_By = actor.ID
+		Requested_At = zoho.currenttime
+		Retraction_Reason = cleanReason
+		Replacement_Path = cleanReplacementPath
+	];
+
+	metadata = Map();
+	metadata.put("jobId",jobId);
+	metadata.put("revisionId",revision.ID);
+	metadata.put("revisionNumber",revision.Revision_Number);
+	metadata.put("idempotencyKey",idempotencyKey);
+	metadata.put("reason",cleanReason);
+	metadata.put("replacementPath",cleanReplacementPath);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-RETRACT-QUEUED-" + jobId
+		Entity_Type = "Publication"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "Retraction Queued"
+		Actor_Employee = actor.ID
+		Previous_State = article.Workflow_State
+		New_State = article.Workflow_State
+		Event_Summary = actor.Display_Name + " requested retraction of revision " + revision.Revision_Number + "."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	return thisapp.handoff_publication_to_catalyst(jobId);
+}

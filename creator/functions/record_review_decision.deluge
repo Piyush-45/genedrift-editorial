@@ -1,0 +1,307 @@
+map record_review_decision(int assignmentId, string decision, string decisionSummary)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+	actorReviewerRole = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Reviewer" && Active == true];
+	if(actorReviewerRole.count() == 0)
+	{
+		result.put("message","Only an active editorial reviewer can record a review decision.");
+		return result;
+	}
+	if(decision != "Approved" && decision != "Changes Requested" && decision != "Rejected")
+	{
+		result.put("message","Unsupported review decision.");
+		return result;
+	}
+	if((decision == "Changes Requested" || decision == "Rejected") && (decisionSummary == null || decisionSummary.trim() == ""))
+	{
+		result.put("message","A reason is required when requesting changes or rejecting an article.");
+		return result;
+	}
+	if(decisionSummary != null && decisionSummary.length() > 8000)
+	{
+		result.put("message","The decision summary must be within 8,000 characters.");
+		return result;
+	}
+
+	assignment = Review_Assignments[ID == assignmentId];
+	if(assignment.count() == 0)
+	{
+		result.put("message","Review assignment not found.");
+		return result;
+	}
+	if(assignment.Status != "Claimed" || assignment.Reviewer == null || assignment.Reviewer.ID != actor.ID)
+	{
+		result.put("message","You must claim this review before recording a decision.");
+		return result;
+	}
+	article = Articles[ID == assignment.Article.ID];
+	revision = Article_Revisions[ID == assignment.Revision.ID];
+	if(article.count() == 0 || revision.count() == 0 || article.Workflow_State != "In Review" || revision.Revision_State != "Submitted")
+	{
+		result.put("message","This article revision is no longer open for review.");
+		return result;
+	}
+	if(actor.ID == article.Primary_Author.ID)
+	{
+		result.put("message","The primary author cannot review their own article.");
+		return result;
+	}
+	if(decision == "Changes Requested")
+	{
+		existingDraftRevision = Article_Revisions[Article == article.ID && Revision_State == "Draft"];
+		if(existingDraftRevision.count() > 0)
+		{
+			result.put("message","This article already has an editable draft revision. Reload the workspace before continuing.");
+			return result;
+		}
+	}
+
+	previousArticleState = article.Workflow_State;
+	assignment.Decision = decision;
+	assignment.Decision_Summary = ifnull(decisionSummary,"").trim();
+	assignment.Status = decision;
+	assignment.Decided_At = zoho.currenttime;
+
+	if(decision == "Changes Requested" || decision == "Rejected" || (decisionSummary != null && decisionSummary.trim() != ""))
+	{
+		commentType = "General";
+		if(decision == "Changes Requested")
+		{
+			commentType = "Change Request";
+		}
+		insert into Review_Comments
+		[
+			Assignment = assignment.ID
+			Revision = revision.ID
+			Author_Employee = actor.ID
+			Comment_Type = commentType
+			Comment_Body = decisionSummary.trim()
+			Resolved = false
+		];
+	}
+
+	requiredApprovals = article.Approval_Policy.Required_Approval_Count;
+	if(article.Approval_Override_Count != null && article.Approval_Override_Count > 0)
+	{
+		requiredApprovals = article.Approval_Override_Count;
+	}
+	approvedReviewerIds = List();
+	approvedAssignments = Review_Assignments[Article == article.ID && Revision == revision.ID && Status == "Approved"];
+	for each approvedAssignment in approvedAssignments
+	{
+		if(approvedAssignment.Reviewer != null && !approvedReviewerIds.contains(approvedAssignment.Reviewer.ID))
+		{
+			approvedReviewerIds.add(approvedAssignment.Reviewer.ID);
+		}
+	}
+
+	articleState = "In Review";
+	newDraftRevisionId = null;
+	newDraftRevisionNumber = null;
+	newDraftRevisionUuid = "";
+	if(decision == "Approved" && approvedReviewerIds.size() >= requiredApprovals)
+	{
+		articleState = "Approved";
+		revision.Revision_State = "Approved";
+		revision.Approved_At = zoho.currenttime;
+		article.Workflow_State = "Approved";
+		article.Active_Draft_Revision_ID = "";
+		article.Approved_Revision_ID = revision.ID.toString();
+	}
+	else if(decision == "Changes Requested")
+	{
+		articleState = "Changes Requested";
+		nextRevisionNumber = 1;
+		articleRevisions = Article_Revisions[Article == article.ID];
+		for each articleRevision in articleRevisions
+		{
+			if(articleRevision.Revision_Number != null && articleRevision.Revision_Number >= nextRevisionNumber)
+			{
+				nextRevisionNumber = articleRevision.Revision_Number + 1;
+			}
+		}
+		revisionSuffix = nextRevisionNumber.toString();
+		if(nextRevisionNumber < 10)
+		{
+			revisionSuffix = "000" + nextRevisionNumber;
+		}
+		else if(nextRevisionNumber < 100)
+		{
+			revisionSuffix = "00" + nextRevisionNumber;
+		}
+		else if(nextRevisionNumber < 1000)
+		{
+			revisionSuffix = "0" + nextRevisionNumber;
+		}
+		newDraftRevisionUuid = "REV-" + article.Article_UUID + "-" + revisionSuffix;
+		newDraftRevisionId = insert into Article_Revisions
+		[
+			Revision_UUID = newDraftRevisionUuid
+			Article = article.ID
+			Revision_Number = nextRevisionNumber
+			Revision_State = "Draft"
+			Title = revision.Title
+			Slug = revision.Slug
+			Excerpt = revision.Excerpt
+			Editor_Document = revision.Editor_Document
+			Document_Checksum = revision.Document_Checksum
+			Referenced_Media_UUIDs = revision.Referenced_Media_UUIDs
+			Plain_Text_Extract = revision.Plain_Text_Extract
+			Featured_Media = if(revision.Featured_Media != null,revision.Featured_Media.ID,null)
+			Social_Media = if(revision.Social_Media != null,revision.Social_Media.ID,null)
+			SEO_Title = revision.SEO_Title
+			SEO_Description = revision.SEO_Description
+			Canonical_URL_Override = revision.Canonical_URL_Override
+			Robots_Directive = ifnull(revision.Robots_Directive,"Index Follow")
+			Word_Count = revision.Word_Count
+			Reading_Time_Minutes = revision.Reading_Time_Minutes
+			Change_Summary = "Changes requested from revision " + revision.Revision_Number + ": " + decisionSummary.trim()
+			Created_By_Employee = article.Primary_Author.ID
+		];
+		newDraftRevisionNumber = nextRevisionNumber;
+		revisionMetadata = Map();
+		revisionMetadata.put("articleId",article.ID);
+		revisionMetadata.put("sourceRevisionId",revision.ID);
+		revisionMetadata.put("sourceRevisionNumber",revision.Revision_Number);
+		revisionMetadata.put("newDraftRevisionId",newDraftRevisionId);
+		revisionMetadata.put("newDraftRevisionNumber",newDraftRevisionNumber);
+		insert into Audit_Events
+		[
+			Event_UUID = "EVT-REVISION-" + newDraftRevisionId + "-" + zoho.currenttime.toLong()
+			Entity_Type = "Revision"
+			Entity_UUID = newDraftRevisionUuid
+			Event_Type = "Draft Revision Created"
+			Actor_Employee = actor.ID
+			Previous_State = "Submitted"
+			New_State = "Draft"
+			Event_Summary = "Revision " + nextRevisionNumber + " was created after changes were requested for revision " + revision.Revision_Number + "."
+			Event_Metadata = revisionMetadata.toString()
+			Occurred_At = zoho.currenttime
+		];
+		article.Workflow_State = "Changes Requested";
+		article.Active_Draft_Revision_ID = newDraftRevisionId.toString();
+	}
+	else if(decision == "Rejected")
+	{
+		articleState = "Rejected";
+		article.Workflow_State = "Rejected";
+		article.Active_Draft_Revision_ID = "";
+	}
+
+	if(articleState != "In Review")
+	{
+		openAssignments = Review_Assignments[Article == article.ID && Revision == revision.ID && ID != assignment.ID && (Status == "Queued" || Status == "Assigned" || Status == "Claimed")];
+		for each openAssignment in openAssignments
+		{
+			openAssignment.Status = "Cancelled";
+			openAssignment.Cancelled_At = zoho.currenttime;
+		}
+	}
+
+	metadata = Map();
+	metadata.put("assignmentId",assignment.ID);
+	metadata.put("revisionId",revision.ID);
+	metadata.put("decision",decision);
+	metadata.put("approvedReviewerCount",approvedReviewerIds.size());
+	metadata.put("requiredApprovals",requiredApprovals);
+	if(newDraftRevisionId != null)
+	{
+		metadata.put("newDraftRevisionId",newDraftRevisionId);
+		metadata.put("newDraftRevisionNumber",newDraftRevisionNumber);
+		metadata.put("newDraftRevisionUuid",newDraftRevisionUuid);
+	}
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-DECISION-" + assignment.ID + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Article"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "Review " + decision
+		Actor_Employee = actor.ID
+		Previous_State = previousArticleState
+		New_State = articleState
+		Event_Summary = actor.Display_Name + " recorded " + decision + " for revision " + revision.Revision_Number + "."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	notificationRecipientIds = List();
+	if(article.Owner != null && !notificationRecipientIds.contains(article.Owner.ID))
+	{
+		notificationRecipientIds.add(article.Owner.ID);
+	}
+	if(article.Primary_Author != null && !notificationRecipientIds.contains(article.Primary_Author.ID))
+	{
+		notificationRecipientIds.add(article.Primary_Author.ID);
+	}
+	notificationType = "Review decision recorded";
+	notificationDetail = actor.Display_Name + " recorded " + decision + " for revision " + revision.Revision_Number + ".";
+	if(decision == "Changes Requested" && newDraftRevisionNumber != null)
+	{
+		notificationType = "Changes requested";
+		notificationDetail = notificationDetail + " Draft revision " + newDraftRevisionNumber + " is ready for author updates.";
+	}
+	else if(decision == "Rejected")
+	{
+		notificationType = "Article rejected";
+	}
+	else if(articleState == "Approved")
+	{
+		notificationType = "Article ready for publishing";
+		publisherRoles = Editorial_Role_Assignments[Editorial_Role == "Publisher" && Active == true];
+		for each publisherRoleAssignment in publisherRoles
+		{
+			if(publisherRoleAssignment.Employee != null && !notificationRecipientIds.contains(publisherRoleAssignment.Employee.ID))
+			{
+				notificationRecipientIds.add(publisherRoleAssignment.Employee.ID);
+			}
+		}
+	}
+	recipientIdsCsvText = "";
+	for each notificationRecipientId in notificationRecipientIds
+	{
+		if(recipientIdsCsvText != "")
+		{
+			recipientIdsCsvText = recipientIdsCsvText + ",";
+		}
+		recipientIdsCsvText = recipientIdsCsvText + notificationRecipientId;
+	}
+	if(recipientIdsCsvText != "")
+	{
+		try
+		{
+			thisapp.send_editorial_notification(notificationType,article.ID,assignment.ID,recipientIdsCsvText,notificationDetail);
+		}
+		catch (notificationError)
+		{
+		}
+	}
+
+	result.put("ok",true);
+	result.put("message","Review decision recorded.");
+	result.put("assignmentId",assignment.ID);
+	result.put("articleId",article.ID);
+	result.put("revisionId",revision.ID);
+	result.put("decision",decision);
+	result.put("articleState",articleState);
+	result.put("approvedReviewerCount",approvedReviewerIds.size());
+	result.put("requiredApprovals",requiredApprovals);
+	if(newDraftRevisionId != null)
+	{
+		result.put("newDraftRevisionId",newDraftRevisionId);
+		result.put("newDraftRevisionNumber",newDraftRevisionNumber);
+		result.put("newDraftRevisionUuid",newDraftRevisionUuid);
+	}
+	return result;
+}

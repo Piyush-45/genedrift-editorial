@@ -1,0 +1,348 @@
+map handoff_publication_to_catalyst(int jobId)
+{
+	result = Map();
+	result.put("ok",false);
+
+	job = Publication_Jobs[ID == jobId];
+	if(job.count() == 0)
+	{
+		result.put("message","Publication job not found.");
+		return result;
+	}
+	if(job.Status == "Succeeded")
+	{
+		result.put("ok",true);
+		result.put("message","Publication already completed.");
+		result.put("jobId",job.ID);
+		result.put("publicationId",job.Catalyst_Publication_ID);
+		return result;
+	}
+	if(job.Status == "Processing")
+	{
+		result.put("ok",true);
+		result.put("message","Catalyst already accepted this publication job.");
+		result.put("jobId",job.ID);
+		return result;
+	}
+	if(job.Status != "Queued")
+	{
+		result.put("message","Only queued publication jobs can be handed to Catalyst.");
+		return result;
+	}
+
+	article = Articles[ID == job.Article.ID];
+	revision = Article_Revisions[ID == job.Revision.ID];
+	if(article.count() == 0 || revision.count() == 0)
+	{
+		result.put("message","The publication job no longer has a valid article and revision.");
+		return result;
+	}
+	isRetraction = job.Action == "Unpublish";
+	approvedRevisionId = ifnull(article.Approved_Revision_ID,"").trim();
+	if(isRetraction)
+	{
+		approvedRevisionId = ifnull(article.Published_Revision_ID,"").trim();
+		if(article.Workflow_State != "Published" || approvedRevisionId == "" || approvedRevisionId != revision.ID.toString() || revision.Revision_State != "Published" || ifnull(job.Retraction_Reason,"").trim().length() < 3)
+		{
+			result.put("message","The exact current published revision is no longer retractable, or the reason is missing.");
+			return result;
+		}
+	}
+	else if((article.Workflow_State != "Approved" && article.Workflow_State != "Scheduled") || approvedRevisionId == "" || approvedRevisionId != revision.ID.toString() || revision.Revision_State != "Approved")
+	{
+		result.put("message","The exact approved revision is no longer publishable.");
+		return result;
+	}
+	if(revision.Editor_Document == null || ifnull(revision.Document_Checksum,"").trim() == "")
+	{
+		result.put("message","The approved revision is missing its editor document or checksum.");
+		return result;
+	}
+	if(job.Requested_By == null || job.Requested_At == null || revision.Approved_At == null)
+	{
+		result.put("message","The publication job is missing requester data or the revision approval timestamp.");
+		return result;
+	}
+
+	documentText = revision.Editor_Document.content;
+	if(documentText == null || documentText.trim() == "")
+	{
+		result.put("message","The approved editor document could not be read.");
+		return result;
+	}
+
+	mediaPayload = List();
+	if(!isRetraction)
+	{
+		referencedMediaIds = List();
+		referencedMediaText = ifnull(revision.Referenced_Media_UUIDs,"").trim();
+		if(documentText.contains("\"mediaId\":\"") && referencedMediaText == "")
+		{
+			result.put("message","The approved revision is missing its normalized media references. Re-save the draft before approval and publish again.");
+			return result;
+		}
+		if(referencedMediaText != "")
+		{
+			for each referencedMediaId in referencedMediaText.toList(",")
+			{
+				cleanMediaId = referencedMediaId.trim();
+				if(cleanMediaId != "" && !referencedMediaIds.contains(cleanMediaId))
+				{
+					referencedMediaIds.add(cleanMediaId);
+				}
+			}
+		}
+		if(revision.Featured_Media != null && !referencedMediaIds.contains(revision.Featured_Media.Media_UUID))
+		{
+			referencedMediaIds.add(revision.Featured_Media.Media_UUID);
+		}
+		if(revision.Social_Media != null && !referencedMediaIds.contains(revision.Social_Media.Media_UUID))
+		{
+			referencedMediaIds.add(revision.Social_Media.Media_UUID);
+		}
+		if(referencedMediaIds.size() > 200)
+		{
+			result.put("message","This revision references more than 200 media assets and must be split before publication.");
+			return result;
+		}
+		if(referencedMediaIds.size() > 0)
+		{
+			availableMedia = Media_Assets[(Media_UUID in referencedMediaIds) && (Status != "Failed" && Status != "Archived")];
+			for each mediaAsset in availableMedia
+			{
+				if(mediaAsset.Draft_File == null || ifnull(mediaAsset.Original_Filename,"").trim() == "" || ifnull(mediaAsset.MIME_Type,"").trim() == "" || ifnull(mediaAsset.File_Size_Bytes,0) <= 0 || ifnull(mediaAsset.Width_Pixels,0) <= 0 || ifnull(mediaAsset.Height_Pixels,0) <= 0 || ifnull(mediaAsset.Checksum,"").trim() == "" || ifnull(mediaAsset.Alt_Text,"").trim() == "")
+				{
+					result.put("message","Referenced media " + mediaAsset.Media_UUID + " is missing its approved source file or required metadata.");
+					return result;
+				}
+				mediaItem = Map();
+				mediaItem.put("creatorRecordId",mediaAsset.ID.toString());
+				mediaItem.put("mediaId",mediaAsset.Media_UUID);
+				mediaItem.put("originalFilename",mediaAsset.Original_Filename.trim());
+				mediaItem.put("mimeType",ifnull(mediaAsset.MIME_Type,"").trim());
+				mediaItem.put("fileSizeBytes",mediaAsset.File_Size_Bytes);
+				mediaItem.put("widthPixels",mediaAsset.Width_Pixels);
+				mediaItem.put("heightPixels",mediaAsset.Height_Pixels);
+				mediaItem.put("checksum",ifnull(mediaAsset.Checksum,"").trim().toLowerCase());
+				mediaItem.put("altText",ifnull(mediaAsset.Alt_Text,"").trim());
+				mediaItem.put("caption",ifnull(mediaAsset.Caption,""));
+				mediaItem.put("credit",ifnull(mediaAsset.Credit,""));
+				mediaPayload.add(mediaItem);
+			}
+			if(mediaPayload.size() != referencedMediaIds.size())
+			{
+				result.put("message","One or more referenced media records are missing, failed, or archived.");
+				return result;
+			}
+		}
+	}
+
+	tagNames = List();
+	for each tagReference in article.Tags
+	{
+		tagRecord = Tags[ID == tagReference];
+		if(tagRecord.count() > 0)
+		{
+			tagNames.add(tagRecord.Name);
+		}
+	}
+	categoryName = "";
+	if(article.Primary_Category != null)
+	{
+		categoryName = ifnull(article.Primary_Category.Name,"");
+	}
+
+	actionName = "publish";
+	scheduledAtIso = null;
+	if(job.Action == "Schedule")
+	{
+		actionName = "schedule";
+		if(article.Scheduled_At == null)
+		{
+			result.put("message","The scheduled publication time is missing.");
+			return result;
+		}
+		scheduledAtIso = article.Scheduled_At.toString("yyyy-MM-dd'T'HH:mm:ss") + "+05:30";
+	}
+	else if(isRetraction)
+	{
+		actionName = "retract";
+	}
+
+	jobPayload = Map();
+	jobPayload.put("creatorJobId",job.ID.toString());
+	jobPayload.put("idempotencyKey",job.Idempotency_Key);
+	jobPayload.put("requestedAt",job.Requested_At.toString("yyyy-MM-dd'T'HH:mm:ss") + "+05:30");
+	jobPayload.put("scheduledAt",scheduledAtIso);
+	jobPayload.put("requestedByEmployeeId",job.Requested_By.ID.toString());
+
+	articlePayload = Map();
+	articlePayload.put("creatorRecordId",article.ID.toString());
+	articlePayload.put("uuid",article.Article_UUID);
+	articlePayload.put("workflowState",article.Workflow_State);
+	articlePayload.put("approvedRevisionId",approvedRevisionId);
+	articlePayload.put("primaryCategory",categoryName);
+	articlePayload.put("tags",tagNames);
+
+	revisionPayload = Map();
+	revisionPayload.put("creatorRecordId",revision.ID.toString());
+	revisionPayload.put("uuid",revision.Revision_UUID);
+	revisionPayload.put("number",revision.Revision_Number);
+	revisionPayload.put("state",revision.Revision_State);
+	revisionPayload.put("title",revision.Title);
+	revisionPayload.put("slug",revision.Slug);
+	revisionPayload.put("excerpt",ifnull(revision.Excerpt,""));
+	revisionPayload.put("editorDocument",documentText);
+	revisionPayload.put("documentChecksum",revision.Document_Checksum.toLowerCase());
+	revisionPayload.put("seoTitle",ifnull(revision.SEO_Title,""));
+	revisionPayload.put("seoDescription",ifnull(revision.SEO_Description,""));
+	revisionPayload.put("canonicalUrlOverride",ifnull(revision.Canonical_URL_Override,"").toString());
+	revisionPayload.put("robotsDirective",revision.Robots_Directive);
+	revisionPayload.put("wordCount",ifnull(revision.Word_Count,0));
+	revisionPayload.put("readingTimeMinutes",ifnull(revision.Reading_Time_Minutes,0));
+	featuredMediaId = null;
+	if(revision.Featured_Media != null)
+	{
+		featuredMediaId = revision.Featured_Media.Media_UUID;
+	}
+	socialMediaId = null;
+	if(revision.Social_Media != null)
+	{
+		socialMediaId = revision.Social_Media.Media_UUID;
+	}
+	revisionPayload.put("featuredMediaId",featuredMediaId);
+	revisionPayload.put("socialMediaId",socialMediaId);
+	revisionPayload.put("approvedAt",revision.Approved_At.toString("yyyy-MM-dd'T'HH:mm:ss") + "+05:30");
+
+	payload = Map();
+	payload.put("schemaVersion",2);
+	payload.put("action",actionName);
+	payload.put("job",jobPayload);
+	payload.put("article",articlePayload);
+	payload.put("revision",revisionPayload);
+	payload.put("media",mediaPayload);
+	if(isRetraction)
+	{
+		retractionPayload = Map();
+		retractionPayload.put("reason",job.Retraction_Reason.trim());
+		retractionPayload.put("replacementPath",ifnull(job.Replacement_Path,"").trim());
+		payload.put("retraction",retractionPayload);
+	}
+	bodyText = payload.toString();
+
+	try
+	{
+		baseUrl = thisapp.variables.Publishing.Catalyst_Base_URL.toString().trim();
+		secret = thisapp.variables.Publishing.Signing_Secret.toString();
+		if(baseUrl == "" || secret == "")
+		{
+			result.put("message","Catalyst publishing variables are not configured.");
+			return result;
+		}
+		path = "/v1/publications";
+		timestampMillis = zoho.currenttime.toLong();
+		timestampSeconds = (timestampMillis / 1000).toLong().toString();
+		nonce = "creator-" + job.ID + "-" + timestampMillis;
+		bodyHash = zoho.encryption.sha256(bodyText);
+		signatureBase = "POST\n" + path + "\n" + timestampSeconds + "\n" + nonce + "\n" + bodyHash;
+		signature = zoho.encryption.hmacsha256(secret,signatureBase,"hex");
+		headers = Map();
+		headers.put("Content-Type","application/json");
+		headers.put("X-GeneDrift-Timestamp",timestampSeconds);
+		headers.put("X-GeneDrift-Nonce",nonce);
+		headers.put("X-GeneDrift-Signature",signature);
+		handoffResponse = invokeurl
+		[
+			url :baseUrl + path
+			type :POST
+			body :bodyText
+			headers:headers
+		];
+		if(handoffResponse.get("ok") != true)
+		{
+			rejectionPreviousState = article.Workflow_State;
+			rejectionMessage = ifnull(handoffResponse.get("message"),"Catalyst rejected the publication handoff.");
+			rejectionCode = ifnull(handoffResponse.get("code"),"CATALYST_HANDOFF_REJECTED");
+			job.Error_Code = rejectionCode;
+			job.Error_Summary = rejectionMessage;
+			if(handoffResponse.get("transient") == true)
+			{
+				job.Status = "Queued";
+				job.Next_Retry_At = zoho.currenttime.addMinutes(1);
+			}
+			else
+			{
+				job.Status = "Failed";
+				job.Completed_At = zoho.currenttime;
+				job.Next_Retry_At = null;
+				if(article.Workflow_State == "Scheduled" && ifnull(article.Approved_Revision_ID,"").trim() == revision.ID.toString())
+				{
+					article.Workflow_State = "Approved";
+					article.Scheduled_At = null;
+				}
+			}
+			rejectionMetadata = Map();
+			rejectionMetadata.put("jobId",job.ID);
+			rejectionMetadata.put("idempotencyKey",job.Idempotency_Key);
+			rejectionMetadata.put("code",rejectionCode);
+			rejectionMetadata.put("transient",handoffResponse.get("transient"));
+			insert into Audit_Events
+			[
+				Event_UUID = "EVT-HANDOFF-REJECT-" + job.ID + "-" + timestampMillis
+				Entity_Type = "Publication"
+				Entity_UUID = article.Article_UUID
+				Event_Type = "Catalyst Handoff Rejected"
+				Actor_Employee = job.Requested_By
+				Previous_State = rejectionPreviousState
+				New_State = article.Workflow_State
+				Event_Summary = rejectionMessage
+				Event_Metadata = rejectionMetadata.toString()
+				Occurred_At = zoho.currenttime
+			];
+			result.put("message",rejectionMessage);
+			return result;
+		}
+
+		job.Status = "Processing";
+		job.HTTP_Status = 202;
+		job.Error_Code = "";
+		job.Error_Summary = "";
+		job.Next_Retry_At = null;
+
+		metadata = Map();
+		metadata.put("jobId",job.ID);
+		metadata.put("requestId",handoffResponse.get("requestId"));
+		metadata.put("idempotencyKey",job.Idempotency_Key);
+		metadata.put("catalystStatus",handoffResponse.get("status"));
+		insert into Audit_Events
+		[
+			Event_UUID = "EVT-HANDOFF-" + job.ID + "-" + timestampMillis
+			Entity_Type = "Publication"
+			Entity_UUID = article.Article_UUID
+			Event_Type = "Catalyst Handoff Accepted"
+			Actor_Employee = job.Requested_By
+			Previous_State = article.Workflow_State
+			New_State = article.Workflow_State
+			Event_Summary = "Catalyst accepted publication job " + job.ID + " for revision " + revision.Revision_Number + "."
+			Event_Metadata = metadata.toString()
+			Occurred_At = zoho.currenttime
+		];
+
+		result.put("ok",true);
+		result.put("message","Catalyst accepted the publication job.");
+		result.put("jobId",job.ID);
+		result.put("requestId",handoffResponse.get("requestId"));
+		result.put("status",handoffResponse.get("status"));
+		return result;
+	}
+	catch (handoffError)
+	{
+		job.Status = "Queued";
+		job.Error_Code = "CATALYST_HANDOFF_FAILED";
+		job.Error_Summary = handoffError.toString();
+		job.Next_Retry_At = zoho.currenttime.addMinutes(1);
+		result.put("message","Catalyst handoff failed and will be retried: " + handoffError.toString());
+		return result;
+	}
+	return result;
+}

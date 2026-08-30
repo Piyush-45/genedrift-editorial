@@ -1,0 +1,83 @@
+map validate_catalyst_publication_request(string creatorJobId, string idempotencyKey, string articleRecordId, string articleUuid, string revisionRecordId, string revisionUuid, string documentChecksum)
+{
+	result = Map();
+	result.put("ok",false);
+
+	if(creatorJobId == null || !creatorJobId.isNumber())
+	{
+		result.put("code","CREATOR_JOB_INVALID");
+		result.put("message","Publication job identifier is invalid.");
+		return result;
+	}
+	job = Publication_Jobs[ID == creatorJobId.toLong()];
+	if(job.count() == 0 || job.Idempotency_Key != idempotencyKey)
+	{
+		result.put("code","CREATOR_JOB_NOT_FOUND");
+		result.put("message","Publication job was not found or its idempotency key changed.");
+		return result;
+	}
+	if(job.Status != "Queued" && job.Status != "Processing")
+	{
+		result.put("code","CREATOR_JOB_NOT_OPEN");
+		result.put("message","Publication job is no longer open.");
+		return result;
+	}
+
+	article = Articles[ID == articleRecordId.toLong()];
+	revision = Article_Revisions[ID == revisionRecordId.toLong()];
+	if(article.count() == 0 || revision.count() == 0 || job.Article.ID != article.ID || job.Revision.ID != revision.ID)
+	{
+		result.put("code","CREATOR_RECORD_MISMATCH");
+		result.put("message","Publication job no longer points to the supplied article and revision.");
+		return result;
+	}
+	if(article.Article_UUID != articleUuid || revision.Revision_UUID != revisionUuid)
+	{
+		result.put("code","CREATOR_IDENTITY_MISMATCH");
+		result.put("message","Article or revision identity changed.");
+		return result;
+	}
+	isRetraction = job.Action == "Unpublish";
+	if(isRetraction && article.Workflow_State != "Published")
+	{
+		result.put("code","CREATOR_STATE_REVOKED");
+		result.put("message","Article is no longer published.");
+		return result;
+	}
+	if(!isRetraction && article.Workflow_State != "Approved" && article.Workflow_State != "Scheduled")
+	{
+		result.put("code","CREATOR_STATE_REVOKED");
+		result.put("message","Article is no longer approved or scheduled.");
+		return result;
+	}
+	if(isRetraction && (ifnull(article.Published_Revision_ID,"").trim() != revision.ID.toString() || revision.Revision_State != "Published"))
+	{
+		result.put("code","CREATOR_PUBLICATION_CHANGED");
+		result.put("message","The exact revision is no longer the current published revision.");
+		return result;
+	}
+	if(!isRetraction && (ifnull(article.Approved_Revision_ID,"").trim() != revision.ID.toString() || revision.Revision_State != "Approved"))
+	{
+		result.put("code","CREATOR_APPROVAL_REVOKED");
+		result.put("message","The exact revision is no longer the approved revision.");
+		return result;
+	}
+	if(ifnull(revision.Document_Checksum,"").trim().toLowerCase() != ifnull(documentChecksum,"").trim().toLowerCase())
+	{
+		result.put("code","CREATOR_CHECKSUM_CHANGED");
+		result.put("message","The approved editor document checksum changed.");
+		return result;
+	}
+
+	result.put("ok",true);
+	resultMessage = "The exact approved revision is still publishable.";
+	if(isRetraction)
+	{
+		resultMessage = "The exact published revision is still retractable.";
+	}
+	result.put("message",resultMessage);
+	result.put("jobId",job.ID);
+	result.put("articleId",article.ID);
+	result.put("revisionId",revision.ID);
+	return result;
+}

@@ -1,0 +1,274 @@
+map record_catalyst_publication_result(string eventId, string requestId, string creatorJobId, string idempotencyKey, string status, int attemptCount, string publicationId, string objectId, string publishedAt, string nextRetryAt, string errorCode, string errorMessage, string mediaJson, string callbackTimestamp, string callbackNonce, string callbackSignature)
+{
+	result = Map();
+	result.put("ok",false);
+
+	secret = thisapp.variables.Publishing.Signing_Secret.toString();
+	currentSeconds = (zoho.currenttime.toLong() / 1000).toLong();
+	callbackSeconds = ifnull(callbackTimestamp,"0").toLong();
+	if(callbackSeconds < currentSeconds - 300 || callbackSeconds > currentSeconds + 300)
+	{
+		result.put("message","Callback timestamp is outside the allowed clock skew.");
+		return result;
+	}
+	signatureBase = callbackTimestamp + "\n" + callbackNonce + "\n" + eventId + "\n" + creatorJobId + "\n" + idempotencyKey + "\n" + status + "\n" + attemptCount + "\n" + ifnull(publicationId,"") + "\n" + ifnull(objectId,"") + "\n" + ifnull(publishedAt,"") + "\n" + ifnull(nextRetryAt,"") + "\n" + ifnull(errorCode,"") + "\n" + ifnull(errorMessage,"") + "\n" + ifnull(mediaJson,"[]");
+	expectedSignature = zoho.encryption.hmacsha256(secret,signatureBase,"hex");
+	if(expectedSignature.toLowerCase() != ifnull(callbackSignature,"").toLowerCase())
+	{
+		result.put("message","Callback signature is invalid.");
+		return result;
+	}
+
+	existingEvent = Audit_Events[Event_UUID == eventId];
+	if(existingEvent.count() > 0)
+	{
+		result.put("ok",true);
+		result.put("duplicate",true);
+		result.put("message","Callback event was already applied.");
+		return result;
+	}
+	if(creatorJobId == null || !creatorJobId.isNumber())
+	{
+		result.put("message","Publication job identifier is invalid.");
+		return result;
+	}
+	job = Publication_Jobs[ID == creatorJobId.toLong()];
+	if(job.count() == 0 || job.Idempotency_Key != idempotencyKey)
+	{
+		result.put("message","Publication job was not found or its idempotency key changed.");
+		return result;
+	}
+	article = Articles[ID == job.Article.ID];
+	revision = Article_Revisions[ID == job.Revision.ID];
+	if(article.count() == 0 || revision.count() == 0)
+	{
+		result.put("message","Publication job no longer has a valid article and revision.");
+		return result;
+	}
+	publishedMedia = List();
+	isRetraction = job.Action == "Unpublish";
+	mediaApprovalStillCurrent = !isRetraction && ifnull(article.Approved_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Approved" && (article.Workflow_State == "Approved" || article.Workflow_State == "Scheduled");
+	if(status == "Succeeded" && mediaApprovalStillCurrent)
+	{
+		publishedMedia = ifnull(mediaJson,"[]").toJSONList();
+		for each publishedMediaItem in publishedMedia
+		{
+			mediaRecordId = ifnull(publishedMediaItem.get("creatorRecordId"),"").toString();
+			mediaId = ifnull(publishedMediaItem.get("mediaId"),"").toString();
+			mediaChecksum = ifnull(publishedMediaItem.get("checksum"),"").toString().toLowerCase();
+			mediaObjectKey = ifnull(publishedMediaItem.get("objectKey"),"").toString();
+			mediaPublishedUrl = ifnull(publishedMediaItem.get("publishedUrl"),"").toString();
+			if(!mediaRecordId.isNumber() || mediaId == "" || mediaChecksum == "" || mediaObjectKey == "" || !mediaPublishedUrl.startsWith("https://"))
+			{
+				result.put("message","Published media callback contains an invalid mapping.");
+				return result;
+			}
+			mediaRecord = Media_Assets[ID == mediaRecordId.toLong()];
+			if(mediaRecord.count() == 0 || mediaRecord.Media_UUID != mediaId || ifnull(mediaRecord.Checksum,"").trim().toLowerCase() != mediaChecksum)
+			{
+				result.put("message","Published media callback does not match Creator media " + mediaId + ".");
+				return result;
+			}
+		}
+	}
+
+	previousState = article.Workflow_State;
+	now = zoho.currenttime;
+	job.Attempt_Count = attemptCount;
+	job.Error_Code = ifnull(errorCode,"");
+	job.Error_Summary = ifnull(errorMessage,"");
+	eventType = "Catalyst Publication Update";
+	eventSummary = "Catalyst reported " + status + " for publication job " + job.ID + ".";
+	approvalStillCurrent = false;
+	callbackStateAligned = false;
+
+	if(status == "Retrying")
+	{
+		job.Status = "Processing";
+		job.Next_Retry_At = now.addMinutes(1);
+		eventType = "Catalyst Publication Retry Scheduled";
+	}
+	else if(status == "Succeeded")
+	{
+		job.Status = "Succeeded";
+		job.Completed_At = now;
+		job.Catalyst_Publication_ID = publicationId;
+		job.HTTP_Status = 200;
+		job.Next_Retry_At = null;
+		if(isRetraction)
+		{
+			retractionStillCurrent = article.Workflow_State == "Published" && ifnull(article.Published_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Published";
+			alreadyAppliedSuccess = article.Workflow_State == "Unpublished" && ifnull(article.Published_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Published" && job.Catalyst_Publication_ID == publicationId;
+			callbackStateAligned = retractionStillCurrent || alreadyAppliedSuccess;
+			if(retractionStillCurrent)
+			{
+				article.Workflow_State = "Unpublished";
+				article.Scheduled_At = null;
+				job.Error_Code = "";
+				job.Error_Summary = "";
+				eventType = "Catalyst Article Retracted";
+				eventSummary = "Catalyst retracted revision " + revision.Revision_Number + " of " + article.Working_Title + ".";
+			}
+			else if(alreadyAppliedSuccess)
+			{
+				job.Error_Code = "";
+				job.Error_Summary = "";
+				eventType = "Catalyst Article Retracted";
+				eventSummary = "Catalyst retraction success was already applied for revision " + revision.Revision_Number + ".";
+			}
+			else
+			{
+				job.Error_Code = "CREATOR_CALLBACK_STATE_CONFLICT";
+				job.Error_Summary = "Catalyst retracted the public pointer after preflight, but Creator state changed before callback application.";
+				eventType = "Catalyst Retraction State Conflict";
+				eventSummary = job.Error_Summary;
+			}
+		}
+		else
+		{
+			approvalStillCurrent = ifnull(article.Approved_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Approved" && (article.Workflow_State == "Approved" || article.Workflow_State == "Scheduled");
+			alreadyAppliedSuccess = article.Workflow_State == "Published" && ifnull(article.Published_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Published" && job.Catalyst_Publication_ID == publicationId;
+			callbackStateAligned = approvalStillCurrent || alreadyAppliedSuccess;
+			if(approvalStillCurrent)
+			{
+				for each publishedMediaItem in publishedMedia
+				{
+					mediaRecordId = publishedMediaItem.get("creatorRecordId").toString();
+					mediaRecord = Media_Assets[ID == mediaRecordId.toLong()];
+					mediaRecord.Published_Object_Key = ifnull(publishedMediaItem.get("objectKey"),"").toString();
+					mediaRecord.Published_URL = ifnull(publishedMediaItem.get("publishedUrl"),"").toString();
+					mediaRecord.Status = "Ready";
+				}
+				previousPublishedRevisions = Article_Revisions[Article == article.ID && Revision_State == "Published" && ID != revision.ID];
+				for each previousPublishedRevision in previousPublishedRevisions
+				{
+					previousPublishedRevision.Revision_State = "Superseded";
+				}
+				revision.Revision_State = "Published";
+				article.Workflow_State = "Published";
+				article.Published_Revision_ID = revision.ID.toString();
+				article.Scheduled_At = null;
+				if(article.First_Published_At == null)
+				{
+					article.First_Published_At = now;
+				}
+				article.Last_Published_At = now;
+				job.Error_Code = "";
+				job.Error_Summary = "";
+				eventType = "Catalyst Article Published";
+				eventSummary = "Catalyst published revision " + revision.Revision_Number + " of " + article.Working_Title + ".";
+			}
+			else if(alreadyAppliedSuccess)
+			{
+				job.Error_Code = "";
+				job.Error_Summary = "";
+				eventType = "Catalyst Article Published";
+				eventSummary = "Catalyst publication success was already applied for revision " + revision.Revision_Number + ".";
+			}
+			else
+			{
+				job.Error_Code = "CREATOR_CALLBACK_STATE_CONFLICT";
+				job.Error_Summary = "Catalyst published after preflight, but Creator state changed before callback application.";
+				eventType = "Catalyst Publication State Conflict";
+				eventSummary = job.Error_Summary;
+			}
+		}
+	}
+	else if(status == "Failed")
+	{
+		job.Status = "Failed";
+		job.Completed_At = now;
+		job.HTTP_Status = 409;
+		job.Next_Retry_At = null;
+		if(article.Workflow_State == "Scheduled" && ifnull(article.Approved_Revision_ID,"").trim() == revision.ID.toString())
+		{
+			article.Workflow_State = "Approved";
+			article.Scheduled_At = null;
+		}
+		eventType = "Catalyst Publication Failed";
+	}
+	else if(status == "Processing")
+	{
+		job.Status = "Processing";
+		if(job.Started_At == null)
+		{
+			job.Started_At = now;
+		}
+	}
+	else
+	{
+		result.put("message","Unsupported callback status.");
+		return result;
+	}
+
+	metadata = Map();
+	metadata.put("requestId",requestId);
+	metadata.put("jobId",job.ID);
+	metadata.put("idempotencyKey",idempotencyKey);
+	metadata.put("attemptCount",attemptCount);
+	metadata.put("publicationId",ifnull(publicationId,""));
+	metadata.put("objectId",ifnull(objectId,""));
+	metadata.put("publishedAt",ifnull(publishedAt,""));
+	metadata.put("nextRetryAt",ifnull(nextRetryAt,""));
+	metadata.put("errorCode",ifnull(job.Error_Code,""));
+	metadata.put("errorMessage",ifnull(job.Error_Summary,""));
+		metadata.put("publishedMediaCount",publishedMedia.size());
+		metadata.put("action",job.Action);
+		metadata.put("retractionReason",ifnull(job.Retraction_Reason,""));
+		metadata.put("replacementPath",ifnull(job.Replacement_Path,""));
+	insert into Audit_Events
+	[
+		Event_UUID = eventId
+		Entity_Type = "Publication"
+		Entity_UUID = article.Article_UUID
+		Event_Type = eventType
+		Actor_Employee = job.Requested_By
+		Previous_State = previousState
+		New_State = article.Workflow_State
+		Event_Summary = eventSummary
+		Event_Metadata = metadata.toString()
+		Occurred_At = now
+	];
+
+	if(status == "Succeeded" || status == "Failed")
+	{
+		try
+		{
+			recipientIdsCsvText = article.Owner.ID.toString();
+			if(article.Primary_Author != null && article.Primary_Author.ID != article.Owner.ID)
+			{
+				recipientIdsCsvText = recipientIdsCsvText + "," + article.Primary_Author.ID;
+			}
+			notificationSubject = "Publication failed";
+			notificationMessage = ifnull(errorMessage,"Catalyst could not publish the approved revision.");
+			if(status == "Succeeded" && callbackStateAligned)
+			{
+				if(isRetraction)
+				{
+					notificationSubject = "Article retracted";
+					notificationMessage = "Revision " + revision.Revision_Number + " is no longer publicly served.";
+				}
+				else
+				{
+					notificationSubject = "Article published";
+					notificationMessage = "Revision " + revision.Revision_Number + " has been published.";
+				}
+			}
+			else if(status == "Succeeded")
+			{
+				notificationSubject = "Publication reconciliation required";
+				notificationMessage = "Catalyst published revision " + revision.Revision_Number + ", but Creator state changed after preflight. Review the publication audit event.";
+			}
+			thisapp.send_editorial_notification(notificationSubject,article.ID,0,recipientIdsCsvText,notificationMessage);
+		}
+		catch (notificationError)
+		{
+		}
+	}
+
+	result.put("ok",true);
+	result.put("message","Catalyst callback applied.");
+	result.put("jobId",job.ID);
+	result.put("articleState",article.Workflow_State);
+	return result;
+}

@@ -1,0 +1,34 @@
+// Articles form: Created -> Load of the form.
+// Initializes a new article and protects fields managed by later workflows.
+if(input.Article_UUID == null || input.Article_UUID.trim() == "")
+{
+	entropy = zoho.currenttime.toLong().toString() + "-" + randomNumber(100000,999999).toString() + "-" + zoho.loginuserid;
+	input.Article_UUID = "ART-" + zoho.encryption.sha256(entropy).subString(0,32);
+}
+
+input.Workflow_State = "Draft";
+
+currentEmployee = Demo_Employees[Creator_Username == zoho.loginuserid && Status == "Active"];
+if(currentEmployee.count() > 0)
+{
+	input.Owner = currentEmployee.ID;
+	input.Primary_Author = currentEmployee.ID;
+}
+
+defaultPolicy = Approval_Policies[Is_Default == true && Active == true];
+if(defaultPolicy.count() > 0)
+{
+	input.Approval_Policy = defaultPolicy.ID;
+}
+
+disable Article_UUID;
+disable Approval_Override_Count;
+disable Override_Reason;
+disable Workflow_State;
+disable Active_Draft_Revision_ID;
+disable Approved_Revision_ID;
+disable Published_Revision_ID;
+disable Scheduled_At;
+disable First_Published_At;
+disable Last_Published_At;
+disable Archived_At;

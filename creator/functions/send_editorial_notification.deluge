@@ -1,0 +1,125 @@
+map send_editorial_notification(string eventType, int articleId, int assignmentId, string recipientIdsCsv, string detail)
+{
+	result = Map();
+	result.put("ok",false);
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+
+	recipientEmails = List();
+	recipientNames = List();
+	if(recipientIdsCsv != null && recipientIdsCsv.trim() != "")
+	{
+		recipientIds = recipientIdsCsv.toList(",");
+		for each recipientIdText in recipientIds
+		{
+			cleanRecipientId = recipientIdText.trim();
+			if(cleanRecipientId != "")
+			{
+				recipient = Demo_Employees[ID == cleanRecipientId.toLong() && Status == "Active"];
+				if(recipient.count() > 0 && recipient.Work_Email != null && recipient.Work_Email.trim() != "" && !recipientEmails.contains(recipient.Work_Email))
+				{
+					recipientEmails.add(recipient.Work_Email);
+					recipientNames.add(recipient.Display_Name);
+				}
+			}
+		}
+	}
+
+	if(recipientEmails.size() == 0)
+	{
+		result.put("ok",true);
+		result.put("message","No notification recipients were available.");
+		result.put("recipientCount",0);
+		return result;
+	}
+
+	actorName = "Editorial system";
+	actorId = if(article.Owner != null,article.Owner.ID,null);
+	if(actor.count() > 0)
+	{
+		actorName = actor.Display_Name;
+		actorId = actor.ID;
+	}
+
+	subject = "GeneDrift editorial update: " + eventType;
+	messageBody = "Article: " + article.Working_Title + "\n";
+	messageBody = messageBody + "Event: " + eventType + "\n";
+	messageBody = messageBody + "Actor: " + actorName + "\n";
+	if(detail != null && detail.trim() != "")
+	{
+		messageBody = messageBody + "\n" + detail.trim() + "\n";
+	}
+	messageBody = messageBody + "\nOpen the GeneDrift Editorial Workspace in Zoho Creator to continue.";
+
+	metadata = Map();
+	metadata.put("eventType",eventType);
+	metadata.put("articleId",article.ID);
+	metadata.put("assignmentId",assignmentId);
+	metadata.put("recipientIdsCsv",recipientIdsCsv);
+	metadata.put("recipientCount",recipientEmails.size());
+	metadata.put("recipients",recipientNames);
+
+	try
+	{
+		sendmail
+		[
+			from : zoho.adminuserid
+			to : recipientEmails
+			subject : subject
+			message : messageBody
+		]
+
+		insert into Audit_Events
+		[
+			Event_UUID = "EVT-NOTIFY-" + article.ID + "-" + zoho.currenttime.toLong()
+			Entity_Type = "Article"
+			Entity_UUID = article.Article_UUID
+			Event_Type = "Notification Handoff"
+			Actor_Employee = actorId
+			Previous_State = article.Workflow_State
+			New_State = article.Workflow_State
+			Event_Summary = eventType + " notification handed to Zoho for " + recipientEmails.size() + " recipient(s)."
+			Event_Metadata = metadata.toString()
+			Occurred_At = zoho.currenttime
+		];
+
+		result.put("ok",true);
+		result.put("message","Notification handed to Zoho.");
+		result.put("recipientCount",recipientEmails.size());
+		return result;
+	}
+	catch (notificationError)
+	{
+		metadata.put("error",notificationError.message);
+		metadata.put("errorLine",notificationError.lineNo);
+		insert into Audit_Events
+		[
+			Event_UUID = "EVT-NOTIFY-FAILED-" + article.ID + "-" + zoho.currenttime.toLong()
+			Entity_Type = "Article"
+			Entity_UUID = article.Article_UUID
+			Event_Type = "Notification Failed"
+			Actor_Employee = actorId
+			Previous_State = article.Workflow_State
+			New_State = article.Workflow_State
+			Event_Summary = eventType + " notification failed before handoff."
+			Event_Metadata = metadata.toString()
+			Occurred_At = zoho.currenttime
+		];
+
+		result.put("message","Notification failed before handoff: " + notificationError.message);
+		result.put("recipientCount",recipientEmails.size());
+		return result;
+	}
+	return result;
+}

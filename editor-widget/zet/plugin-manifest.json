@@ -1,0 +1,13 @@
+{
+  "service": "CREATOR",
+  "cspDomains": {
+    "connect-src": []
+  },
+  "config": [
+    {
+      "name": "articleId",
+      "type": "string",
+      "help": "Creator record ID for the article to edit"
+    }
+  ]
+}

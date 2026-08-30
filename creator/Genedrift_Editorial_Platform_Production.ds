@@ -1,0 +1,713 @@
+/*
+ * GeneDrift Editorial Platform
+ * Production schema baseline 1.0
+ *
+ * This import establishes the editorial control-plane schema. Records, secrets,
+ * Catalyst connections, lifecycle workflows, and the editor widget are installed
+ * separately after Creator validates the generated component link names.
+ */
+application "GeneDrift Editorial Platform"
+{
+	date format = "dd-MMM-yyyy"
+	time zone = "Asia/Kolkata"
+	time format = "24-hr"
+
+	forms
+	{
+		form Demo_Employees
+		{
+			success message = "Employee saved."
+			Identity
+			(
+				type = section
+				row = 1
+				column = 0
+				width = medium
+			)
+			must have unique Employee_Key
+			(
+				type = text
+				displayname = "Employee Key"
+				maxchar = 100
+				row = 1
+				column = 1
+				width = medium
+			)
+			must have Display_Name
+			(
+				type = text
+				displayname = "Display Name"
+				maxchar = 150
+				row = 2
+				column = 1
+				width = medium
+			)
+			must have unique Work_Email
+			(
+				type = email
+				displayname = "Work Email"
+				maxchar = 150
+				row = 3
+				column = 1
+				width = medium
+				personal data = true
+			)
+			Creator_Username
+			(
+				type = text
+				displayname = "Creator Username"
+				maxchar = 150
+				row = 4
+				column = 1
+				width = medium
+			)
+			Job_Title
+			(
+				type = text
+				displayname = "Job Title"
+				maxchar = 150
+				row = 5
+				column = 1
+				width = medium
+			)
+			Avatar
+			(
+				type = image
+				source = file
+				aspect ratio = original
+				camera = primary
+				show gallery = true
+				switch camera = true
+				row = 6
+				column = 1
+				width = medium
+			)
+			must have Status
+			(
+				type = picklist
+				values = {"Active","Inactive"}
+				initial value = "Active"
+				row = 7
+				column = 1
+				width = medium
+			)
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Employee" ) }
+				on edit { update ( type = submit displayname = "Update Employee" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Demo_Teams
+		{
+			success message = "Team saved."
+			Team_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Team_Key ( type = text displayname = "Team Key" maxchar = 100 row = 1 column = 1 width = medium )
+			must have unique Team_Name ( type = text displayname = "Team Name" maxchar = 150 row = 2 column = 1 width = medium )
+			Team_Lead
+			(
+				type = picklist
+				values = Demo_Employees.ID
+				displayformat = [Display_Name]
+				sortorder = ascending
+				row = 3 column = 1 width = medium
+			)
+			must have Status ( type = picklist values = {"Active","Inactive"} initial value = "Active" row = 4 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Team" ) }
+				on edit { update ( type = submit displayname = "Update Team" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Demo_Team_Memberships
+		{
+			success message = "Membership saved."
+			Membership ( type = section row = 1 column = 0 width = medium )
+			must have Employee ( type = picklist values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 1 column = 1 width = medium )
+			must have Team ( type = picklist values = Demo_Teams.ID displayformat = [Team_Name] sortorder = ascending row = 2 column = 1 width = medium )
+			must have Membership_Role ( type = picklist displayname = "Membership Role" values = {"Member","Lead"} initial value = "Member" row = 3 column = 1 width = medium )
+			Active_From ( type = datetime displayname = "Active From" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 4 column = 1 width = medium )
+			Active_Until ( type = datetime displayname = "Active Until" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 5 column = 1 width = medium )
+			Active ( type = checkbox initial value = true row = 6 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Membership" ) }
+				on edit { update ( type = submit displayname = "Update Membership" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Categories
+		{
+			success message = "Category saved."
+			Category_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Category_UUID ( type = text displayname = "Category UUID" maxchar = 64 row = 1 column = 1 width = medium )
+			must have unique Name ( type = text maxchar = 150 row = 2 column = 1 width = medium )
+			must have unique Slug ( type = text maxchar = 180 row = 3 column = 1 width = medium )
+			Description ( type = textarea height = 100px row = 4 column = 1 width = medium )
+			Default_Approval_Policy ( type = picklist displayname = "Default Approval Policy" values = Approval_Policies.ID displayformat = [Policy_Name] sortorder = ascending row = 5 column = 1 width = medium )
+			Display_Order ( type = number displayname = "Display Order" row = 6 column = 1 width = medium )
+			Active ( type = checkbox initial value = true row = 7 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Category" ) }
+				on edit { update ( type = submit displayname = "Update Category" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Tags
+		{
+			success message = "Tag saved."
+			Tag_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Tag_UUID ( type = text displayname = "Tag UUID" maxchar = 64 row = 1 column = 1 width = medium )
+			must have unique Name ( type = text maxchar = 150 row = 2 column = 1 width = medium )
+			must have unique Slug ( type = text maxchar = 180 row = 3 column = 1 width = medium )
+			Description ( type = textarea height = 100px row = 4 column = 1 width = medium )
+			Active ( type = checkbox initial value = true row = 5 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Tag" ) }
+				on edit { update ( type = submit displayname = "Update Tag" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Approval_Policies
+		{
+			success message = "Approval policy saved."
+			Policy_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Policy_Key ( type = text displayname = "Policy Key" maxchar = 100 row = 1 column = 1 width = medium )
+			must have unique Policy_Name ( type = text displayname = "Policy Name" maxchar = 150 row = 2 column = 1 width = medium )
+			Description ( type = textarea height = 100px row = 3 column = 1 width = medium )
+			must have Required_Approval_Count ( type = number displayname = "Required Approval Count" row = 4 column = 1 width = medium )
+			Require_Distinct_Reviewers ( type = checkbox displayname = "Require Distinct Reviewers" initial value = true row = 5 column = 1 width = medium )
+			Required_Expertise_Categories
+			(
+				type = list
+				displayname = "Required Expertise Categories"
+				values = Categories.ID
+				displayformat = [Name]
+				sortorder = ascending
+				height = 100px
+				row = 6 column = 1 width = medium
+			)
+			Active ( type = checkbox initial value = true row = 7 column = 1 width = medium )
+			Is_Default ( type = checkbox displayname = "Is Default" initial value = false row = 8 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Policy" ) }
+				on edit { update ( type = submit displayname = "Update Policy" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Editorial_Role_Assignments
+		{
+			success message = "Editorial role assignment saved."
+			Role_Assignment ( type = section row = 1 column = 0 width = medium )
+			must have Employee ( type = picklist values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 1 column = 1 width = medium )
+			must have Editorial_Role ( type = picklist displayname = "Editorial Role" values = {"Author","Reviewer","Publisher","Editorial Admin"} row = 2 column = 1 width = medium )
+			Expertise_Categories
+			(
+				type = list
+				displayname = "Expertise Categories"
+				values = Categories.ID
+				displayformat = [Name]
+				sortorder = ascending
+				height = 100px
+				row = 3 column = 1 width = medium
+			)
+			Effective_From ( type = datetime displayname = "Effective From" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 4 column = 1 width = medium )
+			Effective_Until ( type = datetime displayname = "Effective Until" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 5 column = 1 width = medium )
+			Active ( type = checkbox initial value = true row = 6 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Assign Role" ) }
+				on edit { update ( type = submit displayname = "Update Assignment" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Articles
+		{
+			success message = "Article saved."
+			Article_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Article_UUID ( type = text displayname = "Article UUID" maxchar = 64 row = 1 column = 1 width = medium )
+			must have Working_Title ( type = text displayname = "Working Title" maxchar = 250 row = 2 column = 1 width = medium )
+			must have Owner ( type = picklist values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 3 column = 1 width = medium )
+			must have Primary_Author ( type = picklist displayname = "Primary Author" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 4 column = 1 width = medium )
+			Primary_Category ( type = picklist displayname = "Primary Category" values = Categories.ID displayformat = [Name] sortorder = ascending row = 5 column = 1 width = medium )
+			Tags ( type = list values = Tags.ID displayformat = [Name] sortorder = ascending height = 100px row = 6 column = 1 width = medium )
+			must have Approval_Policy ( type = picklist displayname = "Approval Policy" values = Approval_Policies.ID displayformat = [Policy_Name] sortorder = ascending row = 7 column = 1 width = medium )
+			Approval_Override_Count ( type = number displayname = "Approval Override Count" row = 8 column = 1 width = medium )
+			Override_Reason ( type = textarea displayname = "Override Reason" height = 100px row = 9 column = 1 width = medium )
+			Workflow_State ( type = picklist displayname = "Workflow State" values = {"Draft","In Review","Changes Requested","Approved","Scheduled","Published","Unpublished","Rejected","Archived"} initial value = "Draft" row = 10 column = 1 width = medium )
+			Revision_Pointers ( type = section row = 11 column = 0 width = medium )
+			Active_Draft_Revision_ID ( type = text displayname = "Active Draft Revision ID" maxchar = 64 row = 11 column = 1 width = medium )
+			Approved_Revision_ID ( type = text displayname = "Approved Revision ID" maxchar = 64 row = 12 column = 1 width = medium )
+			Published_Revision_ID ( type = text displayname = "Published Revision ID" maxchar = 64 row = 13 column = 1 width = medium )
+			Scheduled_At ( type = datetime displayname = "Scheduled At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 14 column = 1 width = medium )
+			First_Published_At ( type = datetime displayname = "First Published At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 15 column = 1 width = medium )
+			Last_Published_At ( type = datetime displayname = "Last Published At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 16 column = 1 width = medium )
+			Archived_At ( type = datetime displayname = "Archived At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 17 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Create Article" ) }
+				on edit { update ( type = submit displayname = "Update Article" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Article_Contributors
+		{
+			success message = "Contributor saved."
+			Contributor_Details ( type = section row = 1 column = 0 width = medium )
+			must have Article ( type = picklist values = Articles.ID displayformat = [Working_Title] sortorder = ascending row = 1 column = 1 width = medium )
+			must have Employee ( type = picklist values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 2 column = 1 width = medium )
+			must have Contribution_Type ( type = picklist displayname = "Contribution Type" values = {"Co-author","Contributor","Subject Expert"} row = 3 column = 1 width = medium )
+			Display_Order ( type = number displayname = "Display Order" row = 4 column = 1 width = medium )
+			Show_Publicly ( type = checkbox displayname = "Show Publicly" initial value = true row = 5 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Contributor" ) }
+				on edit { update ( type = submit displayname = "Update Contributor" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Article_Revisions
+		{
+			success message = "Revision saved."
+			Revision_Identity ( type = section row = 1 column = 0 width = medium )
+			must have unique Revision_UUID ( type = text displayname = "Revision UUID" maxchar = 64 row = 1 column = 1 width = medium )
+			must have Article ( type = picklist values = Articles.ID displayformat = [Working_Title] sortorder = ascending row = 2 column = 1 width = medium )
+			must have Revision_Number ( type = number displayname = "Revision Number" row = 3 column = 1 width = medium )
+			must have Revision_State ( type = picklist displayname = "Revision State" values = {"Draft","Submitted","Approved","Superseded","Published"} initial value = "Draft" row = 4 column = 1 width = medium )
+			Content ( type = section row = 5 column = 0 width = medium )
+			must have Title ( type = text maxchar = 250 row = 5 column = 1 width = medium )
+			must have Slug ( type = text maxchar = 180 row = 6 column = 1 width = medium )
+			Excerpt ( type = textarea height = 120px row = 7 column = 1 width = medium )
+			Editor_Document ( type = upload file displayname = "Editor Document" browse = local_drive row = 8 column = 1 width = medium )
+			Document_Checksum ( type = text displayname = "Document Checksum" maxchar = 128 row = 9 column = 1 width = medium )
+			Plain_Text_Extract ( type = textarea displayname = "Plain Text Extract" height = 160px row = 10 column = 1 width = medium )
+			Featured_Media ( type = picklist displayname = "Featured Media" values = Media_Assets.ID displayformat = [Alt_Text] sortorder = ascending row = 11 column = 1 width = medium )
+			Social_Media ( type = picklist displayname = "Social Media" values = Media_Assets.ID displayformat = [Alt_Text] sortorder = ascending row = 12 column = 1 width = medium )
+			SEO ( type = section row = 13 column = 0 width = medium )
+			SEO_Title ( type = text displayname = "SEO Title" maxchar = 250 row = 13 column = 1 width = medium )
+			SEO_Description ( type = textarea displayname = "SEO Description" height = 100px row = 14 column = 1 width = medium )
+			Canonical_URL_Override ( type = url displayname = "Canonical URL Override" enable linkname row = 15 column = 1 width = medium )
+			Robots_Directive ( type = picklist displayname = "Robots Directive" values = {"Index Follow","Noindex Follow","Noindex Nofollow"} initial value = "Index Follow" row = 16 column = 1 width = medium )
+			Metrics ( type = section row = 17 column = 0 width = medium )
+			Word_Count ( type = number displayname = "Word Count" row = 17 column = 1 width = medium )
+			Reading_Time_Minutes ( type = number displayname = "Reading Time Minutes" row = 18 column = 1 width = medium )
+			Change_Summary ( type = textarea displayname = "Change Summary" height = 100px row = 19 column = 1 width = medium )
+			Created_By_Employee ( type = picklist displayname = "Created By Employee" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 20 column = 1 width = medium )
+			Submitted_At ( type = datetime displayname = "Submitted At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 21 column = 1 width = medium )
+			Approved_At ( type = datetime displayname = "Approved At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 22 column = 1 width = medium )
+			Referenced_Media_UUIDs ( type = textarea displayname = "Referenced Media UUIDs" height = 80px row = 23 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Revision" ) }
+				on edit { update ( type = submit displayname = "Update Revision" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Review_Assignments
+		{
+			success message = "Review assignment saved."
+			Assignment_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Assignment_UUID ( type = text displayname = "Assignment UUID" maxchar = 64 row = 1 column = 1 width = medium )
+			must have Article ( type = picklist values = Articles.ID displayformat = [Working_Title] sortorder = ascending row = 2 column = 1 width = medium )
+			must have Revision ( type = picklist values = Article_Revisions.ID displayformat = [Revision_UUID] sortorder = ascending row = 3 column = 1 width = medium )
+			Reviewer ( type = picklist values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 4 column = 1 width = medium )
+			must have Assignment_Source ( type = picklist displayname = "Assignment Source" values = {"Author Suggested","Queue","Admin Assigned"} row = 5 column = 1 width = medium )
+			must have Status ( type = picklist values = {"Queued","Assigned","Claimed","Approved","Changes Requested","Rejected","Cancelled"} row = 6 column = 1 width = medium )
+			Decision ( type = picklist values = {"Approved","Changes Requested","Rejected"} row = 7 column = 1 width = medium )
+			Decision_Summary ( type = textarea displayname = "Decision Summary" height = 120px row = 8 column = 1 width = medium )
+			Assigned_At ( type = datetime displayname = "Assigned At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 9 column = 1 width = medium )
+			Claimed_At ( type = datetime displayname = "Claimed At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 10 column = 1 width = medium )
+			Decided_At ( type = datetime displayname = "Decided At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 11 column = 1 width = medium )
+			Cancelled_At ( type = datetime displayname = "Cancelled At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 12 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Assignment" ) }
+				on edit { update ( type = submit displayname = "Update Assignment" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Review_Comments
+		{
+			success message = "Comment saved."
+			Comment_Details ( type = section row = 1 column = 0 width = medium )
+			must have Assignment ( type = picklist values = Review_Assignments.ID displayformat = [Assignment_UUID] sortorder = ascending row = 1 column = 1 width = medium )
+			must have Revision ( type = picklist values = Article_Revisions.ID displayformat = [Revision_UUID] sortorder = ascending row = 2 column = 1 width = medium )
+			must have Author_Employee ( type = picklist displayname = "Author Employee" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 3 column = 1 width = medium )
+			must have Comment_Type ( type = picklist displayname = "Comment Type" values = {"General","Change Request","Reply","Resolution"} row = 4 column = 1 width = medium )
+			must have Comment_Body ( type = textarea displayname = "Comment Body" height = 160px row = 5 column = 1 width = medium )
+			Document_Anchor ( type = text displayname = "Document Anchor" maxchar = 255 row = 6 column = 1 width = medium )
+			Parent_Comment ( type = picklist displayname = "Parent Comment" values = Review_Comments.ID displayformat = [Comment_Body] sortorder = ascending row = 7 column = 1 width = medium )
+			Resolved ( type = checkbox initial value = false row = 8 column = 1 width = medium )
+			Resolved_By ( type = picklist displayname = "Resolved By" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 9 column = 1 width = medium )
+			Resolved_At ( type = datetime displayname = "Resolved At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 10 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Add Comment" ) }
+				on edit { update ( type = submit displayname = "Update Comment" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Media_Assets
+		{
+			success message = "Media asset saved."
+			Media_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Media_UUID ( type = text displayname = "Media UUID" maxchar = 64 row = 1 column = 1 width = medium )
+			Draft_File ( type = upload file displayname = "Draft File" browse = local_drive row = 2 column = 1 width = medium )
+			must have Media_Type ( type = picklist displayname = "Media Type" values = {"Image","Document","Video Thumbnail"} row = 3 column = 1 width = medium )
+			Original_Filename ( type = text displayname = "Original Filename" maxchar = 255 row = 4 column = 1 width = medium )
+			MIME_Type ( type = text displayname = "MIME Type" maxchar = 100 row = 5 column = 1 width = medium )
+			File_Size_Bytes ( type = number displayname = "File Size Bytes" row = 6 column = 1 width = medium )
+			Width_Pixels ( type = number displayname = "Width Pixels" row = 7 column = 1 width = medium )
+			Height_Pixels ( type = number displayname = "Height Pixels" row = 8 column = 1 width = medium )
+			Checksum ( type = text maxchar = 128 row = 9 column = 1 width = medium )
+			Alt_Text ( type = text displayname = "Alt Text" maxchar = 250 row = 10 column = 1 width = medium )
+			Caption ( type = textarea height = 100px row = 11 column = 1 width = medium )
+			Credit ( type = text maxchar = 250 row = 12 column = 1 width = medium )
+			Published_Object_Key ( type = text displayname = "Published Object Key" maxchar = 255 row = 13 column = 1 width = medium )
+			Published_URL ( type = url displayname = "Published URL" enable linkname row = 14 column = 1 width = medium )
+			must have Status ( type = picklist values = {"Draft","Processing","Ready","Failed","Archived"} initial value = "Draft" row = 15 column = 1 width = medium )
+			Uploaded_By ( type = picklist displayname = "Uploaded By" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 16 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Media" ) }
+				on edit { update ( type = submit displayname = "Update Media" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Publication_Jobs
+		{
+			success message = "Publication job saved."
+			Job_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Idempotency_Key ( type = text displayname = "Idempotency Key" maxchar = 150 row = 1 column = 1 width = medium )
+			must have Article ( type = picklist values = Articles.ID displayformat = [Working_Title] sortorder = ascending row = 2 column = 1 width = medium )
+			must have Revision ( type = picklist values = Article_Revisions.ID displayformat = [Revision_UUID] sortorder = ascending row = 3 column = 1 width = medium )
+			must have Action ( type = picklist values = {"Preview","Publish","Schedule","Unpublish","Republish","Rollback"} row = 4 column = 1 width = medium )
+			must have Status ( type = picklist values = {"Queued","Processing","Succeeded","Failed","Cancelled"} initial value = "Queued" row = 5 column = 1 width = medium )
+			Attempt_Count ( type = number displayname = "Attempt Count" row = 6 column = 1 width = medium )
+			Requested_By ( type = picklist displayname = "Requested By" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 7 column = 1 width = medium )
+			Requested_At ( type = datetime displayname = "Requested At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 8 column = 1 width = medium )
+			Started_At ( type = datetime displayname = "Started At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 9 column = 1 width = medium )
+			Completed_At ( type = datetime displayname = "Completed At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 10 column = 1 width = medium )
+			Catalyst_Publication_ID ( type = text displayname = "Catalyst Publication ID" maxchar = 150 row = 11 column = 1 width = medium )
+			HTTP_Status ( type = number displayname = "HTTP Status" row = 12 column = 1 width = medium )
+			Error_Code ( type = text displayname = "Error Code" maxchar = 100 row = 13 column = 1 width = medium )
+			Error_Summary ( type = textarea displayname = "Error Summary" height = 120px row = 14 column = 1 width = medium )
+			Next_Retry_At ( type = datetime displayname = "Next Retry At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 15 column = 1 width = medium )
+			Retraction_Reason ( type = textarea displayname = "Retraction Reason" height = 100px row = 16 column = 1 width = medium )
+			Replacement_Path ( type = text displayname = "Replacement Path" maxchar = 255 row = 17 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Queue Job" ) }
+				on edit { update ( type = submit displayname = "Update Job" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Redirects
+		{
+			success message = "Redirect saved."
+			Redirect_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Source_Path ( type = text displayname = "Source Path" maxchar = 255 row = 1 column = 1 width = medium )
+			must have Destination_Path ( type = text displayname = "Destination Path" maxchar = 255 row = 2 column = 1 width = medium )
+			must have Redirect_Type ( type = picklist displayname = "Redirect Type" values = {"301 Permanent","302 Temporary"} initial value = "301 Permanent" row = 3 column = 1 width = medium )
+			Active ( type = checkbox initial value = true row = 4 column = 1 width = medium )
+			Notes ( type = textarea height = 100px row = 5 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Redirect" ) }
+				on edit { update ( type = submit displayname = "Update Redirect" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Audit_Events
+		{
+			success message = "Audit event saved."
+			Event_Details ( type = section row = 1 column = 0 width = medium )
+			must have unique Event_UUID ( type = text displayname = "Event UUID" maxchar = 64 row = 1 column = 1 width = medium )
+			must have Entity_Type ( type = picklist displayname = "Entity Type" values = {"Article","Revision","Review","Publication","Media","Role"} row = 2 column = 1 width = medium )
+			must have Entity_UUID ( type = text displayname = "Entity UUID" maxchar = 64 row = 3 column = 1 width = medium )
+			must have Event_Type ( type = text displayname = "Event Type" maxchar = 150 row = 4 column = 1 width = medium )
+			Actor_Employee ( type = picklist displayname = "Actor Employee" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 5 column = 1 width = medium )
+			Previous_State ( type = text displayname = "Previous State" maxchar = 100 row = 6 column = 1 width = medium )
+			New_State ( type = text displayname = "New State" maxchar = 100 row = 7 column = 1 width = medium )
+			Event_Summary ( type = textarea displayname = "Event Summary" height = 120px row = 8 column = 1 width = medium )
+			Event_Metadata ( type = textarea displayname = "Event Metadata" height = 160px row = 9 column = 1 width = medium )
+			Occurred_At ( type = datetime displayname = "Occurred At" timedisplayoptions = "hh:mm:ss" alloweddays = 0,1,2,3,4,5,6 row = 10 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Event" ) }
+				on edit { update ( type = submit displayname = "Update Event" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+
+		form Site_Settings
+		{
+			success message = "Site settings saved."
+			Settings ( type = section row = 1 column = 0 width = medium )
+			must have unique Settings_Key ( type = text displayname = "Settings Key" maxchar = 100 row = 1 column = 1 width = medium )
+			must have Site_Name ( type = text displayname = "Site Name" maxchar = 150 row = 2 column = 1 width = medium )
+			Insights_Base_Path ( type = text displayname = "Insights Base Path" maxchar = 150 row = 3 column = 1 width = medium )
+			Default_SEO_Title_Pattern ( type = text displayname = "Default SEO Title Pattern" maxchar = 250 row = 4 column = 1 width = medium )
+			Default_SEO_Description ( type = textarea displayname = "Default SEO Description" height = 100px row = 5 column = 1 width = medium )
+			Default_Social_Image ( type = picklist displayname = "Default Social Image" values = Media_Assets.ID displayformat = [Alt_Text] sortorder = ascending row = 6 column = 1 width = medium )
+			Publishing_Timezone ( type = picklist displayname = "Publishing Timezone" values = {"Asia/Kolkata"} initial value = "Asia/Kolkata" row = 7 column = 1 width = medium )
+			RSS_Enabled ( type = checkbox displayname = "RSS Enabled" initial value = true row = 8 column = 1 width = medium )
+			Search_Enabled ( type = checkbox displayname = "Search Enabled" initial value = true row = 9 column = 1 width = medium )
+			Related_Articles_Enabled ( type = checkbox displayname = "Related Articles Enabled" initial value = true row = 10 column = 1 width = medium )
+			actions
+			{
+				on add { submit ( type = submit displayname = "Save Settings" ) }
+				on edit { update ( type = submit displayname = "Update Settings" ) cancel ( type = cancel displayname = "Cancel" ) }
+			}
+		}
+	}
+
+	reports
+	{
+		default list Demo_Employees_Report
+		{
+			displayName = "Employees"
+			show all rows from Demo_Employees ( Employee_Key as "Employee Key" Display_Name as "Display Name" Work_Email as "Work Email" Creator_Username as "Creator Username" Job_Title as "Job Title" Avatar Status )
+		}
+		default list Demo_Teams_Report
+		{
+			displayName = "Teams"
+			show all rows from Demo_Teams ( Team_Key as "Team Key" Team_Name as "Team Name" Team_Lead as "Team Lead" Status )
+		}
+		default list Demo_Team_Memberships_Report
+		{
+			displayName = "Team Memberships"
+			show all rows from Demo_Team_Memberships ( Employee Team Membership_Role as "Membership Role" Active_From as "Active From" Active_Until as "Active Until" Active )
+		}
+		default list Editorial_Role_Assignments_Report
+		{
+			displayName = "Editorial Roles"
+			show all rows from Editorial_Role_Assignments ( Employee Editorial_Role as "Editorial Role" Expertise_Categories as "Expertise Categories" Effective_From as "Effective From" Effective_Until as "Effective Until" Active )
+		}
+		default list Approval_Policies_Report
+		{
+			displayName = "Approval Policies"
+			show all rows from Approval_Policies ( Policy_Key as "Policy Key" Policy_Name as "Policy Name" Required_Approval_Count as "Required Approvals" Require_Distinct_Reviewers as "Distinct Reviewers" Required_Expertise_Categories as "Expertise" Active Is_Default as "Default" )
+		}
+		default list Articles_Report
+		{
+			displayName = "All Articles"
+			show all rows from Articles ( Article_UUID as "Article UUID" Working_Title as "Working Title" Owner Primary_Author as "Primary Author" Primary_Category as "Category" Tags Approval_Policy as "Approval Policy" Approval_Override_Count as "Approval Override Count" Override_Reason as "Override Reason" Workflow_State as "State" Active_Draft_Revision_ID as "Active Draft Revision ID" Approved_Revision_ID as "Approved Revision ID" Published_Revision_ID as "Published Revision ID" Scheduled_At as "Scheduled At" First_Published_At as "First Published At" Last_Published_At as "Last Published At" Archived_At as "Archived At" )
+		}
+		default list Article_Contributors_Report
+		{
+			displayName = "Article Contributors"
+			show all rows from Article_Contributors ( Article Employee Contribution_Type as "Contribution Type" Display_Order as "Display Order" Show_Publicly as "Show Publicly" )
+		}
+		default list Article_Revisions_Report
+		{
+			displayName = "Article Revisions"
+			show all rows from Article_Revisions ( Revision_UUID as "Revision UUID" Article Revision_Number as "Revision" Revision_State as "State" Title Slug Excerpt Editor_Document as "Editor Document" Document_Checksum as "Document Checksum" Plain_Text_Extract as "Plain Text Extract" Featured_Media as "Featured Media" Social_Media as "Social Media" SEO_Title as "SEO Title" SEO_Description as "SEO Description" Canonical_URL_Override as "Canonical URL Override" Robots_Directive as "Robots Directive" Word_Count as "Word Count" Reading_Time_Minutes as "Reading Time" Change_Summary as "Change Summary" Created_By_Employee as "Created By Employee" Submitted_At as "Submitted At" Approved_At as "Approved At" Referenced_Media_UUIDs as "Referenced Media UUIDs" )
+		}
+		default list Review_Assignments_Report
+		{
+			displayName = "Review Queue"
+			show all rows from Review_Assignments ( Assignment_UUID as "Assignment UUID" Article Revision Reviewer Assignment_Source as "Source" Status Decision Assigned_At as "Assigned At" Claimed_At as "Claimed At" Decided_At as "Decided At" )
+		}
+		default list Review_Comments_Report
+		{
+			displayName = "Review Comments"
+			show all rows from Review_Comments ( Assignment Revision Author_Employee as "Author" Comment_Type as "Type" Comment_Body as "Comment" Parent_Comment as "Parent" Resolved Resolved_By as "Resolved By" Resolved_At as "Resolved At" )
+		}
+		default list Categories_Report
+		{
+			displayName = "Categories"
+			show all rows from Categories ( Category_UUID as "Category UUID" Name Slug Description Default_Approval_Policy as "Default Policy" Display_Order as "Display Order" Active )
+		}
+		default list Tags_Report
+		{
+			displayName = "Tags"
+			show all rows from Tags ( Tag_UUID as "Tag UUID" Name Slug Description Active )
+		}
+		default list Media_Assets_Report
+		{
+			displayName = "Media Library"
+			show all rows from Media_Assets ( Media_UUID as "Media UUID" Draft_File as "Draft File" Media_Type as "Type" Original_Filename as "Filename" MIME_Type as "MIME Type" File_Size_Bytes as "Size" Width_Pixels as "Width" Height_Pixels as "Height" Checksum Alt_Text as "Alt Text" Caption Credit Published_Object_Key as "Published Object Key" Published_URL as "Published URL" Status Uploaded_By as "Uploaded By" )
+		}
+		default list Publication_Jobs_Report
+		{
+			displayName = "Publishing Health"
+			show all rows from Publication_Jobs ( Idempotency_Key as "Idempotency Key" Article Revision Action Status Attempt_Count as "Attempts" Requested_By as "Requested By" Requested_At as "Requested At" Started_At as "Started At" Completed_At as "Completed At" Catalyst_Publication_ID as "Catalyst Publication ID" HTTP_Status as "HTTP Status" Error_Code as "Error Code" Error_Summary as "Error" Next_Retry_At as "Next Retry" Retraction_Reason as "Retraction Reason" Replacement_Path as "Replacement Path" )
+		}
+		default list Redirects_Report
+		{
+			displayName = "Redirects"
+			show all rows from Redirects ( Source_Path as "Source Path" Destination_Path as "Destination Path" Redirect_Type as "Type" Active Notes )
+		}
+		default list Audit_Events_Report
+		{
+			displayName = "Audit Events"
+			show all rows from Audit_Events ( Event_UUID as "Event UUID" Entity_Type as "Entity Type" Entity_UUID as "Entity UUID" Event_Type as "Event Type" Actor_Employee as "Actor" Previous_State as "Previous State" New_State as "New State" Event_Summary as "Summary" Event_Metadata as "Metadata" Occurred_At as "Occurred At" )
+		}
+		default list Site_Settings_Report
+		{
+			displayName = "Site Settings"
+			show all rows from Site_Settings ( Settings_Key as "Settings Key" Site_Name as "Site Name" Insights_Base_Path as "Insights Base Path" Publishing_Timezone as "Timezone" RSS_Enabled as "RSS" Search_Enabled as "Search" Related_Articles_Enabled as "Related Articles" )
+		}
+	}
+
+	share_settings
+	{
+		"Read"
+		{
+			name = "Read"
+			type = Users_Permissions
+			permissions = {Chat:true, Predefined:true, ApiAccess:true, PIIAccess:true, ePHIAccess:true}
+			description = "Read-only application access."
+		}
+		"Write"
+		{
+			name = "Write"
+			type = Users_Permissions
+			permissions = {Chat:true, Predefined:true, ApiAccess:true, PIIAccess:true, ePHIAccess:true}
+			description = "Standard application access."
+		}
+		"Developer"
+		{
+			name = "Developer"
+			type = Developer
+			permissions = {Chat:false, Predefined:true, ApiAccess:true, PIIAccess:true, ePHIAccess:true}
+			description = "Developer profile."
+		}
+		"Administrator"
+		{
+			name = "Administrator"
+			type = Users_Permissions
+			permissions = {Chat:true, Predefined:true, ApiAccess:true, PIIAccess:true, ePHIAccess:true}
+			description = "Application administrator."
+		}
+		roles
+		{
+			"CEO" { description = "Top-level application role." }
+		}
+		role Hierarchy = {Approval_Policies,Article_Contributors,Article_Revisions,Articles,Audit_Events,Categories,Demo_Employees,Demo_Team_Memberships,Demo_Teams,Editorial_Role_Assignments,Media_Assets,Publication_Jobs,Redirects,Review_Assignments,Review_Comments,Site_Settings,Tags}
+	}
+
+	web
+	{
+		forms
+		{
+			form Demo_Employees { label placement = left }
+			form Demo_Teams { label placement = left }
+			form Demo_Team_Memberships { label placement = left }
+			form Editorial_Role_Assignments { label placement = left }
+			form Approval_Policies { label placement = left }
+			form Articles { label placement = left }
+			form Article_Contributors { label placement = left }
+			form Article_Revisions { label placement = left }
+			form Review_Assignments { label placement = left }
+			form Review_Comments { label placement = left }
+			form Categories { label placement = left }
+			form Tags { label placement = left }
+			form Media_Assets { label placement = left }
+			form Publication_Jobs { label placement = left }
+			form Redirects { label placement = left }
+			form Audit_Events { label placement = left }
+			form Site_Settings { label placement = left }
+		}
+		menu
+		{
+			space Editorial_Workspace
+			{
+				displayname = "Editorial Workspace"
+				icon = "design-photo-editor"
+				section Content
+				{
+					displayname = "Content"
+					icon = "tech-desktop"
+					report Articles_Report { icon = "tech-desktop" }
+					report Article_Revisions_Report { icon = "tech-desktop" }
+					report Article_Contributors_Report { icon = "tech-desktop" }
+				}
+				section Review
+				{
+					displayname = "Review"
+					icon = "design-todo"
+					report Review_Assignments_Report { icon = "design-todo" }
+					report Review_Comments_Report { icon = "design-todo" }
+				}
+				section Publishing
+				{
+					displayname = "Publishing"
+					icon = "objects-spaceship"
+					report Publication_Jobs_Report { icon = "objects-spaceship" }
+					report Redirects_Report { icon = "objects-spaceship" }
+				}
+				section Media
+				{
+					displayname = "Media"
+					icon = "design-photo-editor"
+					report Media_Assets_Report { icon = "design-photo-editor" }
+				}
+				section Taxonomy
+				{
+					displayname = "Taxonomy"
+					icon = "education-language"
+					report Categories_Report { icon = "education-language" }
+					report Tags_Report { icon = "education-language" }
+					report Approval_Policies_Report { icon = "education-language" }
+				}
+				section Team_and_Roles
+				{
+					displayname = "Team and Roles"
+					icon = "business-chart-bar-33"
+					report Demo_Employees_Report { icon = "business-chart-bar-33" }
+					report Demo_Teams_Report { icon = "business-chart-bar-33" }
+					report Demo_Team_Memberships_Report { icon = "business-chart-bar-33" }
+					report Editorial_Role_Assignments_Report { icon = "business-chart-bar-33" }
+				}
+				section Administration
+				{
+					displayname = "Administration"
+					icon = "design-app"
+					report Site_Settings_Report { icon = "design-app" }
+					report Audit_Events_Report { icon = "design-app" }
+				}
+			}
+			preference { icon { style = outline } }
+		}
+		customize
+		{
+			font = "lato"
+			color options { color = "11" }
+			logo { preference = "app_icon" placement = "left" }
+		}
+	}
+
+	phone
+	{
+		customize
+		{
+			layout = twocolumn
+			font = "default"
+			style = "3"
+			color options { color = "11" }
+			logo { preference = "none" }
+		}
+	}
+
+	tablet
+	{
+		customize
+		{
+			layout = slidingpane
+			font = "default"
+			style = "3"
+			color options { color = "11" }
+			logo { preference = "none" }
+		}
+	}
+
+	translation
+	{
+		{"Language_Settings":{"LANGAGUE_WITH_LOGIN":"browser"}}
+	}
+}

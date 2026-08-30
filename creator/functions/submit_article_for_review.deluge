@@ -1,0 +1,213 @@
+map submit_article_for_review(int articleId, string reviewerIdsCsv)
+{
+	result = Map();
+	result.put("ok",false);
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	if(article.Workflow_State != "Draft" && article.Workflow_State != "Changes Requested")
+	{
+		result.put("message","Only a draft or changes-requested article can be submitted.");
+		return result;
+	}
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+	actorIsAdmin = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	if(actor.ID != article.Owner.ID && actor.ID != article.Primary_Author.ID && actorIsAdmin.count() == 0)
+	{
+		result.put("message","Only the article owner, primary author, or an Editorial Admin can submit this article.");
+		return result;
+	}
+
+	if(article.Active_Draft_Revision_ID == null || article.Active_Draft_Revision_ID.trim() == "")
+	{
+		result.put("message","The article has no active draft revision.");
+		return result;
+	}
+	revisionId = article.Active_Draft_Revision_ID.toLong();
+	revision = Article_Revisions[ID == revisionId && Article == article.ID];
+	if(revision.count() == 0 || revision.Revision_State != "Draft")
+	{
+		result.put("message","The active revision is missing or is no longer editable.");
+		return result;
+	}
+	if(revision.Title == null || revision.Title.trim() == "" || revision.Slug == null || revision.Slug.trim() == "")
+	{
+		result.put("message","A title and slug are required before review.");
+		return result;
+	}
+	if(revision.Editor_Document == null || revision.Plain_Text_Extract == null || revision.Plain_Text_Extract.trim() == "")
+	{
+		result.put("message","Article content must be saved before review.");
+		return result;
+	}
+
+	requiredApprovals = article.Approval_Policy.Required_Approval_Count;
+	if(article.Approval_Override_Count != null && article.Approval_Override_Count > 0)
+	{
+		requiredApprovals = article.Approval_Override_Count;
+	}
+	if(requiredApprovals == null || requiredApprovals < 1 || requiredApprovals > 10)
+	{
+		result.put("message","The approval policy must require between 1 and 10 approvals.");
+		return result;
+	}
+
+	validatedReviewerIds = List();
+	if(reviewerIdsCsv != null && reviewerIdsCsv.trim() != "")
+	{
+		requestedReviewerIds = reviewerIdsCsv.toList(",");
+		for each requestedReviewerId in requestedReviewerIds
+		{
+			reviewerIdText = requestedReviewerId.trim();
+			if(reviewerIdText != "")
+			{
+				reviewerId = reviewerIdText.toLong();
+				if(validatedReviewerIds.contains(reviewerId))
+				{
+					result.put("message","The same reviewer cannot be assigned twice.");
+					return result;
+				}
+				if(reviewerId == article.Primary_Author.ID)
+				{
+					result.put("message","The primary author cannot review their own article.");
+					return result;
+				}
+				reviewer = Demo_Employees[ID == reviewerId && Status == "Active"];
+				reviewerRole = Editorial_Role_Assignments[Employee == reviewerId && Editorial_Role == "Reviewer" && Active == true];
+				if(reviewer.count() == 0 || reviewerRole.count() == 0)
+				{
+					result.put("message","One or more selected reviewers are inactive or ineligible.");
+					return result;
+				}
+				validatedReviewerIds.add(reviewerId);
+			}
+		}
+	}
+	notificationReviewerIds = List();
+	for each validatedReviewerId in validatedReviewerIds
+	{
+		if(!notificationReviewerIds.contains(validatedReviewerId))
+		{
+			notificationReviewerIds.add(validatedReviewerId);
+		}
+	}
+
+	activeAssignments = Review_Assignments[Article == article.ID && Revision == revision.ID && Status != "Cancelled"];
+	if(activeAssignments.count() > 0)
+	{
+		result.put("message","This revision already has active review assignments.");
+		return result;
+	}
+
+	assignmentIds = List();
+	for each reviewerId in validatedReviewerIds
+	{
+		assignmentId = insert into Review_Assignments
+		[
+			Assignment_UUID = "ASG-" + article.ID + "-R" + revision.Revision_Number + "-" + reviewerId
+			Article = article.ID
+			Revision = revision.ID
+			Reviewer = reviewerId
+			Assignment_Source = "Author Suggested"
+			Status = "Assigned"
+			Assigned_At = zoho.currenttime
+		];
+		assignmentIds.add(assignmentId);
+	}
+
+	queueSlotsRequired = requiredApprovals - validatedReviewerIds.size();
+	if(queueSlotsRequired > 0)
+	{
+		reviewerRoles = Editorial_Role_Assignments[Editorial_Role == "Reviewer" && Active == true];
+		for each reviewerRoleAssignment in reviewerRoles
+		{
+			if(reviewerRoleAssignment.Employee != null && reviewerRoleAssignment.Employee.ID != article.Primary_Author.ID && !notificationReviewerIds.contains(reviewerRoleAssignment.Employee.ID))
+			{
+				notificationReviewerIds.add(reviewerRoleAssignment.Employee.ID);
+			}
+		}
+	}
+	queueSlots = {1,2,3,4,5,6,7,8,9,10};
+	for each queueSlot in queueSlots
+	{
+		if(queueSlot <= queueSlotsRequired)
+		{
+			assignmentId = insert into Review_Assignments
+			[
+				Assignment_UUID = "ASG-" + article.ID + "-Q-" + revision.Revision_Number + "-" + queueSlot
+				Article = article.ID
+				Revision = revision.ID
+				Assignment_Source = "Queue"
+				Status = "Queued"
+				Assigned_At = zoho.currenttime
+			];
+			assignmentIds.add(assignmentId);
+		}
+	}
+
+	previousState = article.Workflow_State;
+	revision.Revision_State = "Submitted";
+	revision.Submitted_At = zoho.currenttime;
+	article.Workflow_State = "In Review";
+
+	metadata = Map();
+	metadata.put("revisionId",revision.ID);
+	metadata.put("requiredApprovals",requiredApprovals);
+	metadata.put("assignmentIds",assignmentIds);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-SUBMIT-" + article.ID + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Article"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "Submitted for Review"
+		Actor_Employee = actor.ID
+		Previous_State = previousState
+		New_State = "In Review"
+		Event_Summary = "Revision " + revision.Revision_Number + " submitted with " + assignmentIds.size() + " review assignment(s)."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	recipientIdsCsvText = "";
+	for each notificationReviewerId in notificationReviewerIds
+	{
+		if(recipientIdsCsvText != "")
+		{
+			recipientIdsCsvText = recipientIdsCsvText + ",";
+		}
+		recipientIdsCsvText = recipientIdsCsvText + notificationReviewerId;
+	}
+	if(recipientIdsCsvText != "")
+	{
+		try
+		{
+			thisapp.send_editorial_notification("Article submitted for review",article.ID,0,recipientIdsCsvText,"Revision " + revision.Revision_Number + " is ready for review.");
+		}
+		catch (notificationError)
+		{
+		}
+	}
+
+	result.put("ok",true);
+	result.put("message","Article submitted for review.");
+	result.put("articleId",article.ID);
+	result.put("revisionId",revision.ID);
+	result.put("state","In Review");
+	result.put("requiredApprovals",requiredApprovals);
+	result.put("assignmentIds",assignmentIds);
+	return result;
+}

@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
-
-export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { console.error(error); }, [error]);
+export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
-    <main className="shell narrow-page">
-      <div className="status-card">
+    <main className="narrow-page shell">
+      <section className="status-card">
         <span className="eyebrow">Temporary interruption</span>
-        <h1>We couldn’t load this content</h1>
-        <p>Please try again. If the problem continues, the publishing service may be briefly unavailable.</p>
-        <button className="button button-primary" onClick={reset}>Try again</button>
-      </div>
+        <h1>We could not load this page.</h1>
+        <p>Please try again. If the issue continues, the content service may be temporarily unavailable.</p>
+        <button className="button button-primary" type="button" onClick={reset}>Try again</button>
+      </section>
     </main>
   );
 }

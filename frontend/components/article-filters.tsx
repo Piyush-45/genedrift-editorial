@@ -12,7 +12,7 @@ export function ArticleFilters({ query, category, tag, categories }: Props) {
     <form className="filters" action="/insights" role="search">
       <label className="search-field">
         <span className="sr-only">Search insights</span>
-        <input name="q" type="search" defaultValue={query} placeholder="Search insights" />
+        <input name="q" type="search" defaultValue={query} placeholder="Search regulatory intelligence" />
       </label>
       <label className="select-field">
         <span className="sr-only">Filter by category</span>

@@ -7,7 +7,6 @@ export function ArticleCard({ article, featured = false }: { article: ArticleSum
     <article className={`article-card${featured ? " article-card-featured" : ""}`}>
       {article.featuredMedia ? (
         <div className="card-media">
-          {/* The publishing service supplies immutable, approved public media URLs. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={article.featuredMedia.publishedUrl}

@@ -6,7 +6,7 @@ const footerGroups = [
   { title: "Expertise", links: [["Regulatory Affairs", "/#expertise"], ["Pharmacovigilance", "/#expertise"], ["Regulatory Intelligence", "/#intelligence"]] },
   { title: "Markets", links: [["Asia Pacific", "/#markets"], ["Middle East", "/#markets"], ["Africa", "/#markets"], ["CIS", "/#markets"]] },
   { title: "Knowledge Hub", links: [["Regulatory Intelligence", "/#intelligence"], ["Insights", "/insights"], ["Client Success", "/#client-success"]] },
-  { title: "Company", links: [["Why GeneDrift", "/#why-genedrift"], ["Careers", "mailto:cs@genedrift.com?subject=Careers%20at%20GeneDrift"], ["Contact", "/#contact"]] }
+  { title: "Company", links: [["Why Genedrift", "/#why-genedrift"], ["Careers", "mailto:cs@genedrift.com?subject=Careers%20at%20Genedrift"], ["Contact", "/#contact"]] }
 ] as const;
 
 export function SiteFooter() {
@@ -28,7 +28,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="site-shell footer-bottom">
-        <p>© 2026 GeneDrift. All rights reserved.</p>
+        <p>© 2026 Genedrift. All rights reserved.</p>
         <div>
           <Link href="#">Privacy</Link>
           <Link href="#">Terms</Link>

@@ -1,0 +1,117 @@
+map schedule_approved_article(int articleId, string scheduledAtText)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+	publisherRole = Editorial_Role_Assignments[Employee == actor.ID && Active == true && (Editorial_Role == "Publisher" || Editorial_Role == "Editorial Admin")];
+	if(publisherRole.count() == 0)
+	{
+		result.put("message","Only an active publisher or editorial admin can schedule approved content.");
+		return result;
+	}
+	if(scheduledAtText == null || scheduledAtText.trim() == "")
+	{
+		result.put("message","Choose a publication date and time.");
+		return result;
+	}
+
+	scheduledAt = scheduledAtText.trim().replaceAll("T"," ").toDateTime("yyyy-MM-dd HH:mm");
+	if(scheduledAt <= zoho.currenttime.addMinutes(2))
+	{
+		result.put("message","Scheduled publication must be at least two minutes in the future.");
+		return result;
+	}
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	approvedRevisionId = ifnull(article.Approved_Revision_ID,"").trim();
+	if(article.Workflow_State != "Approved" || approvedRevisionId == "")
+	{
+		result.put("message","Only an article with an approved revision pointer can be scheduled.");
+		return result;
+	}
+	revision = Article_Revisions[ID == approvedRevisionId.toLong()];
+	if(revision.count() == 0 || revision.Revision_State != "Approved")
+	{
+		result.put("message","The approved revision is not ready to schedule.");
+		return result;
+	}
+
+	existingOpenJob = Publication_Jobs[Article == article.ID && Revision == revision.ID && (Action == "Schedule" || Action == "Publish") && (Status == "Queued" || Status == "Processing")];
+	if(existingOpenJob.count() > 0)
+	{
+		result.put("message","A schedule or publish job is already open for this revision.");
+		result.put("jobId",existingOpenJob.ID);
+		return result;
+	}
+
+	previousArticleState = article.Workflow_State;
+	idempotencyKey = "SCH-" + article.Article_UUID + "-" + revision.Revision_UUID + "-" + scheduledAt.toLong();
+	jobId = insert into Publication_Jobs
+	[
+		Idempotency_Key = idempotencyKey
+		Article = article.ID
+		Revision = revision.ID
+		Action = "Schedule"
+		Status = "Queued"
+		Attempt_Count = 0
+		Requested_By = actor.ID
+		Requested_At = zoho.currenttime
+		Next_Retry_At = null
+	];
+
+	article.Workflow_State = "Scheduled";
+	article.Scheduled_At = scheduledAt;
+
+	metadata = Map();
+	metadata.put("jobId",jobId);
+	metadata.put("revisionId",revision.ID);
+	metadata.put("revisionNumber",revision.Revision_Number);
+	metadata.put("scheduledAt",scheduledAt);
+	metadata.put("idempotencyKey",idempotencyKey);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-SCHEDULE-" + jobId
+		Entity_Type = "Publication"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "Article Scheduled"
+		Actor_Employee = actor.ID
+		Previous_State = previousArticleState
+		New_State = "Scheduled"
+		Event_Summary = actor.Display_Name + " scheduled revision " + revision.Revision_Number + " for Catalyst publication."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	handoffResult = thisapp.handoff_publication_to_catalyst(jobId);
+	if(handoffResult.get("ok") == true)
+	{
+		try
+		{
+			recipientIdsCsvText = article.Owner.ID.toString();
+			if(article.Primary_Author != null && article.Primary_Author.ID != article.Owner.ID)
+			{
+				recipientIdsCsvText = recipientIdsCsvText + "," + article.Primary_Author.ID;
+			}
+			thisapp.send_editorial_notification("Article scheduled",article.ID,0,recipientIdsCsvText,"Scheduled for " + scheduledAt + " Asia/Kolkata.");
+		}
+		catch (notificationError)
+		{
+		}
+	}
+	return handoffResult;
+}

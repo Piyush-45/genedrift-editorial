@@ -1,6 +1,6 @@
 # Data Sharing Audit
 
-Last checked: 2026-08-26
+Last checked: 2026-08-26 export; amended 2026-09-01 from live visual testing.
 
 Source reviewed:
 
@@ -15,6 +15,12 @@ The Author to Reviewer review loop and combined Reviewer+Publisher path are
 functionally working. The live export is not yet least privilege: Author and
 Reviewer profiles are broad, Publisher and Editorial Admin profiles/Creator
 roles are absent, and Publisher/Admin sharing is incomplete.
+
+2026-09-01 amendment: separate-role visual UI checks later passed for
+Author-only, Reviewer-only, Publisher-only, and Editorial Admin configurations.
+That does not replace this audit because no fresh post-cleanup DS export has
+been captured. Treat the fresh DS export and direct API/security denial checks as
+still required before a production-ready claim.
 
 The older suspected `Review_Comments_RA` targeting error is not present in this
 export. It now correctly targets `Review_Comments` with Reviewer to Editorial

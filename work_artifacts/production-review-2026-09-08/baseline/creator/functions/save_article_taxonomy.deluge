@@ -1,0 +1,107 @@
+map save_article_taxonomy(int articleId, string primaryCategoryId, string tagIdsCsv)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	actorIsAdmin = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	if(actor.ID != article.Owner.ID && actor.ID != article.Primary_Author.ID && actorIsAdmin.count() == 0)
+	{
+		result.put("message","Only the article owner, primary author, or an Editorial Admin can change article taxonomy.");
+		return result;
+	}
+	if(article.Workflow_State != "Draft" && article.Workflow_State != "Changes Requested")
+	{
+		result.put("message","Taxonomy can only be changed on a draft or changes-requested article.");
+		return result;
+	}
+
+	categoryIdText = ifnull(primaryCategoryId,"").trim();
+	validatedCategoryId = 0;
+	if(categoryIdText != "")
+	{
+		validatedCategoryId = categoryIdText.toLong();
+		category = Categories[ID == validatedCategoryId && Active == true];
+		if(category.count() == 0)
+		{
+			result.put("message","The selected category is missing or inactive.");
+			return result;
+		}
+	}
+
+	validatedTagIds = List();
+	tagIdsText = ifnull(tagIdsCsv,"").trim();
+	if(tagIdsText != "")
+	{
+		requestedTagIds = tagIdsText.toList(",");
+		for each requestedTagId in requestedTagIds
+		{
+			tagIdText = requestedTagId.trim();
+			if(tagIdText != "")
+			{
+				tagId = tagIdText.toLong();
+				if(!validatedTagIds.contains(tagId))
+				{
+					tag = Tags[ID == tagId && Active == true];
+					if(tag.count() == 0)
+					{
+						result.put("message","One or more selected tags are missing or inactive.");
+						return result;
+					}
+					validatedTagIds.add(tagId);
+				}
+			}
+		}
+	}
+
+	if(validatedCategoryId == 0)
+	{
+		article.Primary_Category = null;
+	}
+	else
+	{
+		article.Primary_Category = validatedCategoryId;
+	}
+	article.Tags = validatedTagIds;
+
+	metadata = Map();
+	metadata.put("articleId",article.ID);
+	metadata.put("categoryId",categoryIdText);
+	metadata.put("tagIdsCsv",tagIdsText);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-TAXONOMY-SAVE-" + article.ID + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Article"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "Article Taxonomy Updated"
+		Actor_Employee = actor.ID
+		Previous_State = article.Workflow_State
+		New_State = article.Workflow_State
+		Event_Summary = actor.Display_Name + " updated the article category and tags."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	result.put("ok",true);
+	result.put("message","Article category and tags saved.");
+	result.put("articleId",article.ID.toString());
+	result.put("categoryId",categoryIdText);
+	result.put("tagIdsCsv",tagIdsText);
+	return result;
+}

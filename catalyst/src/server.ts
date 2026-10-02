@@ -11,7 +11,7 @@ import { sha256Hex, verifyRequestSignature } from "./security";
 
 type RawRequest = Request & { rawBody?: Buffer };
 
-const SERVICE_VERSION = "0.4.0";
+const SERVICE_VERSION = "0.4.2";
 const SCHEDULER_PAYLOAD_VERSION = 4;
 const app = express();
 app.disable("x-powered-by");

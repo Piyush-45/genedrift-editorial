@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../useDialogFocus'
 import { AlertCircle, Check, MessageSquare, RotateCcw, ShieldCheck, X, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import type { CurrentEmployee, ReviewAssignment, ReviewComment } from '../domain'
@@ -21,6 +22,7 @@ export function ReviewActionDialog({
 }: Props) {
   const [comment, setComment] = useState('')
   const [summary, setSummary] = useState('')
+  const dialogRef = useDialogFocus(open, busy, onClose)
   if (!open) return null
 
   const assignedToCurrentUser = currentEmployee && (
@@ -35,12 +37,21 @@ export function ReviewActionDialog({
     if (!value) return
     if (await onComment(value)) setComment('')
   }
+  const submitDecision = async (decision: NonNullable<ReviewAssignment['decision']>) => {
+    const pendingComment = comment.trim()
+    if (pendingComment) {
+      const saved = await onComment(pendingComment)
+      if (!saved) return
+      setComment('')
+    }
+    onDecision(decision, summary.trim())
+  }
 
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy) onClose()
     }}>
-      <section className="review-dialog review-action-dialog" role="dialog" aria-modal="true" aria-labelledby="review-action-title">
+      <section ref={dialogRef} tabIndex={-1} className="review-dialog review-action-dialog" role="dialog" aria-modal="true" aria-labelledby="review-action-title">
         <header>
           <div>
             <h2 id="review-action-title">Review revision</h2>
@@ -87,9 +98,9 @@ export function ReviewActionDialog({
                   <textarea value={summary} maxLength={4000} rows={4} disabled={busy} placeholder="Required for changes requested or rejection" onChange={(event) => setSummary(event.target.value)} />
                 </label>
                 <div className="decision-actions">
-                  <button className="decision-command approve" type="button" disabled={busy} onClick={() => onDecision('Approved', summary.trim())}><Check /> Approve</button>
-                  <button className="decision-command changes" type="button" disabled={busy || !summary.trim()} onClick={() => onDecision('Changes Requested', summary.trim())}><RotateCcw /> Request changes</button>
-                  <button className="decision-command reject" type="button" disabled={busy || !summary.trim()} onClick={() => onDecision('Rejected', summary.trim())}><XCircle /> Reject</button>
+                  <button className="decision-command approve" type="button" disabled={busy} onClick={() => void submitDecision('Approved')}><Check /> Approve</button>
+                  <button className="decision-command changes" type="button" disabled={busy || !summary.trim()} onClick={() => void submitDecision('Changes Requested')}><RotateCcw /> Request changes</button>
+                  <button className="decision-command reject" type="button" disabled={busy || !summary.trim()} onClick={() => void submitDecision('Rejected')}><XCircle /> Reject</button>
                 </div>
               </section>
             </>

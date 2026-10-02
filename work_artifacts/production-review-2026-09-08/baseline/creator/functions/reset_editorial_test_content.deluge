@@ -1,0 +1,59 @@
+map reset_editorial_test_content(string confirmation)
+{
+	result = Map();
+	result.put("ok",false);
+
+	confirmationText = ifnull(confirmation,"").trim();
+	if(confirmationText != "RESET TEST CONTENT")
+	{
+		result.put("message","Type RESET TEST CONTENT to confirm.");
+		return result;
+	}
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+	resetRole = Editorial_Role_Assignments[Employee == actor.ID && Active == true && (Editorial_Role == "CEO" || Editorial_Role == "Editorial Admin")];
+	if(resetRole.count() == 0)
+	{
+		result.put("message","Only a CEO or Editorial Admin can reset development test content.");
+		return result;
+	}
+
+	deletedArticles = Articles[ID != 0].count();
+	deletedRevisions = Article_Revisions[ID != 0].count();
+	deletedContributors = Article_Contributors[ID != 0].count();
+	deletedReviewAssignments = Review_Assignments[ID != 0].count();
+	deletedReviewComments = Review_Comments[ID != 0].count();
+	deletedPublicationJobs = Publication_Jobs[ID != 0].count();
+	deletedMediaAssets = Media_Assets[ID != 0].count();
+	deletedAuditEvents = Audit_Events[ID != 0].count();
+
+	delete from Review_Comments[ID != 0];
+	delete from Review_Assignments[ID != 0];
+	delete from Article_Contributors[ID != 0];
+	delete from Publication_Jobs[ID != 0];
+	delete from Article_Revisions[ID != 0];
+	delete from Articles[ID != 0];
+	delete from Media_Assets[ID != 0];
+	delete from Audit_Events[ID != 0];
+
+	result.put("ok",true);
+	result.put("message","Creator test content was reset. Policies, users, roles, categories, tags, and settings were kept.");
+	result.put("deletedArticles",deletedArticles);
+	result.put("deletedRevisions",deletedRevisions);
+	result.put("deletedContributors",deletedContributors);
+	result.put("deletedReviewAssignments",deletedReviewAssignments);
+	result.put("deletedReviewComments",deletedReviewComments);
+	result.put("deletedPublicationJobs",deletedPublicationJobs);
+	result.put("deletedMediaAssets",deletedMediaAssets);
+	result.put("deletedAuditEvents",deletedAuditEvents);
+	return result;
+}

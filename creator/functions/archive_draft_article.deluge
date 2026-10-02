@@ -1,0 +1,74 @@
+map archive_draft_article(int articleId)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	actorIsAdmin = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	if(actor.ID != article.Owner.ID && actor.ID != article.Primary_Author.ID && actorIsAdmin.count() == 0)
+	{
+		result.put("message","Only the article owner, primary author, or an Editorial Admin can move this draft to Trash.");
+		return result;
+	}
+	if(article.Workflow_State != "Draft" && article.Workflow_State != "Changes Requested")
+	{
+		result.put("message","Only a draft or changes-requested article can be moved to Trash.");
+		return result;
+	}
+	openAssignments = Review_Assignments[Article == article.ID && (Status == "Queued" || Status == "Assigned" || Status == "Claimed")];
+	if(openAssignments.count() > 0)
+	{
+		result.put("message","This article still has an open review assignment. Close or cancel it before moving the draft to Trash.");
+		return result;
+	}
+	openJobs = Publication_Jobs[Article == article.ID && (Status == "Queued" || Status == "Processing")];
+	if(openJobs.count() > 0)
+	{
+		result.put("message","This article has an active publication job and cannot be moved to Trash.");
+		return result;
+	}
+
+	previousState = article.Workflow_State;
+	article.Workflow_State = "Archived";
+	article.Archived_At = zoho.currenttime;
+
+	metadata = Map();
+	metadata.put("articleId",article.ID);
+	metadata.put("recoverable",true);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-ARCHIVE-" + article.ID + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Article"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "Draft Moved to Trash"
+		Actor_Employee = actor.ID
+		Previous_State = previousState
+		New_State = "Archived"
+		Event_Summary = actor.Display_Name + " moved the draft to recoverable Trash."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	result.put("ok",true);
+	result.put("message","Draft moved to Trash. Revisions and audit history were preserved.");
+	result.put("articleId",article.ID);
+	result.put("articleState",article.Workflow_State);
+	result.put("archivedAt",article.Archived_At);
+	return result;
+}

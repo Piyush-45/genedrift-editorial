@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genedrift — Hero, Orbit</title>
+  <meta charset="utf-8">
+  
+</head>
+<body style="margin:0">
+
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #5B3FD2; text-decoration: none; }
+    a:hover { color: #241653; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.03em; }
+
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 72%, 100% { opacity: .55; r: 4.6; } 82% { opacity: 1; r: 6.4; } }
+    @keyframes halo1 { 0% { r: 66; opacity: .5; } 100% { r: 132; opacity: 0; } }
+    @keyframes halo2 { 0% { r: 66; opacity: .4; } 100% { r: 176; opacity: 0; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+    .ring0 { transform-origin: 700px 560px; animation: spin 120s linear infinite normal; }
+.ring1 { transform-origin: 700px 560px; animation: spin 150s linear infinite reverse; }
+.ring2 { transform-origin: 700px 560px; animation: spin 130s linear infinite normal; }
+.ring3 { transform-origin: 700px 560px; animation: spin 170s linear infinite reverse; }
+.ring4 { transform-origin: 700px 560px; animation: spin 145s linear infinite normal; }
+.ring5 { transform-origin: 700px 560px; animation: spin 190s linear infinite reverse; }
+    .pulse { animation: pulse 6s ease-in-out infinite; }
+    .halo1 { animation: halo1 5s ease-out infinite; }
+    .halo2 { animation: halo2 5s ease-out .9s infinite; }
+    .rise { animation: rise .9s cubic-bezier(.2,.7,.3,1) both; }
+    .d1 { animation-delay: .05s } .d2 { animation-delay: .18s } .d3 { animation-delay: .31s }
+    .d4 { animation-delay: .44s } .d5 { animation-delay: .57s } .d6 { animation-delay: .70s }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse, .halo1, .halo2, .rise { animation: none; }
+    }
+  </style>
+
+
+<div style="width: 1440px; height: 940px; background: #241653; color: #FFFFFF; position: relative; overflow: hidden">
+
+  <div style="position: absolute; right: -340px; top: -20px; width: 1400px; height: 1120px; opacity: .95">
+    <svg viewBox="0 0 1400 1120" style="width:100%; height:100%; display:block; overflow:visible"><circle cx="700" cy="560" r="118" fill="none" stroke="rgba(150,122,255,0.16)" stroke-width="1.1"/><circle cx="700" cy="560" r="168" fill="none" stroke="rgba(150,122,255,0.20)" stroke-width="1.1"/><circle cx="700" cy="560" r="222" fill="none" stroke="rgba(150,122,255,0.23)" stroke-width="1.1"/><circle cx="700" cy="560" r="282" fill="none" stroke="rgba(150,122,255,0.27)" stroke-width="1.1"/><circle cx="700" cy="560" r="350" fill="none" stroke="rgba(150,122,255,0.30)" stroke-width="1.1"/><circle cx="700" cy="560" r="424" fill="none" stroke="rgba(150,122,255,0.34)" stroke-width="1.1"/><g class="ring0"><circle cx="818.0" cy="560.0" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.00s"/><circle cx="582.0" cy="560.0" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.37s"/></g><g class="ring1"><circle cx="863.7" cy="597.8" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.60s"/><circle cx="536.3" cy="522.2" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.97s"/></g><g class="ring2"><circle cx="899.5" cy="657.3" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.20s"/><circle cx="602.7" cy="759.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.57s"/><circle cx="500.5" cy="462.7" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.94s"/><circle cx="797.3" cy="360.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.31s"/></g><g class="ring3"><circle cx="919.2" cy="737.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.80s"/><circle cx="655.9" cy="838.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.17s"/><circle cx="436.7" cy="661.1" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.54s"/><circle cx="480.8" cy="382.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.91s"/><circle cx="744.1" cy="281.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:3.28s"/><circle cx="963.3" cy="458.9" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:3.65s"/></g><g class="ring4"><circle cx="915.5" cy="835.8" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.40s"/><circle cx="784.7" cy="899.6" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.77s"/><circle cx="639.2" cy="904.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.14s"/><circle cx="504.3" cy="850.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.51s"/><circle cx="403.2" cy="745.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.88s"/><circle cx="353.4" cy="608.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.25s"/><circle cx="363.6" cy="463.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.62s"/><circle cx="431.9" cy="335.0" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.99s"/><circle cx="546.6" cy="245.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.36s"/><circle cx="687.8" cy="210.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.73s"/><circle cx="831.1" cy="235.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.10s"/><circle cx="951.8" cy="316.9" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.47s"/><circle cx="1028.9" cy="440.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.84s"/><circle cx="1049.1" cy="584.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.21s"/><circle cx="1009.0" cy="724.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.58s"/></g><g class="ring5"><circle cx="879.2" cy="944.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.00s"/><circle cx="728.3" cy="983.1" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.37s"/><circle cx="573.5" cy="964.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.74s"/><circle cx="435.9" cy="891.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.11s"/><circle cx="333.9" cy="773.9" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.48s"/><circle cx="281.4" cy="627.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.85s"/><circle cx="285.4" cy="471.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.22s"/><circle cx="345.4" cy="327.6" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.59s"/><circle cx="453.3" cy="215.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.96s"/><circle cx="594.5" cy="149.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.33s"/><circle cx="749.9" cy="139.0" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.70s"/><circle cx="898.7" cy="185.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.07s"/><circle cx="1020.6" cy="282.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.44s"/><circle cx="1099.2" cy="417.0" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.81s"/><circle cx="1123.9" cy="570.9" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.18s"/><circle cx="1091.3" cy="723.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.55s"/><circle cx="1005.9" cy="853.6" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.92s"/></g><circle cx="700" cy="560" r="66" fill="#5B3FD2"/><circle cx="700" cy="560" r="66" fill="none" stroke="rgba(150,122,255,0.45)" stroke-width="1.1" class="halo1"/><circle cx="700" cy="560" r="66" fill="none" stroke="rgba(150,122,255,0.30)" stroke-width="1.1" class="halo2"/><g transform="translate(681,541)" stroke="#FFFFFF" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M8 3c0 8 22 8 22 15s-22 6-22 15"/><path d="M30 3c0 8-22 8-22 15s22 6 22 15"/><path d="M11.5 11.5h15M11.5 26.5h15"/></g></svg>
+  </div>
+
+  <div style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 26px 96px">
+    <span style="font-size: 22px; font-weight: 700; letter-spacing: -0.03em">genedrift</span>
+    <div style="display: flex; align-items: center; gap: 32px; font-size: 15px; font-weight: 500; color: #DCD6F5">
+      <span>Explore</span><span>Expertise</span><span>Markets</span><span>Knowledge Hub</span><span>Client Success</span><span>Company</span><span>Careers</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#DCD6F5" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+      <div style="background: #5B3FD2; color: #FFFFFF; font-size: 14.5px; font-weight: 600; padding: 11px 20px; border-radius: 8px">Speak to an Expert</div>
+    </div>
+  </div>
+
+  <div style="position: relative; padding: 96px 96px 0; max-width: 800px">
+    <div class="rise d1" style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A794FF">Global Regulatory Affairs &amp; Pharmacovigilance</div>
+    <h1 class="rise d2" style="margin-top: 24px; font-size: 76px; line-height: 1.0">One partner.<br>Forty-six<br>regulatory<br>systems.</h1>
+    <div class="rise d3" style="width: 88px; height: 2px; background: #7C63E8; margin-top: 36px"></div>
+    <p class="rise d4" style="margin-top: 30px; font-size: 19px; line-height: 1.6; color: #CFC8EC; max-width: 560px">
+      Every ring is a region we operate in. Every point on it is a market Genedrift has mapped — where we file, hold the licence, run pharmacovigilance, or are opening up next.
+    </p>
+    <div class="rise d5" style="display: flex; align-items: center; gap: 30px; margin-top: 40px">
+      <div style="background: #5B3FD2; color: #FFFFFF; font-size: 16px; font-weight: 600; padding: 16px 30px; border-radius: 9px">Speak to an Expert</div>
+      <div style="display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 600; color: #FFFFFF">
+        Explore the coverage map
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="rise d6" style="position: absolute; left: 96px; bottom: 44px; display: flex; align-items: flex-end; gap: 44px">
+    <div>
+      <div style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #9C92C9">Regions, inner to outer</div>
+      <div style="display: flex; gap: 26px; margin-top: 16px">
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">02</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Middle East</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">02</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">E. Europe</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">04</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">CIS</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">06</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Latin America</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">15</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Asia Pacific</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">17</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Africa</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

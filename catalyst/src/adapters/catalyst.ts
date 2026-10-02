@@ -364,8 +364,11 @@ export class CatalystPublicationStore implements PublicationStore {
   }
 
   async listPointers(): Promise<PublishedPointer[]> {
-    const rows = await this.app.zcql().executeZCQLQuery(`SELECT * FROM ${TABLES.pointers}`);
-    return unwrapRows(rows, TABLES.pointers).map(pointerFromRow);
+    const pointers: PublishedPointer[] = [];
+    for await (const row of this.table(TABLES.pointers).getIterableRows()) {
+      pointers.push(pointerFromRow(row));
+    }
+    return pointers;
   }
 
   async compareAndSwapPointer(expected: PublishedPointer | null, next: PublishedPointer): Promise<boolean> {
@@ -478,6 +481,14 @@ export class CatalystPublicationStore implements PublicationStore {
 
   async markCallbackDeadLetter(eventId: string, attemptCount: number, message: string): Promise<void> {
     await this.update(TABLES.callbacks, { Delivery_Status: "DeadLetter", Delivery_Attempt_Count: attemptCount, Next_Delivery_At: null, Last_Delivery_Error: message.slice(0, 9000) }, `Event_ID = ${sql(eventId)}`);
+  }
+
+  async reopenDeadLetterCallback(eventId: string): Promise<void> {
+    await this.update(
+      TABLES.callbacks,
+      { Delivery_Status: "Pending", Delivery_Attempt_Count: 0, Next_Delivery_At: null, Last_Delivery_Error: null },
+      `Event_ID = ${sql(eventId)} AND Delivery_Status = 'DeadLetter'`
+    );
   }
 }
 
@@ -603,6 +614,14 @@ const MAX_CRON_NAME_LENGTH = 30;
 const MAX_JOB_NAME_LENGTH = 20;
 const MIN_SCHEDULING_LEAD_MS = 120_000;
 
+function isAlreadyExistsError(error: unknown): boolean {
+  const record = error && typeof error === "object" ? error as Record<string, unknown> : {};
+  const status = Number(record.statusCode);
+  const code = String(record.code ?? "").toLowerCase();
+  const message = String(record.message ?? "").toLowerCase();
+  return status === 409 || code.includes("exist") || code.includes("duplicate") || message.includes("already exists") || message.includes("duplicate");
+}
+
 export class CatalystScheduler implements PublicationScheduler {
   constructor(
     private readonly app: CatalystApp,
@@ -631,11 +650,7 @@ export class CatalystScheduler implements PublicationScheduler {
       });
       return String(job.id ?? job.job_id ?? jobName);
     } catch (error) {
-      const record = error && typeof error === "object" ? error as Record<string, unknown> : {};
-      const status = Number(record.statusCode);
-      const code = String(record.code ?? "").toLowerCase();
-      const message = String(record.message ?? "").toLowerCase();
-      if (status === 409 || code.includes("exist") || code.includes("duplicate") || message.includes("already exists") || message.includes("duplicate")) {
+      if (isAlreadyExistsError(error)) {
         return jobName;
       }
       throw error;
@@ -700,6 +715,9 @@ export class CatalystScheduler implements PublicationScheduler {
       });
       return String(cron.id);
     } catch (error) {
+      if (isAlreadyExistsError(error)) {
+        return name;
+      }
       const existing = await this.findExistingLegacyCron(name).catch(() => null);
       if (existing) return existing;
       throw error;

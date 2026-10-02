@@ -1,0 +1,440 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genedrift — Homepage, mobile (Route B)</title>
+  <meta charset="utf-8">
+  
+</head>
+<body style="background:#E9E9E6; display:flex; justify-content:center; padding:36px 0">
+
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #F5F5F2; color: #0E1210;
+      font-family: "Schibsted Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -0.028em; }
+    a { color: #5B3FD2; text-decoration: none; }
+    a:hover { color: #0E1210; }
+    .lab { font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase; }
+    .hair { height: 1px; background: #E3E3DE; }
+    @keyframes marq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .marq { animation: marq 60s linear infinite; }
+    @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-34px,28px) scale(1.07); } }
+    @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(38px,-26px) scale(0.94); } }
+    @keyframes drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(16px,34px) scale(1.05); } }
+    @keyframes drift4 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-24px,-18px) scale(1.03); } }
+    @keyframes flute { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-16px); } }
+    @keyframes sheen { 0%,100% { opacity: .12; } 50% { opacity: .26; } }
+    @keyframes slidecycle {
+      0%   { opacity: 0; transform: translateY(14px); }
+      3%   { opacity: 1; transform: translateY(0); }
+      30%  { opacity: 1; transform: translateY(0); }
+      34%  { opacity: 0; transform: translateY(-14px); }
+      100% { opacity: 0; transform: translateY(-14px); }
+    }
+    @keyframes dotcycle {
+      0%,1%    { width: 6px;  background: #CFD2CE; }
+      4%,30%   { width: 20px; background: #5B3FD2; }
+      34%,100% { width: 6px;  background: #CFD2CE; }
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+    .b1 { animation: drift1 19s ease-in-out infinite; transform-origin: center; }
+    .b2 { animation: drift2 23s ease-in-out infinite; transform-origin: center; }
+    .b3 { animation: drift3 17s ease-in-out infinite; transform-origin: center; }
+    .b4 { animation: drift4 26s ease-in-out infinite; transform-origin: center; }
+    .flute { animation: flute 21s ease-in-out infinite; }
+    .sheen { animation: sheen 9s ease-in-out infinite; }
+    .slide { opacity: 0; animation: slidecycle 12s ease-in-out infinite backwards; }
+    .dot   { width: 6px; background: #CFD2CE; animation: dotcycle 12s ease-in-out infinite backwards; }
+    .s2 { animation-delay: 4s; } .s3 { animation-delay: 8s; }
+    .rise { animation: rise 1s cubic-bezier(.2,.7,.25,1) both; }
+    .bob { animation: bob 7s ease-in-out infinite; }
+    .d1{animation-delay:.06s}.d2{animation-delay:.18s}.d3{animation-delay:.30s}
+    .d4{animation-delay:.42s}.d5{animation-delay:.54s}.d6{animation-delay:.66s}
+    @media (prefers-reduced-motion: reduce) {
+      .b1,.b2,.b3,.b4,.flute,.sheen,.bob,.rise { animation: none; }
+      .slide { animation: none; opacity: 0; }
+      .slide.s1 { opacity: 1; }
+      .dot { animation: none; }
+    }
+
+  </style>
+
+
+<div style="box-shadow:0 24px 70px rgba(0,0,0,.16); border-radius:22px; overflow:hidden; width: 390px; background: #F5F5F2; color: #0E1210">
+
+  <!-- ============ NAV ============ -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px">
+    <div style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #E3E3DE; border-radius: 100px; padding: 7px 16px 7px 8px">
+      <span style="width: 24px; height: 24px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#EAF0EC" stroke-width="1.7" stroke-linecap="round"><path d="M6 3c0 5 12 5 12 9s-12 4-12 9"/><path d="M18 3c0 5-12 5-12 9s12 4 12 9"/></svg>
+      </span>
+      <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.03em">genedrift</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px">
+      <span style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #E3E3DE; display: flex; align-items: center; justify-content: center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A504D" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+      </span>
+      <span style="width: 44px; height: 44px; border-radius: 50%; background: #0E1210; display: flex; align-items: center; justify-content: center">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F5F5F2" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M5 16h14"/></svg>
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ HERO ============ -->
+  <div style="padding: 6px 16px 0">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <span style="display: block; width: 46px; height: 2px; background: #0E1210"></span>
+      <span class="lab" style="color: #4A504D">Regulatory Affairs &amp; PV</span>
+    </div>
+    <h1 style="margin-top: 18px; font-size: 34px; line-height: 1.04; letter-spacing: -0.04em">Approval in the markets others call too difficult</h1>
+    <p style="margin-top: 18px; font-size: 15.5px; line-height: 1.6; color: #6E7370">
+      Regulatory affairs, pharmacovigilance and MAH representation across 46 markets — delivered by our own people, on record with the authority.
+    </p>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px">
+      <div style="display: flex; align-items: center; gap: 10px; background: #0E1210; color: #F5F5F2; font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 15px 24px; border-radius: 100px">
+        Speak to an expert
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F5F5F2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </div>
+      <div class="bob" style="width: 56px; height: 56px; border-radius: 50%; border: 1px solid #E3E3DE; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ART PANEL ============ -->
+  <div style="padding: 24px 16px 0">
+    <div style="position: relative; height: 430px; border-radius: 18px; overflow: hidden; background: #DCE5DF">
+      <svg style="position: absolute; inset: 0; width: 100%; height: 100%" viewBox="0 0 358 430" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="26"/></filter>
+          <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+          <pattern id="fluteP" width="7" height="430" patternUnits="userSpaceOnUse">
+            <rect x="0" y="0" width="3.4" height="430" fill="#FFFFFF" opacity="0.30"/>
+            <rect x="3.4" y="0" width="2" height="430" fill="#0E241C" opacity="0.09"/>
+          </pattern>
+          <clipPath id="fluteClip"><rect x="104" y="62" width="150" height="306" rx="8"/></clipPath>
+        </defs>
+        <rect width="358" height="430" fill="#E4EBE6"/>
+        <g filter="url(#soft)">
+          <ellipse class="b1" cx="82" cy="128" rx="88" ry="98" fill="#7FA893"/>
+          <ellipse class="b2" cx="272" cy="100" rx="94" ry="86" fill="#B9CFC2"/>
+          <ellipse class="b3" cx="204" cy="336" rx="124" ry="104" fill="#5B3FD2"/>
+          <ellipse class="b4" cx="58" cy="322" rx="88" ry="84" fill="#3E6B57"/>
+          <ellipse class="b2" cx="308" cy="236" rx="70" ry="86" fill="#EFE7D8"/>
+          <ellipse class="b1" cx="180" cy="200" rx="76" ry="86" fill="#2E5A48"/>
+        </g>
+        <g clip-path="url(#fluteClip)">
+          <g class="flute"><rect x="88" y="62" width="182" height="306" fill="url(#fluteP)"/></g>
+          <rect class="sheen" x="104" y="62" width="150" height="306" fill="#FFFFFF"/>
+        </g>
+        <rect x="104" y="62" width="150" height="306" rx="8" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.45"/>
+        <rect width="358" height="430" filter="url(#grain)" opacity="0.15"/>
+      </svg>
+
+      <div style="position: absolute; left: 16px; right: 16px; top: 16px; background: rgba(14,36,28,0.34); border: 1px solid rgba(255,255,255,0.34); border-radius: 14px; padding: 15px 16px">
+        <div style="font-size: 15px; line-height: 1.35; font-weight: 500; color: #FFFFFF">A local qualified person on record in every market that requires one.</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px">
+          <span class="lab" style="color: rgba(255,255,255,0.9)">Regulatory lead</span>
+          <span style="width: 30px; height: 30px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <div style="position: absolute; left: 18px; right: 18px; bottom: 18px; display: flex; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; align-items: baseline; gap: 8px">
+          <span style="font-size: 32px; font-weight: 500; letter-spacing: -0.035em; color: #FFFFFF">30+</span>
+          <span style="font-size: 13px; color: rgba(255,255,255,0.82)">live</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px">
+          <span style="font-size: 32px; font-weight: 500; letter-spacing: -0.035em; color: #FFFFFF">20+</span>
+          <span style="font-size: 13px; color: rgba(255,255,255,0.82)">MAH</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CAROUSEL CARD ============ -->
+  <div style="padding: 12px 16px 0">
+    <div style="background: #FFFFFF; border-radius: 18px; padding: 20px 20px 18px; box-shadow: 0 18px 36px rgba(14,18,16,0.08), 0 2px 5px rgba(14,18,16,0.04)">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <span class="lab" style="color: #6E7370">Market status</span>
+        <div style="display: flex; align-items: center; gap: 6px">
+          <span style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #E3E3DE; display: flex; align-items: center; justify-content: center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8B908C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          </span>
+          <span style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #0E1210; display: flex; align-items: center; justify-content: center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </div>
+      </div>
+      <div style="position: relative; height: 158px; margin-top: 12px">
+        <div class="slide s1" style="position: absolute; inset: 0">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <span style="font-size: 22px; font-weight: 600; letter-spacing: -0.03em">Saudi Arabia</span><span class="lab" style="color: #8B908C">Middle East</span>
+          </div>
+          <div class="hair" style="margin-top: 12px"></div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 11px 0; align-items: center; padding-top: 12px; font-size: 14px">
+            <span style="color: #4A504D">Regulatory Affairs</span><span style="display:flex;align-items:center;gap:6px;color:#5B3FD2;font-weight:500"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+            <span style="color: #4A504D">MAH / Local Rep.</span><span style="display:flex;align-items:center;gap:6px;color:#5B3FD2;font-weight:500"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+            <span style="color: #4A504D">Pharmacovigilance</span><span style="display:flex;align-items:center;gap:6px;color:#5B3FD2;font-weight:500"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+          </div>
+        </div>
+        <div class="slide s2" style="position: absolute; inset: 0">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <span style="font-size: 22px; font-weight: 600; letter-spacing: -0.03em">Nigeria</span><span class="lab" style="color: #8B908C">Africa — West</span>
+          </div>
+          <div class="hair" style="margin-top: 12px"></div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 11px 0; align-items: center; padding-top: 12px; font-size: 14px">
+            <span style="color: #4A504D">Regulatory Affairs</span><span style="display:flex;align-items:center;gap:6px;color:#5B3FD2;font-weight:500"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+            <span style="color: #4A504D">MAH / Local Rep.</span><span style="display:flex;align-items:center;gap:6px;color:#5B3FD2;font-weight:500"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+            <span style="color: #4A504D">Pharmacovigilance</span><span style="display:flex;align-items:center;gap:6px;color:#5B3FD2;font-weight:500"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+          </div>
+        </div>
+        <div class="slide s3" style="position: absolute; inset: 0">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <span style="font-size: 22px; font-weight: 600; letter-spacing: -0.03em">Kazakhstan</span><span class="lab" style="color: #8B908C">CIS</span>
+          </div>
+          <div class="hair" style="margin-top: 12px"></div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 11px 0; align-items: center; padding-top: 12px; font-size: 14px">
+            <span style="color: #4A504D">Regulatory Affairs</span><span style="display:flex;align-items:center;gap:6px;color:#6E7370"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#8B908C" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#8B908C"/></svg>Upcoming</span>
+            <span style="color: #4A504D">MAH / Local Rep.</span><span style="display:flex;align-items:center;gap:6px;color:#6E7370"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#8B908C" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#8B908C"/></svg>Upcoming</span>
+            <span style="color: #4A504D">Pharmacovigilance</span><span style="display:flex;align-items:center;gap:6px;color:#6E7370"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#8B908C" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#8B908C"/></svg>Upcoming</span>
+          </div>
+        </div>
+      </div>
+      <div class="hair"></div>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 13px">
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="dot s1" style="height: 6px; border-radius: 100px; display: block"></span>
+          <span class="dot s2" style="height: 6px; border-radius: 100px; display: block"></span>
+          <span class="dot s3" style="height: 6px; border-radius: 100px; display: block"></span>
+          <span class="lab" style="margin-left: 8px; color: #8B908C">46 mapped</span>
+        </div>
+        <span style="font-size: 13.5px; font-weight: 500; color: #5B3FD2">Check yours →</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WHERE WE OPERATE ============ -->
+  <div style="padding: 30px 16px 0">
+    <div style="font-size: 22px; font-weight: 500; letter-spacing: -0.03em">Where we operate</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center">
+      <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 15px; font-size: 13.5px">Asia Pacific</span>
+      <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 15px; font-size: 13.5px">Africa</span>
+      <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 15px; font-size: 13.5px">Middle East</span>
+      <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 15px; font-size: 13.5px">CIS</span>
+      <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 15px; font-size: 13.5px">Eastern Europe</span>
+      <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 15px; font-size: 13.5px">Latin America</span>
+    </div>
+  </div>
+
+  <!-- ============ MARQUEE ============ -->
+  <div style="margin-top: 34px; border-top: 1px solid #E3E3DE; border-bottom: 1px solid #E3E3DE; overflow: hidden; padding: 13px 0">
+    <div class="marq lab" style="display: flex; gap: 20px; white-space: nowrap; width: max-content; color: #8B908C">
+      <span>India</span><span>·</span><span>Nigeria</span><span>·</span><span>Saudi Arabia</span><span>·</span><span>Vietnam</span><span>·</span><span>Kenya</span><span>·</span><span>Uzbekistan</span><span>·</span><span>Thailand</span><span>·</span><span>Ghana</span><span>·</span><span>Peru</span><span>·</span><span>Philippines</span><span>·</span><span>Tanzania</span><span>·</span><span>Kazakhstan</span><span>·</span><span>Indonesia</span><span>·</span><span>South Africa</span><span>·</span><span>Malaysia</span><span>·</span><span>Ethiopia</span><span>·</span><span>Chile</span><span>·</span><span>Singapore</span><span>·</span><span>Senegal</span><span>·</span><span>Sri Lanka</span><span>·</span><span>Uganda</span><span>·</span><span>Taiwan</span><span>·</span><span>Cameroon</span><span>·</span><span>Myanmar</span><span>·</span>
+      <span>India</span><span>·</span><span>Nigeria</span><span>·</span><span>Saudi Arabia</span><span>·</span><span>Vietnam</span><span>·</span><span>Kenya</span><span>·</span><span>Uzbekistan</span><span>·</span><span>Thailand</span><span>·</span><span>Ghana</span><span>·</span><span>Peru</span><span>·</span><span>Philippines</span><span>·</span><span>Tanzania</span><span>·</span><span>Kazakhstan</span><span>·</span><span>Indonesia</span><span>·</span><span>South Africa</span><span>·</span><span>Malaysia</span><span>·</span><span>Ethiopia</span><span>·</span><span>Chile</span><span>·</span><span>Singapore</span><span>·</span><span>Senegal</span><span>·</span><span>Sri Lanka</span><span>·</span><span>Uganda</span><span>·</span><span>Taiwan</span><span>·</span><span>Cameroon</span><span>·</span><span>Myanmar</span><span>·</span>
+    </div>
+  </div>
+
+  <!-- ============ VALUE ============ -->
+  <div style="padding: 40px 16px 0">
+    <h2 style="font-size: 23px; letter-spacing: -0.03em">Our value, your advantage</h2>
+    <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 24px">
+      <div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <div style="margin-top: 12px; font-size: 16px; font-weight: 600">Fully in-house delivery</div>
+        <p style="margin-top: 7px; font-size: 14.5px; line-height: 1.6; color: #6E7370">No subcontractors. The team that writes your dossier answers the authority's queries years later.</p>
+      </div>
+      <div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>
+        <div style="margin-top: 12px; font-size: 16px; font-weight: 600">Genuine local presence</div>
+        <p style="margin-top: 7px; font-size: 14.5px; line-height: 1.6; color: #6E7370">In-country specialists on record with the health authority, not a remote desk.</p>
+      </div>
+      <div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 7.5 3v6c0 4.4-3 7.6-7.5 9-4.5-1.4-7.5-4.6-7.5-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        <div style="margin-top: 12px; font-size: 16px; font-weight: 600">Audit-ready by default</div>
+        <p style="margin-top: 7px; font-size: 14.5px; line-height: 1.6; color: #6E7370">ISO 9001 and 27001 systems, GDPR and 21 CFR Part 11 controls, SOC 2 Type II infrastructure.</p>
+      </div>
+      <div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5M8 13.5h8M8 16.5h5"/></svg>
+        <div style="margin-top: 12px; font-size: 16px; font-weight: 600">Published, not implied</div>
+        <p style="margin-top: 7px; font-size: 14.5px; line-height: 1.6; color: #6E7370">Every market's RA, MAH and PV status is on the site — including where we are not there yet.</p>
+      </div>
+    </div>
+    <div class="hair" style="margin-top: 34px"></div>
+  </div>
+
+  <!-- ============ STATEMENT ============ -->
+  <div style="padding: 40px 16px 0">
+    <div class="lab" style="display: flex; align-items: center; gap: 9px; color: #6E7370">
+      <span style="width: 6px; height: 6px; background: #5B3FD2; display: block"></span>
+      Regulatory clarity becomes market access
+    </div>
+    <h2 style="margin-top: 20px; font-size: 28px; line-height: 1.28; letter-spacing: -0.03em">
+      <span>We do not sell hours. We take responsibility for an outcome —</span><span style="color: #B7BAB6"> a licence granted, a QPPV on record, a market opened — and stay accountable long after the approval letter arrives.</span>
+    </h2>
+  </div>
+
+  <!-- ============ SERVICES ============ -->
+  <div style="padding: 44px 16px 0">
+    <h2 style="font-size: 23px; letter-spacing: -0.03em">Services overview</h2>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px">
+      <div style="background: #EDEDE9; border-radius: 14px; padding: 22px">
+        <div style="font-size: 16.5px; font-weight: 600">Regulatory Affairs</div>
+        <p style="margin-top: 9px; font-size: 14.5px; line-height: 1.6; color: #6E7370">Strategy, dossier preparation, eCTD publishing, submissions, approvals, variations and renewals.</p>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 18px; font-size: 14px; font-weight: 500">Learn more <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+      <div style="background: #EDEDE9; border-radius: 14px; padding: 22px">
+        <div style="font-size: 16.5px; font-weight: 600">Pharmacovigilance</div>
+        <p style="margin-top: 9px; font-size: 14.5px; line-height: 1.6; color: #6E7370">Local QPPV and deputy cover, ICSR intake, aggregate reporting and inspection readiness.</p>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 18px; font-size: 14px; font-weight: 500">Learn more <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+      <div style="background: #EDEDE9; border-radius: 14px; padding: 22px">
+        <div style="font-size: 16.5px; font-weight: 600">MAH &amp; local representation</div>
+        <p style="margin-top: 9px; font-size: 14.5px; line-height: 1.6; color: #6E7370">Licence holding where you have no legal entity, with obligations managed on your behalf.</p>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 18px; font-size: 14px; font-weight: 500">Learn more <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #D6D8D4; border-radius: 100px; padding: 15px; font-size: 14.5px; font-weight: 500">
+        All six capabilities
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MARKETS ============ -->
+  <div style="padding: 44px 16px 0">
+    <div class="lab" style="color: #6E7370">Global footprint</div>
+    <h2 style="margin-top: 14px; font-size: 26px; line-height: 1.1">Forty-six markets, and exactly what we can do in each</h2>
+    <div style="border: 1px solid #E3E3DE; border-radius: 14px; margin-top: 22px; background: #FFFFFF; overflow: hidden">
+      <div style="padding: 20px 20px 18px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between">
+          <span style="font-size: 16px; font-weight: 600">Asia Pacific</span><span class="lab" style="color: #8B908C">15 markets</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 28px 28px 28px; gap: 0 8px; padding: 16px 0 9px" class="lab"><span style="color:#8B908C">Market</span><span style="text-align:center;color:#8B908C">RA</span><span style="text-align:center;color:#8B908C">MAH</span><span style="text-align:center;color:#8B908C">PV</span></div>
+        <div class="hair"></div>
+        <div style="display: grid; grid-template-columns: 1fr 28px 28px 28px; gap: 12px 8px; align-items: center; padding-top: 13px; font-size: 14.5px">
+          <span>India</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#5B3FD2">✓</span>
+          <span>Vietnam</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#5B3FD2">✓</span>
+          <span>Thailand</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#5B3FD2">✓</span>
+          <span>Indonesia</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#C3C7C3">✕</span><span style="text-align:center;color:#5B3FD2">✓</span>
+          <span>Pakistan</span><span style="text-align:center;color:#5B3FD2">✓</span><span style="text-align:center;color:#8B908C">◐</span><span style="text-align:center;color:#8B908C">◐</span>
+        </div>
+      </div>
+      <div style="border-top: 1px solid #E3E3DE; display: flex; align-items: center; justify-content: space-between; padding: 14px 20px" class="lab">
+        <span style="color: #4A504D"><span style="color:#5B3FD2">✓</span> Available &nbsp; <span style="color:#8B908C">◐</span> Upcoming &nbsp; <span style="color:#C3C7C3">✕</span> No</span>
+        <span style="color: #5B3FD2">All →</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CLIENT SUCCESS ============ -->
+  <div style="padding: 44px 16px 0">
+    <div class="lab" style="color: #6E7370">Client success</div>
+    <h2 style="margin-top: 14px; font-size: 26px; line-height: 1.1">Work our clients let us talk about</h2>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px">
+      <div style="background: #5B3FD2; color: #F1EEFC; border-radius: 14px; padding: 24px">
+        <div class="lab" style="color: #B7A9EE">Pharmacovigilance</div>
+        <div style="margin-top: 16px; font-size: 19px; font-weight: 600; line-height: 1.25; letter-spacing: -0.02em">Leading consumer healthcare company</div>
+        <div style="margin-top: 18px"><div class="lab" style="color: #B7A9EE">Impact</div>
+          <p style="margin-top: 8px; font-size: 14.5px; line-height: 1.6; color: rgba(240,243,241,0.82)">Local QPPV, Deputy QPPV and end-to-end pharmacovigilance delivered in-house across the local market.</p></div>
+        <div style="margin-top: 20px; border: 1px solid rgba(240,243,241,0.28); border-radius: 100px; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 500">Read the case study →</div>
+      </div>
+      <div style="background: #EDEDE9; border-radius: 14px; padding: 24px">
+        <div class="lab" style="color: #6E7370">Dedicated FTE · Lifecycle</div>
+        <div style="margin-top: 16px; font-size: 19px; font-weight: 600; line-height: 1.25; letter-spacing: -0.02em">Leading US regulatory consulting organization</div>
+        <div style="margin-top: 18px"><div class="lab" style="color: #6E7370">Impact</div>
+          <p style="margin-top: 8px; font-size: 14.5px; line-height: 1.6; color: #4A504D">Dedicated FTE supporting lifecycle management for 170+ products with hybrid onsite deployment.</p></div>
+        <div style="margin-top: 20px; border: 1px solid #D6D8D4; border-radius: 100px; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 500">Read the case study →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OPERATING MODEL ============ -->
+  <div style="padding: 44px 16px 0">
+    <div class="lab" style="color: #6E7370">Operating model</div>
+    <h2 style="margin-top: 14px; font-size: 26px; line-height: 1.1">Twelve stages. One team from filing to withdrawal.</h2>
+    <div style="border: 1px solid #E3E3DE; border-radius: 14px; margin-top: 22px; background: #FFFFFF; overflow: hidden">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr))">
+        <div style="border-right:1px solid #E3E3DE;border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">01</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Regulatory strategy</div></div>
+        <div style="border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">02</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Regulatory intelligence</div></div>
+        <div style="border-right:1px solid #E3E3DE;border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">03</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Classification &amp; gap analysis</div></div>
+        <div style="border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">04</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Dossier preparation</div></div>
+        <div style="border-right:1px solid #E3E3DE;border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">05</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">eCTD publishing</div></div>
+        <div style="border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">06</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Submission management</div></div>
+        <div style="border-right:1px solid #E3E3DE;border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">07</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Authority interaction</div></div>
+        <div style="border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">08</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Approval</div></div>
+        <div style="border-right:1px solid #E3E3DE;border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">09</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Lifecycle management</div></div>
+        <div style="border-bottom:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">10</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">MAH / local representation</div></div>
+        <div style="border-right:1px solid #E3E3DE;padding:18px"><span class="lab" style="color:#8B908C">11</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Pharmacovigilance</div></div>
+        <div style="padding:18px"><span class="lab" style="color:#8B908C">12</span><div style="margin-top:12px;font-size:14.5px;font-weight:600;line-height:1.3">Dedicated resource</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INSIGHTS ============ -->
+  <div style="padding: 44px 16px 0">
+    <div class="lab" style="color: #6E7370">Knowledge hub</div>
+    <h2 style="margin-top: 14px; font-size: 26px; line-height: 1.1">Regulatory change, explained</h2>
+    <div style="display: flex; flex-direction: column; gap: 22px; margin-top: 24px">
+      <div>
+        <div style="height: 190px; border-radius: 12px; background: #222825; position: relative; overflow: hidden">
+          <svg style="position:absolute; inset:0; width:100%; height:100%"><rect width="100%" height="100%" filter="url(#grain)" opacity="0.14"/></svg>
+          <span class="lab" style="position:absolute; left:14px; bottom:12px; color: rgba(245,245,242,0.5)">[ Image ]</span>
+        </div>
+        <div class="lab" style="margin-top: 14px; color: #5B3FD2">Regulatory update · [DATE]</div>
+        <div style="margin-top: 9px; font-size: 17px; font-weight: 600; line-height: 1.35">[AUTHORITY UPDATE HEADLINE]</div>
+      </div>
+      <div>
+        <div style="height: 190px; border-radius: 12px; background: #222825; position: relative; overflow: hidden">
+          <svg style="position:absolute; inset:0; width:100%; height:100%"><rect width="100%" height="100%" filter="url(#grain)" opacity="0.14"/></svg>
+          <span class="lab" style="position:absolute; left:14px; bottom:12px; color: rgba(245,245,242,0.5)">[ Image ]</span>
+        </div>
+        <div class="lab" style="margin-top: 14px; color: #5B3FD2">Country intelligence · [DATE]</div>
+        <div style="margin-top: 9px; font-size: 17px; font-weight: 600; line-height: 1.35">[COUNTRY INTELLIGENCE HEADLINE]</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CTA ============ -->
+  <div style="padding: 44px 16px 0">
+    <div style="background: #5B3FD2; color: #F1EEFC; border-radius: 18px; padding: 32px 24px 28px">
+      <div class="lab" style="color: #B7A9EE">Speak to an expert</div>
+      <h2 style="margin-top: 16px; font-size: 26px; line-height: 1.1; color: #F1EEFC">Tell us the product and the market. We'll map the pathway.</h2>
+      <p style="margin-top: 14px; font-size: 15px; line-height: 1.6; color: rgba(240,243,241,0.78)">A regional regulatory lead replies within two working days with an initial assessment — no obligation.</p>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 24px">
+        <div style="border: 1px solid rgba(240,243,241,0.28); border-radius: 100px; padding: 14px 20px; font-size: 15px; color: rgba(240,243,241,0.55)">Work email</div>
+        <div style="border: 1px solid rgba(240,243,241,0.28); border-radius: 100px; padding: 14px 20px; font-size: 15px; color: rgba(240,243,241,0.55)">Target market</div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 9px; background: #F5F5F2; color: #0E1210; font-size: 15px; font-weight: 500; padding: 15px; border-radius: 100px">
+          Request an assessment
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FOOTER ============ -->
+  <div style="padding: 44px 16px 26px">
+    <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.035em">genedrift<span style="color:#5B3FD2">.</span></span>
+    <p style="margin-top: 12px; font-size: 14.5px; line-height: 1.6; color: #6E7370">Invent. Reinvent.<br>cs@genedrift.com</p>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px; margin-top: 22px; font-size: 14.5px; color: #4A504D">
+      <span>Explore</span><span>Expertise</span><span>Markets</span><span>Knowledge Hub</span><span>Client Success</span><span>Company</span><span>Careers</span><span>Contact</span>
+    </div>
+    <div class="hair" style="margin-top: 26px"></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; padding-top: 16px" class="lab">
+      <span style="color: #4A504D">ISO 9001:2000</span><span style="color: #4A504D">ISO 27001:2022</span><span style="color: #4A504D">GDPR</span><span style="color: #4A504D">21 CFR Part 11</span><span style="color: #4A504D">SOC 2 Type II</span>
+    </div>
+    <div class="lab" style="margin-top: 16px; color: #8B908C">© 2026 Genedrift</div>
+  </div>
+
+</div>
+
+</body>
+</html>

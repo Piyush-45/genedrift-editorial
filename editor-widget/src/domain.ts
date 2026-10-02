@@ -9,7 +9,6 @@ export type LookupValue = {
 export type MediaMetadata = {
   altText: string
   caption: string
-  credit: string
 }
 
 export type MediaAsset = MediaMetadata & {
@@ -20,6 +19,9 @@ export type MediaAsset = MediaMetadata & {
   fileSizeBytes: number
   widthPixels: number
   heightPixels: number
+  // Retained only so existing Creator records and historical snapshots remain
+  // readable. Credit is no longer collected or rendered by the authoring UI.
+  credit: string
   status: 'Draft' | 'Processing' | 'Ready' | 'Failed' | 'Archived'
   previewUrl: string
 }
@@ -40,6 +42,23 @@ export type Article = {
   scheduledAt?: string
   firstPublishedAt?: string
   lastPublishedAt?: string
+  archivedAt?: string
+}
+
+export type ApprovalPolicyOption = LookupValue & {
+  description: string
+  requiredApprovals: number
+  isDefault: boolean
+}
+
+export type TaxonomyKind = 'category' | 'tag'
+
+export type TaxonomyTermResult = {
+  ok: boolean
+  message: string
+  kind: TaxonomyKind
+  term: LookupValue
+  created: boolean
 }
 
 export type ReviewerOption = {
@@ -118,6 +137,16 @@ export type ReviewContext = {
   canReview: boolean
 }
 
+export type ReviewFeedback = {
+  id: string
+  revisionId: string
+  reviewerName: string
+  status: ReviewAssignment['status']
+  decisionSummary: string
+  decidedAt: string
+  comments: ReviewComment[]
+}
+
 export type ReviewActionResult = {
   ok: boolean
   message: string
@@ -158,19 +187,25 @@ export type Revision = {
 export type WorkspaceData = {
   article: Article
   revision: Revision
+  previousRevision?: Revision
   eligibleReviewers: ReviewerOption[]
+  categories: LookupValue[]
+  tags: LookupValue[]
   review: ReviewContext
+  feedback: ReviewFeedback[]
+  auditEvents: AuditEvent[]
   source: 'creator' | 'mock'
 }
 
 export type DashboardData = {
+  warnings?: string[]
   currentEmployee?: CurrentEmployee
   articles: Article[]
   publicationJobs: PublicationJob[]
   assignments: ReviewAssignment[]
   auditEvents: AuditEvent[]
   categories: LookupValue[]
-  approvalPolicies: LookupValue[]
+  approvalPolicies: ApprovalPolicyOption[]
   source: 'creator' | 'mock'
 }
 
@@ -180,6 +215,7 @@ export type PublicationJob = {
   revisionId: string
   action: 'Publish' | 'Schedule' | 'Unpublish' | string
   status: 'Queued' | 'Processing' | 'Succeeded' | 'Failed' | 'Cancelled' | string
+  requestedBy?: LookupValue
   requestedAt: string
   nextRetryAt: string
   errorCode: string
@@ -224,6 +260,26 @@ export type RetractArticleResult = {
   articleState: string
 }
 
+export type ArticleLifecycleResult = {
+  ok: boolean
+  message: string
+  articleId: string
+  articleState: string
+  archivedAt?: string
+}
+
+export type WorkspaceResetResult = {
+  ok: boolean
+  message: string
+  deletedArticles: number
+  deletedRevisions: number
+  deletedReviewAssignments: number
+  deletedReviewComments: number
+  deletedPublicationJobs: number
+  deletedMediaAssets: number
+  deletedAuditEvents: number
+}
+
 export type SaveRevisionInput = Pick<
   Revision,
   | 'id'
@@ -240,6 +296,9 @@ export type SaveRevisionInput = Pick<
 > & {
   expectedChecksum: string
   expectedVersionToken: string
+  primaryCategoryId?: string
+  tagIds: string[]
+  saveTaxonomy: boolean
 }
 
 export interface EditorialRepository {
@@ -248,6 +307,7 @@ export interface EditorialRepository {
   resolveRevisionId(): Promise<string | undefined>
   loadDashboard(): Promise<DashboardData>
   createDraftArticle(input: ArticleDraftInput): Promise<ArticleDraftResult>
+  createTaxonomyTerm(kind: TaxonomyKind, name: string): Promise<TaxonomyTermResult>
   loadWorkspace(articleId: string, revisionId?: string): Promise<WorkspaceData>
   saveDraft(input: SaveRevisionInput): Promise<Revision>
   submitForReview(articleId: string, reviewerIds: string[]): Promise<SubmitForReviewResult>
@@ -257,6 +317,9 @@ export interface EditorialRepository {
   publishArticle(articleId: string): Promise<PublishArticleResult>
   scheduleArticle(articleId: string, scheduledAt: string): Promise<ScheduleArticleResult>
   retractArticle(articleId: string, reason: string, replacementPath: string): Promise<RetractArticleResult>
+  archiveDraftArticle(articleId: string): Promise<ArticleLifecycleResult>
+  restoreArchivedArticle(articleId: string): Promise<ArticleLifecycleResult>
+  resetTestContent(confirmation: string): Promise<WorkspaceResetResult>
   hydrateDocument(document: JSONContent): Promise<JSONContent>
   createImageAsset(file: File, metadata: MediaMetadata, uploadedById: string): Promise<MediaAsset>
   updateImageAsset(asset: MediaAsset, metadata: MediaMetadata): Promise<MediaAsset>

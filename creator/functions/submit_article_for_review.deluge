@@ -54,6 +54,11 @@ map submit_article_for_review(int articleId, string reviewerIdsCsv)
 		result.put("message","Article content must be saved before review.");
 		return result;
 	}
+	if(article.Primary_Category == null)
+	{
+		result.put("message","Choose a category before submitting for review.");
+		return result;
+	}
 
 	requiredApprovals = article.Approval_Policy.Required_Approval_Count;
 	if(article.Approval_Override_Count != null && article.Approval_Override_Count > 0)

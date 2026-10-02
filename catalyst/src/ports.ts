@@ -44,6 +44,7 @@ export interface PublicationStore {
   markCallbackDelivered(eventId: string): Promise<void>;
   markCallbackRetry(eventId: string, attemptCount: number, nextDeliveryAt: string, message: string): Promise<void>;
   markCallbackDeadLetter(eventId: string, attemptCount: number, message: string): Promise<void>;
+  reopenDeadLetterCallback(eventId: string): Promise<void>;
 }
 
 export interface ImmutableObjectStore {

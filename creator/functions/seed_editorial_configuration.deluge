@@ -121,6 +121,12 @@ if(standardPolicy.count() == 0)
 else
 {
 	standardPolicyId = standardPolicy.ID;
+	standardPolicy.Policy_Name = "Standard Review";
+	standardPolicy.Description = "One eligible reviewer approval is required.";
+	standardPolicy.Required_Approval_Count = 1;
+	standardPolicy.Require_Distinct_Reviewers = true;
+	standardPolicy.Active = true;
+	standardPolicy.Is_Default = true;
 }
 
 regulatedPolicy = Approval_Policies[Policy_Key == "REGULATED"];
@@ -136,6 +142,15 @@ if(regulatedPolicy.count() == 0)
 		Active = true
 		Is_Default = false
 	];
+}
+else
+{
+	regulatedPolicy.Policy_Name = "Regulated Review";
+	regulatedPolicy.Description = "Two distinct eligible reviewer approvals are required.";
+	regulatedPolicy.Required_Approval_Count = 2;
+	regulatedPolicy.Require_Distinct_Reviewers = true;
+	regulatedPolicy.Active = true;
+	regulatedPolicy.Is_Default = false;
 }
 
 categoriesWithoutPolicy = Categories[Default_Approval_Policy == null];

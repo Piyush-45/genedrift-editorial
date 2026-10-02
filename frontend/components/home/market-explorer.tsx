@@ -23,7 +23,7 @@ export function MarketExplorer() {
   return (
     <div className="market-explorer">
       <Tabs value={region} onValueChange={changeRegion}>
-        <TabsList className="market-region-tabs" aria-label="GeneDrift operating regions">
+        <TabsList className="market-region-tabs" aria-label="Genedrift operating regions">
           {regions.map((item, index) => <TabsTrigger key={item} value={item}><span>{String(index + 1).padStart(2, "0")}</span>{item}</TabsTrigger>)}
         </TabsList>
       </Tabs>

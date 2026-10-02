@@ -1,0 +1,31 @@
+map process_scheduled_publication(int articleId)
+{
+	result = Map();
+	result.put("ok",false);
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	approvedRevisionId = ifnull(article.Approved_Revision_ID,"").trim();
+	if(approvedRevisionId == "")
+	{
+		result.put("message","Article has no approved revision pointer.");
+		return result;
+	}
+	scheduleJob = Publication_Jobs[Article == article.ID && Revision == approvedRevisionId.toLong() && Action == "Schedule" && (Status == "Queued" || Status == "Processing")];
+	if(scheduleJob.count() == 0)
+	{
+		result.put("message","No open Catalyst schedule job exists for this article.");
+		return result;
+	}
+	if(scheduleJob.Status == "Processing")
+	{
+		result.put("ok",true);
+		result.put("message","Catalyst owns this scheduled publication and will run it at the stored time.");
+		result.put("jobId",scheduleJob.ID);
+		return result;
+	}
+	return thisapp.handoff_publication_to_catalyst(scheduleJob.ID);
+}

@@ -7,30 +7,33 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --import ./test/register.mjs --test test/*.test.mjs"
   },
   "dependencies": {
-    "@tiptap/core": "^3.30.2",
-    "@tiptap/extension-highlight": "latest",
-    "@tiptap/extension-link": "latest",
-    "@tiptap/extension-subscript": "latest",
-    "@tiptap/extension-superscript": "latest",
-    "@tiptap/extension-table": "latest",
-    "@tiptap/extension-text-align": "latest",
-    "@tiptap/extension-underline": "latest",
-    "@tiptap/pm": "latest",
-    "@tiptap/react": "latest",
-    "@tiptap/starter-kit": "latest",
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "@tiptap/core": "3.31.3",
+    "@tiptap/extension-highlight": "3.31.3",
+    "@tiptap/extension-link": "3.31.3",
+    "@tiptap/extension-subscript": "3.31.3",
+    "@tiptap/extension-superscript": "3.31.3",
+    "@tiptap/extension-table": "3.31.3",
+    "@tiptap/extension-text-align": "3.31.3",
+    "@tiptap/extension-underline": "3.31.3",
+    "@tiptap/pm": "3.31.3",
+    "@tiptap/react": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
+    "lucide-react": "1.33.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@vitejs/plugin-react": "latest",
-    "typescript": "latest",
-    "vite": "latest",
-    "zoho-extension-toolkit": "^1.0.28"
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.1.0",
+    "jsdom": "27.0.1",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "zoho-extension-toolkit": "1.0.28",
+    "rolldown": "1.2.5"
   }
 }

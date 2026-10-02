@@ -201,6 +201,15 @@ export class MemoryPublicationStore implements PublicationStore {
     event.lastDeliveryError = message;
   }
 
+  async reopenDeadLetterCallback(eventId: string): Promise<void> {
+    const event = this.requiredCallback(eventId);
+    if (event.deliveryStatus !== "DeadLetter") return;
+    event.deliveryStatus = "Pending";
+    event.deliveryAttemptCount = 0;
+    event.nextDeliveryAt = null;
+    event.lastDeliveryError = null;
+  }
+
   private requiredRequest(requestId: string): PublicationRequestRecord {
     const request = this.requests.get(requestId);
     if (!request) throw new Error(`Missing request ${requestId}`);

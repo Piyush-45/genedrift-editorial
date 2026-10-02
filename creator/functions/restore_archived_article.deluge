@@ -1,0 +1,78 @@
+map restore_archived_article(int articleId)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	actorIsAdmin = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	if(actor.ID != article.Owner.ID && actor.ID != article.Primary_Author.ID && actorIsAdmin.count() == 0)
+	{
+		result.put("message","Only the article owner, primary author, or an Editorial Admin can restore this draft.");
+		return result;
+	}
+	if(article.Workflow_State != "Archived")
+	{
+		result.put("message","Only an article in Trash can be restored.");
+		return result;
+	}
+
+	latestDraftId = 0;
+	latestDraftNumber = 0;
+	draftRevisions = Article_Revisions[Article == article.ID && Revision_State == "Draft"];
+	for each draftRevision in draftRevisions
+	{
+		if(draftRevision.Revision_Number != null && draftRevision.Revision_Number >= latestDraftNumber)
+		{
+			latestDraftNumber = draftRevision.Revision_Number;
+			latestDraftId = draftRevision.ID;
+		}
+	}
+	if(latestDraftId == 0)
+	{
+		result.put("message","This archived article has no editable draft revision to restore.");
+		return result;
+	}
+
+	article.Workflow_State = "Draft";
+	article.Active_Draft_Revision_ID = latestDraftId.toString();
+	article.Archived_At = null;
+
+	metadata = Map();
+	metadata.put("articleId",article.ID);
+	metadata.put("draftRevisionId",latestDraftId);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-RESTORE-" + article.ID + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Article"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "Draft Restored"
+		Actor_Employee = actor.ID
+		Previous_State = "Archived"
+		New_State = "Draft"
+		Event_Summary = actor.Display_Name + " restored draft revision " + latestDraftNumber + " from Trash."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	result.put("ok",true);
+	result.put("message","Draft restored from Trash.");
+	result.put("articleId",article.ID);
+	result.put("articleState",article.Workflow_State);
+	return result;
+}

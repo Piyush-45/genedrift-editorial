@@ -1,8 +1,11 @@
 # GeneDrift Frontend Hosting and Client Migration Guide
 
 Status: beginner-friendly operator guide for the current Development system.
-Production promotion is still blocked by the full Development matrix, fresh
-Creator DS export, and negative role tests.
+Production promotion is still blocked by fresh Creator DS export audit,
+duplicate/idempotency stress evidence, media-format validation,
+accessibility/public-site QA, measured scale evidence, and final secret rotation.
+
+Latest resume checkpoint: `docs/CURRENT_CHECKPOINT_2026-09-01.md`.
 
 ## 1. The simple mental model
 
@@ -132,6 +135,36 @@ The Catalyst API already returns true HTTP 410 for retracted slugs. The current
 Next.js page renders a safe `noindex` retraction notice but returns HTTP 200.
 Before public launch, add and verify a fast Vercel/Next.js proxy or hosting rule
 that returns page-level 410 without performing a slow full-content fetch.
+
+### D2. Current direct Vercel deployment checkpoint
+
+As of 2026-09-01, the current public website revamp is live on the existing
+Vercel project:
+
+- Project: `genedrift-vercel-preview-0.4`
+- Stable URL: `https://genedrift-vercel-preview-04.vercel.app`
+- Latest deployment: `dpl_2XJVNVS1f34WSebPsGs6RkW9o6fc`
+- Vercel account shown: `opensourceindia22-8134`
+- Account email shown: `opensourceindia22@gmail.com`
+- Team/workspace slug: `ztm2`
+- Team ID: `team_8OHZR3PCWIiPgfRTWDp7crr8`
+- Project ID: `prj_Nz73OBb1V6bZBIV6W6Qdjj2S2gpG`
+- Latest local frontend commits:
+  - `a55a727 Revamp GeneDrift public website frontend`
+  - `cdea0c0 Fix Vercel frontend deployment config`
+
+The project is currently **not connected to Git**. The latest deployment was a
+direct CLI deploy against the existing Vercel project IDs. A temporary one-hour
+project-scoped token was created for this deployment, used, revoked in Vercel,
+and removed from local temporary storage.
+
+Deployment note: `frontend/next.config.ts` must not set `output: "standalone"`
+for the current Vercel managed deployment. Vercel's Next.js build expects the
+standard output layout. Removing `standalone` fixed the Vercel build error:
+missing `.next/next-server.js.nft.json`.
+
+Recommended next cleanup: connect the project to the chosen Git repository so
+future commits can deploy predictably without manual tokens.
 
 ### E. Add the client's domain
 
@@ -347,6 +380,7 @@ date, and where the secret is securely stored.
 | Symptom | Check first |
 | --- | --- |
 | Vercel build fails | Root Directory is `frontend`; build log; Node/Next dependency install |
+| Vercel build fails with missing `.next/next-server.js.nft.json` | Remove `output: "standalone"` from `frontend/next.config.ts` for Vercel managed builds |
 | Website loads but has no articles | Vercel API base points to the correct AppSail environment; Catalyst list endpoint |
 | Old API/domain remains after an edit | Redeploy; Vercel variable changes do not change old deployments |
 | Creator says handoff rejected | Creator Catalyst URL/signing secret; AppSail logs; matching Catalyst environment |

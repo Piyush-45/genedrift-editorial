@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genedrift — Website Design Presentation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root { --ink:#16161A; --mut:#6B6B78; --line:#E4E4E9; --bg:#F6F6F4; --acc:#5B3FD2; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:Archivo,"Helvetica Neue",Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; text-decoration:none; }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 32px; }
+  .m { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11px; letter-spacing:.15em; text-transform:uppercase; }
+  h1,h2,h3 { margin:0; font-weight:600; letter-spacing:-0.03em; }
+  .hr { height:1px; background:var(--line); }
+
+  header { padding:34px 0 0; }
+  .top { display:flex; align-items:center; justify-content:space-between; padding-bottom:22px; }
+  .lede { padding:70px 0 64px; }
+  .lede h1 { font-size:56px; line-height:1.06; max-width:820px; }
+  .lede p { margin:22px 0 0; font-size:17px; line-height:1.65; color:var(--mut); max-width:620px; }
+
+  .sec { padding:64px 0 0; }
+  .sechead { display:flex; align-items:baseline; justify-content:space-between; gap:40px; padding-bottom:26px; }
+  .sechead h2 { font-size:30px; }
+  .sechead p { margin:0; font-size:15px; line-height:1.6; color:var(--mut); max-width:520px; }
+
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; padding-top:28px; }
+  .grid.three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .card { display:block; background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    transition:transform .25s ease, box-shadow .25s ease; }
+  .card:hover { transform:translateY(-3px); box-shadow:0 18px 40px rgba(22,22,26,.10); }
+  .card img { display:block; width:100%; aspect-ratio:16/10; object-fit:cover; object-position:top center; background:#EDEDF0; }
+  .meta { padding:18px 20px 20px; }
+  .meta .m { color:var(--acc); }
+  .meta h3 { margin-top:9px; font-size:19px; }
+  .meta p { margin:7px 0 0; font-size:14px; line-height:1.55; color:var(--mut); }
+  .tag { display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:13px; font-weight:500; }
+
+  .vid { padding-top:28px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }
+  video { width:100%; display:block; border:1px solid var(--line); border-radius:10px; background:#000; }
+  .vcap { margin-top:12px; }
+  .vcap .m { color:var(--mut); }
+  .vcap div + div { margin-top:6px; font-size:15px; font-weight:500; }
+
+  .notes { margin-top:26px; border:1px solid var(--line); border-radius:10px; background:#fff; padding:28px 30px; }
+  .notes h3 { font-size:18px; }
+  .notes ol { margin:16px 0 0; padding-left:20px; }
+  .notes li { font-size:15px; line-height:1.75; color:var(--mut); margin-bottom:8px; }
+  .notes li b { color:var(--ink); font-weight:600; }
+
+  footer { margin-top:88px; padding:28px 0 40px; }
+  .fr { display:flex; align-items:center; justify-content:space-between; padding-top:20px; color:var(--mut); }
+  @media (max-width:880px){ .grid,.grid.three,.vid{grid-template-columns:1fr} .lede h1{font-size:38px} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="top">
+      <span class="m">Genedrift · Website design</span>
+      <span class="m" style="color:var(--mut)">Presented by Piyush Tyagi · September 2026</span>
+    </div>
+    <div class="hr"></div>
+    <div class="lede">
+      <span class="m" style="color:var(--acc)">Design presentation</span>
+      <h1>Homepage design routes for the Genedrift website revamp.</h1>
+      <p>Two complete routes plus one concept study. Every screen below is a live page — open it in a browser and the
+      animations, maps and interactive states run exactly as they would on the finished site.</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="sec" style="padding-top:0">
+    <div class="hr"></div>
+    <div class="sechead" style="padding-top:26px">
+      <div><span class="m" style="color:var(--acc)">Approach</span><h2 style="margin-top:10px">How these three routes came about</h2></div>
+      <p>Three documents set the constraints: the LF20 Website Design Philosophy, the LF20 presentation itself, and the
+      Final Information Architecture, Sitemap &amp; Vendor Development Brief. Everything here is built from those.</p>
+    </div>
+
+    <p style="font-size:16px; line-height:1.7; color:var(--mut); max-width:760px; margin:0 0 6px">
+      All copy, figures and market data come from Genedrift's own material — the 1,000+ submissions, 500+ PV
+      deliverables and the capability matrix on page 12 of the LF20 deck. Nothing is invented, and anything still
+      missing is marked in brackets rather than filled with placeholder text.
+    </p>
+    <p style="font-size:16px; line-height:1.7; color:var(--mut); max-width:760px; margin:14px 0 0">
+      Rather than present one interpretation, I built three. Each answers a different question, and they are
+      deliberately not equivalent — one is the recommendation, one is a comparison, one is a demonstration.
+    </p>
+
+    <div class="grid three" style="padding-top:34px">
+      <div class="card" style="cursor:default">
+        <div class="meta" style="padding:26px 24px 26px">
+          <span class="m">Route A</span>
+          <h3 style="margin-top:10px">Does the brief work?</h3>
+          <p style="margin-top:12px">Built strictly to the LF20 philosophy — approved palette, neo-grotesque
+          typography, rounded card system, circular line icons, purple and grey map coding, large purple numerals on
+          lavender. All twenty non-negotiable vendor rules respected: no new colours, no gradients, no heavy shadows,
+          no mixed icon styles. Structure follows the thirteen homepage blocks the sitemap brief specifies.</p>
+          <p style="margin-top:12px"><b style="color:var(--ink)">This is the recommended route.</b></p>
+        </div>
+      </div>
+      <div class="card" style="cursor:default">
+        <div class="meta" style="padding:26px 24px 26px">
+          <span class="m">Route B</span>
+          <h3 style="margin-top:10px">What if the visual system were open?</h3>
+          <p style="margin-top:12px">A different register — neutral off-white, near-black and the Genedrift purple
+          accent, photography-led, hairline grids instead of cards. It positions Genedrift closer to a global
+          consulting or legal practice than to a pharma services vendor.</p>
+          <p style="margin-top:12px">It does <b style="color:var(--ink)">not</b> follow the LF20 palette and would
+          need approval as a design-system deviation under section 19. Content, sequence and information architecture
+          are identical to Route A, so the two can be judged on visual direction alone.</p>
+        </div>
+      </div>
+      <div class="card" style="cursor:default">
+        <div class="meta" style="padding:26px 24px 26px">
+          <span class="m">Concept study</span>
+          <h3 style="margin-top:10px">Where is the ceiling?</h3>
+          <p style="margin-top:12px">Not a proposal — a demonstration of what the brand could support if Genedrift
+          ever wanted a site that competes on craft. The idea comes from the name: genetic drift is what happens to a
+          population as it spreads into new territory, which is precisely the business.</p>
+          <p style="margin-top:12px">Included so the range of the identity is visible, and so the safer routes are
+          chosen deliberately rather than by default.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h3>A note on the three heroes in Route A</h3>
+      <p style="margin-top:12px; font-size:15px; line-height:1.75; color:var(--mut)">
+        The hero is the one place the LF20 philosophy allows real expression — section 6 permits abstract, geometric
+        and geographic graphics and the circular line motif as a signature device. Three treatments are shown because
+        each makes a different argument: <b style="color:var(--ink)">Orbit</b> turns the deck's own concentric line
+        motif into a diagram of the six regions and forty-six markets;
+        <b style="color:var(--ink)">Pathway</b> visualises the twelve-stage integrated service architecture as one
+        continuous line; <b style="color:var(--ink)">Regulatory Pulse</b> leads with geography, the strongest single
+        proof point. Any of the three can be swapped into the homepage without affecting another section.
+      </p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="hr"></div>
+    <div class="sechead" style="padding-top:26px">
+      <div>
+        <span class="m" style="color:var(--acc)">Route A</span>
+        <h2 style="margin-top:10px">The LF20 system</h2>
+      </div>
+      <p>Built strictly to the LF20 Website Design Philosophy — approved palette, typography, card system, iconography
+      and map treatment, following all twenty vendor rules and the thirteen required homepage blocks.</p>
+    </div>
+    <div class="grid">
+      <a class="card" href="01-route-a-homepage-desktop.html">
+        <img src="thumbs/01-route-a-homepage-desktop.jpg" alt="">
+        <div class="meta"><span class="m">Desktop 1440</span><h3>Homepage</h3>
+          <p>Full page, hero through footer, with the animated coverage map in Global Presence.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+      <a class="card" href="02-route-a-homepage-mobile.html">
+        <img src="thumbs/02-route-a-homepage-mobile.jpg" alt="">
+        <div class="meta"><span class="m">Mobile 390</span><h3>Homepage, mobile</h3>
+          <p>Recomposed for small screens rather than stacked desktop cards.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+    </div>
+
+    <div class="sechead" style="padding-top:52px">
+      <div><span class="m" style="color:var(--acc)">Route A</span><h2 style="margin-top:10px">Three hero treatments</h2></div>
+      <p>All three sit inside the LF20 rules and all stay fully legible without motion. Any one can be swapped into
+      the homepage without touching another section.</p>
+    </div>
+    <div class="grid three">
+      <a class="card" href="03-hero-orbit.html">
+        <img src="thumbs/03-hero-orbit.jpg" alt="">
+        <div class="meta"><span class="m">Hero A1</span><h3>Orbit</h3>
+          <p>The deck's concentric line motif becomes the diagram: six rings, forty-six market points.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+      <a class="card" href="04-hero-pathway.html">
+        <img src="thumbs/04-hero-pathway.jpg" alt="">
+        <div class="meta"><span class="m">Hero A2</span><h3>Pathway</h3>
+          <p>A single line draws itself through the six core stages, strategy to lifecycle.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+      <a class="card" href="05-hero-regulatory-pulse.html">
+        <img src="thumbs/05-hero-regulatory-pulse.jpg" alt="">
+        <div class="meta"><span class="m">Hero A3</span><h3>Regulatory Pulse</h3>
+          <p>A true world map that lights one operating region at a time, in step with the headline.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+    </div>
+  </div>
+
+
+
+  <div class="sec">
+    <div class="hr"></div>
+    <div class="sechead" style="padding-top:26px">
+      <div><span class="m" style="color:var(--acc)">Route B</span><h2 style="margin-top:10px">An alternative visual system</h2></div>
+      <p>Offered for comparison. It does not follow the LF20 palette and would need approval as a design-system
+      deviation. Content, sequence and information architecture are identical to Route A.</p>
+    </div>
+    <div class="grid three">
+      <a class="card" href="06-route-b-hero.html">
+        <img src="thumbs/06-route-b-hero.jpg" alt="">
+        <div class="meta"><span class="m">Hero</span><h3>Split hero</h3>
+          <p>Live art panel and a working three-market status carousel.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+      <a class="card" href="07-route-b-homepage-desktop.html">
+        <img src="thumbs/07-route-b-homepage-desktop.jpg" alt="">
+        <div class="meta"><span class="m">Desktop 1440</span><h3>Homepage</h3>
+          <p>Full page in the alternative system.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+      <a class="card" href="08-route-b-homepage-mobile.html">
+        <img src="thumbs/08-route-b-homepage-mobile.jpg" alt="">
+        <div class="meta"><span class="m">Mobile 390</span><h3>Homepage, mobile</h3>
+          <p>Recomposed for small screens.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="hr"></div>
+    <div class="sechead" style="padding-top:26px">
+      <div><span class="m" style="color:var(--acc)">Concept study</span><h2 style="margin-top:10px">Drift</h2></div>
+      <p>A more ambitious direction, shown to demonstrate range. One particle field runs the whole page and never
+      resets, drifting between the molecule, the world map and the coverage matrix — all three built from real data.</p>
+    </div>
+    <div class="grid">
+      <a class="card" href="09-concept-drift.html">
+        <img src="thumbs/09-concept-drift.jpg" alt="">
+        <div class="meta"><span class="m">Desktop 1440</span><h3>Concept homepage</h3>
+          <p>Watch the “Field state” readout at the lower right — the world map appears roughly nine seconds in.</p>
+          <span class="tag" style="color:var(--acc)">Open live page →</span></div>
+      </a>
+      <div class="notes" style="margin-top:0">
+        <h3>How to view these</h3>
+        <ol>
+          <li><b>Open any card above</b> — each is a real web page, not an image. Animations run on load.</li>
+          <li><b>View at full width.</b> The desktop pages are designed at 1440px; maximise the browser window.</li>
+          <li><b>Give the animated pages a moment.</b> The map on Hero A3 cycles through six regions over about
+          fifteen seconds; the concept page runs a thirty-second cycle.</li>
+          <li><b>Bracketed text</b> such as [DATE] marks content still to be supplied.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="hr"></div>
+    <div class="sechead" style="padding-top:26px">
+      <div><span class="m" style="color:var(--acc)">Motion</span><h2 style="margin-top:10px">Recorded walkthroughs</h2></div>
+      <p>Short captures of the animated sections, for sharing in a deck or on a call where the live pages are not to hand.</p>
+    </div>
+    <div class="vid">
+      <div>
+        <div class="vcap"><div class="m">Route A · Coverage tool</div><div>Search, filter, select, compare</div></div>
+      </div>
+      <div>
+        <video src="video/hero-regulatory-pulse.mp4" controls muted loop playsinline poster="thumbs/05-hero-regulatory-pulse.jpg"></video>
+        <div class="vcap"><div class="m">Route A · Hero A3</div><div>World map region sweep</div></div>
+      </div>
+      <div>
+        <video src="video/hero-route-b.mp4" controls muted loop playsinline poster="thumbs/06-route-b-hero.jpg"></video>
+        <div class="vcap"><div class="m">Route B · Hero</div><div>Art panel and market carousel</div></div>
+      </div>
+      <div>
+        <video src="video/concept-drift.mp4" controls muted loop playsinline poster="thumbs/09-concept-drift.jpg"></video>
+        <div class="vcap"><div class="m">Concept · Drift</div><div>Molecule → geography → evidence</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="hr"></div>
+    <div class="sechead" style="padding-top:26px">
+      <div><span class="m" style="color:var(--acc)">Next</span><h2 style="margin-top:10px">Decisions and outstanding items</h2></div>
+      <p>Three decisions unblock the build; the rest is content.</p>
+    </div>
+    <div class="notes" style="margin-top:0">
+      <h3>Decisions needed from this review</h3>
+      <ol>
+        <li><b>Route.</b> A or B. If B, it needs written approval as a design-system deviation.</li>
+        <li><b>Coverage tool.</b> Whether to publish market status openly, including markets where coverage is not yet available. The tool depends on it.</li>
+        <li><b>Hero treatment.</b> Orbit, Pathway or Regulatory Pulse. Orbit is currently built into the Route A homepage.</li>
+        <li><b>Photography.</b> Whether to commission a shoot. Route B depends on it; Route A does not.</li>
+      </ol>
+    </div>
+    <div class="notes">
+      <h3>Content still required</h3>
+      <ol>
+        <li><b>Registered address and telephone number</b> for the footer and contact page.</li>
+        <li><b>Knowledge Hub records</b> — featured article, latest regulatory updates, country intelligence,
+        whitepaper and market entry guide.</li>
+        <li><b>Market count confirmation.</b> The LF20 deck states 30+ markets supported; the page 12 capability
+        matrix lists 46 across APAC (15), Africa (17), CIS (4), Eastern Europe (2), Middle East (2) and Latin
+        America (6). These designs use “46 mapped, 30+ live”.</li>
+        <li><b>Regional positioning.</b> Latin America and Eastern Europe appear in the capability matrix but not in
+        the positioning line, which reads APAC, Africa, Middle East and CIS. Please confirm which is correct.</li>
+        <li><b>Photography direction</b>, if Route B is selected.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="hr"></div>
+    <div class="fr m">
+      <span>Genedrift website — design presentation</span>
+      <span>Piyush Tyagi · hello@piyushtyagi.work</span>
+      <span>Confidential</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

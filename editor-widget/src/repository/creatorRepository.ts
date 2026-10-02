@@ -3,6 +3,8 @@ import type {
   Article,
   ArticleDraftInput,
   ArticleDraftResult,
+  ArticleLifecycleResult,
+  ApprovalPolicyOption,
   AuditEvent,
   CurrentEmployee,
   DashboardData,
@@ -18,15 +20,20 @@ import type {
   ReviewAssignment,
   ReviewComment,
   ReviewContext,
+  ReviewFeedback,
   Revision,
   ScheduleArticleResult,
   SaveRevisionInput,
   SubmitForReviewResult,
+  TaxonomyKind,
+  TaxonomyTermResult,
   WorkspaceData,
+  WorkspaceResetResult,
 } from '../domain'
 import { EMPTY_DOCUMENT, documentText, errorMessage, makeOpaqueId, sha256, sha256Blob, slugify } from '../utils'
-import { collectMediaIds, canonicalizeMedia, hydrateMedia } from '../media'
+import { collectCreatorMediaRecordIds, collectMediaIds, canonicalizeMedia, hydrateMedia } from '../media'
 import { mediaDimensions } from '../media'
+import { creatorImageSource } from '../creatorImageSource'
 
 const REPORTS = {
   articles: 'Articles_Report',
@@ -35,6 +42,7 @@ const REPORTS = {
   employees: 'Demo_Employees_Report',
   approvalPolicies: 'Approval_Policies_Report',
   categories: 'Categories_Report',
+  tags: 'Tags_Report',
   editorialRoles: 'Editorial_Role_Assignments_Report',
   reviewAssignments: 'Review_Assignments_Report',
   reviewComments: 'Review_Comments_Report',
@@ -52,7 +60,14 @@ const ARTICLE_FIELDS = [
   'Article_UUID', 'Working_Title', 'Owner', 'Primary_Author', 'Primary_Category',
   'Tags', 'Approval_Policy', 'Workflow_State', 'Active_Draft_Revision_ID',
   'Approved_Revision_ID', 'Published_Revision_ID', 'Scheduled_At',
-  'First_Published_At', 'Last_Published_At',
+  'First_Published_At', 'Last_Published_At', 'Archived_At',
+].join(',')
+
+const REVISION_FIELDS = [
+  'Revision_UUID', 'Article', 'Revision_Number', 'Revision_State', 'Title', 'Slug',
+  'Excerpt', 'Editor_Document', 'Document_Checksum', 'Plain_Text_Extract',
+  'Featured_Media', 'SEO_Title', 'SEO_Description', 'Robots_Directive',
+  'Word_Count', 'Reading_Time_Minutes', 'Referenced_Media_UUIDs',
 ].join(',')
 
 const MEDIA_FIELDS = [
@@ -64,21 +79,55 @@ const MEDIA_FIELDS = [
 const EMPLOYEE_FIELDS = ['Display_Name', 'Work_Email', 'Creator_Username', 'Job_Title', 'Status'].join(',')
 const REVIEWER_ROLE_FIELDS = ['Employee', 'Expertise_Categories', 'Active'].join(',')
 const CATEGORY_FIELDS = ['Name', 'Active'].join(',')
-const APPROVAL_POLICY_FIELDS = ['Policy_Name', 'Active', 'Is_Default'].join(',')
+const TAG_FIELDS = ['Name', 'Active'].join(',')
+const APPROVAL_POLICY_FIELDS = ['Policy_Name', 'Description', 'Required_Approval_Count', 'Active', 'Is_Default'].join(',')
 const AUDIT_EVENT_FIELDS = [
   'Event_UUID', 'Entity_Type', 'Entity_UUID', 'Event_Type', 'Actor_Employee',
   'Previous_State', 'New_State', 'Event_Summary', 'Occurred_At',
 ].join(',')
 const PUBLICATION_JOB_FIELDS = [
-  'Article', 'Revision', 'Action', 'Status', 'Requested_At', 'Next_Retry_At', 'Error_Code',
+  'Article', 'Revision', 'Action', 'Status', 'Requested_By', 'Requested_At', 'Next_Retry_At', 'Error_Code',
 ].join(',')
 const VERIFY_DELAYS = [0, 500, 1_000, 2_000, 4_000, 8_000] as const
+const SAVE_PRECONDITION_DELAYS = [0, 250, 500, 1_000, 2_000, 4_000] as const
 const NO_RECORD_CODES = new Set([9220, 9280])
+const CREATOR_APP_SLUG = 'genedrift-editorial-platform'
+const CREATOR_WORKSPACE_NAME = 'piyugene02'
 
 function sdk(): ZohoCreatorSdk {
   const creator = window.ZOHO?.CREATOR
   if (!creator) throw new Error('Zoho Creator Widget SDK V2 is unavailable.')
   return creator
+}
+
+function creatorWorkspaceName() {
+  for (const candidate of [document.referrer, window.location.href]) {
+    try {
+      const url = new URL(candidate)
+      const segments = url.pathname.split('/').filter(Boolean)
+
+      if (segments[0] === 'preview') {
+        if (segments[1]) return segments[1]
+        continue
+      }
+
+      if (segments[0] === 'appbuilder') {
+        if (segments[1] && segments[2] === CREATOR_APP_SLUG) return segments[1]
+        continue
+      }
+
+      if (segments[1] === CREATOR_APP_SLUG) {
+        return segments[0]
+      }
+
+      if (segments[1] === 'environment' && segments.includes(CREATOR_APP_SLUG)) {
+        return segments[0]
+      }
+    } catch {
+      // Try the next possible Creator URL source.
+    }
+  }
+  return CREATOR_WORKSPACE_NAME
 }
 
 function assertSuccess<T>(response: ZohoResponse<T>, operation: string): T {
@@ -163,42 +212,54 @@ function urlValue(value: unknown): string {
   return ''
 }
 
-function creatorImageUrl(sourceUrl: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const image = new Image()
-    let settled = false
-    const finish = (result?: string) => {
-      if (settled) return
-      settled = true
-      window.clearTimeout(timeout)
-      if (result || image.src) resolve(result || image.src)
-      else reject(new Error('Creator returned an empty image response.'))
-    }
-    image.onload = () => finish()
-    image.onerror = () => {
-      if (settled) return
-      settled = true
-      window.clearTimeout(timeout)
-      reject(new Error('Creator could not render the stored image.'))
-    }
-    const timeout = window.setTimeout(() => {
-      if (settled) return
-      settled = true
-      reject(new Error('Creator image loading timed out.'))
-    }, 12_000)
-    sdk().UTIL.setImageData(image, sourceUrl, (response) => {
-      if (typeof response === 'string' && response.startsWith('data:image/')) finish(response)
-      else if (image.complete && image.naturalWidth > 0) finish()
-    })
-  })
-}
-
-function binaryImageUrl(content: unknown, mimeType: string): string {
+async function binaryImageUrl(content: unknown, mimeType: string, depth = 0): Promise<string> {
+  if (depth > 5) throw new Error('Creator returned an excessively nested image response.')
   if (content instanceof Blob) return URL.createObjectURL(content)
-  if (typeof content !== 'string') throw new Error('Creator returned an unsupported image response.')
-  if (content.startsWith('data:image/') || content.startsWith('http')) return content
-  const bytes = Uint8Array.from(content, (character) => character.charCodeAt(0) & 0xff)
-  return URL.createObjectURL(new Blob([bytes], { type: mimeType || 'application/octet-stream' }))
+  if (content instanceof ArrayBuffer) {
+    return URL.createObjectURL(new Blob([content], { type: mimeType || 'application/octet-stream' }))
+  }
+  if (ArrayBuffer.isView(content)) {
+    const source = new Uint8Array(content.buffer, content.byteOffset, content.byteLength)
+    const bytes = new Uint8Array(source.byteLength)
+    bytes.set(source)
+    return URL.createObjectURL(new Blob([bytes], { type: mimeType || 'application/octet-stream' }))
+  }
+  if (Array.isArray(content) && content.every((value) => typeof value === 'number')) {
+    return URL.createObjectURL(new Blob([Uint8Array.from(content)], { type: mimeType || 'application/octet-stream' }))
+  }
+  if (typeof content === 'string') {
+    if (content.startsWith('data:image/')) return content
+    if (
+      content.startsWith('/api/v2/')
+      || content.startsWith('/api/v2.1/')
+      || content.startsWith('/publishapi/v2/')
+      || /^https?:/i.test(content)
+    ) {
+      return creatorImageSource(content)
+    }
+    if (content.startsWith('blob:')) return content
+    const bytes = Uint8Array.from(content, (character) => character.charCodeAt(0) & 0xff)
+    return URL.createObjectURL(new Blob([bytes], { type: mimeType || 'application/octet-stream' }))
+  }
+  if (content && typeof content === 'object') {
+    const value = content as Record<string, unknown>
+    if (typeof value.responseText === 'string') {
+      return binaryImageUrl(value.responseText, mimeType, depth + 1)
+    }
+    for (const key of [
+      'response', 'data', 'body', 'content', 'result', 'payload', 'buffer', '_body',
+      'fileContent', 'filecontent', 'url', 'value', 'href', 'download_url',
+      'file_path', 'filepath', 'zc_display_value', 'display_value',
+    ]) {
+      if (value[key] == null || value[key] === content) continue
+      try {
+        return await binaryImageUrl(value[key], mimeType, depth + 1)
+      } catch {
+        // Try the next known Creator host-wrapper property.
+      }
+    }
+  }
+  throw new Error('Creator returned an unsupported image response.')
 }
 
 async function fileResponseText(response: unknown, depth = 0): Promise<string> {
@@ -275,6 +336,7 @@ function mapArticle(record: Record<string, unknown>): Article {
     scheduledAt: text(record.Scheduled_At) || undefined,
     firstPublishedAt: text(record.First_Published_At) || undefined,
     lastPublishedAt: text(record.Last_Published_At) || undefined,
+    archivedAt: text(record.Archived_At) || undefined,
   }
 }
 
@@ -285,6 +347,7 @@ function mapPublicationJob(record: Record<string, unknown>): PublicationJob {
     revisionId: lookup(record.Revision).ID,
     action: text(record.Action),
     status: text(record.Status),
+    requestedBy: record.Requested_By ? lookup(record.Requested_By) : undefined,
     requestedAt: text(record.Requested_At),
     nextRetryAt: text(record.Next_Retry_At),
     errorCode: text(record.Error_Code),
@@ -295,12 +358,22 @@ function mapCategory(record: Record<string, unknown>): LookupValue {
   return { ID: text(record.ID), zc_display_value: text(record.Name) }
 }
 
-function mapApprovalPolicy(record: Record<string, unknown>): LookupValue {
-  return { ID: text(record.ID), zc_display_value: text(record.Policy_Name) }
+function mapTag(record: Record<string, unknown>): LookupValue {
+  return { ID: text(record.ID), zc_display_value: text(record.Name) }
 }
 
-function revisionVersionToken(record: Record<string, unknown>): string {
-  return JSON.stringify({
+function mapApprovalPolicy(record: Record<string, unknown>): ApprovalPolicyOption {
+  return {
+    ID: text(record.ID),
+    zc_display_value: text(record.Policy_Name),
+    description: text(record.Description),
+    requiredApprovals: Number(record.Required_Approval_Count || 0),
+    isDefault: truthy(record.Is_Default),
+  }
+}
+
+function revisionVersionSnapshot(record: Record<string, unknown>) {
+  return {
     state: text(record.Revision_State),
     title: text(record.Title),
     slug: text(record.Slug),
@@ -313,7 +386,36 @@ function revisionVersionToken(record: Record<string, unknown>): string {
     checksum: text(record.Document_Checksum),
     featuredMediaId: record.Featured_Media ? lookup(record.Featured_Media).ID : '',
     referencedMediaUuids: text(record.Referenced_Media_UUIDs),
-  })
+  }
+}
+
+type RevisionVersionSnapshot = ReturnType<typeof revisionVersionSnapshot>
+
+function revisionVersionToken(record: Record<string, unknown>): string {
+  return JSON.stringify(revisionVersionSnapshot(record))
+}
+
+function parseRevisionVersionToken(token: string): RevisionVersionSnapshot | undefined {
+  try {
+    const value = JSON.parse(token) as Partial<RevisionVersionSnapshot>
+    if (!value || typeof value !== 'object') return undefined
+    return {
+      state: text(value.state),
+      title: text(value.title),
+      slug: text(value.slug),
+      excerpt: text(value.excerpt),
+      seoTitle: text(value.seoTitle),
+      seoDescription: text(value.seoDescription),
+      robotsDirective: text(value.robotsDirective),
+      wordCount: Number(value.wordCount || 0),
+      readingTimeMinutes: Number(value.readingTimeMinutes || 0),
+      checksum: text(value.checksum),
+      featuredMediaId: text(value.featuredMediaId),
+      referencedMediaUuids: text(value.referencedMediaUuids),
+    }
+  } catch {
+    return undefined
+  }
 }
 
 function mapRevision(record: Record<string, unknown>, document: JSONContent): Revision {
@@ -343,19 +445,27 @@ async function mapMediaAsset(record: Record<string, unknown>): Promise<MediaAsse
   let previewUrl = urlValue(record.Published_URL)
   if (record.Draft_File) {
     const sourceUrl = urlValue(record.Draft_File)
-    if (sourceUrl) previewUrl = await creatorImageUrl(sourceUrl).catch(() => '')
-    if (!previewUrl) {
-      const response = await sdk().FILE.readFile({
-        report_name: REPORTS.media,
-        id: text(record.ID),
-        field_name: 'Draft_File',
-      })
-      previewUrl = binaryImageUrl(response, text(record.MIME_Type))
+    // Keep the protected Creator reference—not its temporary resolved URL—so
+    // the SDK can populate the actual cover/editor image element after every
+    // render and reload.
+    if (sourceUrl) {
+      previewUrl = creatorImageSource(sourceUrl)
+    } else {
+      try {
+        const response = await sdk().FILE.readFile({
+          report_name: REPORTS.media,
+          id: text(record.ID),
+          field_name: 'Draft_File',
+        })
+        previewUrl = await binaryImageUrl(response, text(record.MIME_Type))
+      } catch {
+        // Retain a published preview when Creator exposes no readable draft source.
+      }
     }
   }
   let widthPixels = Number(record.Width_Pixels || 0)
   let heightPixels = Number(record.Height_Pixels || 0)
-  if (previewUrl && (!widthPixels || !heightPixels)) {
+  if (previewUrl && !previewUrl.startsWith('genedrift-creator-image:') && (!widthPixels || !heightPixels)) {
     const dimensions = await imageDimensionsFromUrl(previewUrl)
     widthPixels ||= dimensions.width
     heightPixels ||= dimensions.height
@@ -376,22 +486,96 @@ async function mapMediaAsset(record: Record<string, unknown>): Promise<MediaAsse
   }
 }
 
-async function getMediaAsset(id: string): Promise<MediaAsset> {
+async function getMediaAsset(reference: string): Promise<MediaAsset> {
+  if (/^\d+$/.test(reference)) {
+    const response = await sdk().DATA.getRecordById({
+      report_name: REPORTS.media,
+      id: reference,
+      field_config: 'custom',
+      fields: MEDIA_FIELDS,
+    })
+    return mapMediaAsset(assertSuccess(response, 'Load media asset'))
+  }
+  if (!/^MED-[A-Za-z0-9-]{8,64}$/.test(reference)) {
+    throw new Error(`Media reference ${reference} is invalid.`)
+  }
+  const records = await getRecordsOrEmpty({
+    report_name: REPORTS.media,
+    criteria: `Media_UUID == "${reference}"`,
+    field_config: 'custom',
+    fields: MEDIA_FIELDS,
+    max_records: 1,
+  }, 'Load media asset by UUID')
+  if (!records[0]) throw new Error(`Media asset ${reference} was not found.`)
+  const recordId = text(records[0].ID)
+  if (!recordId) throw new Error(`Media asset ${reference} has no Creator record ID.`)
+  // Creator's list response can expose a display-only Draft_File value. Inline
+  // media starts from a portable MED-* UUID, so normalize it through the same
+  // by-ID response used by featured media before resolving the protected file.
   const response = await sdk().DATA.getRecordById({
     report_name: REPORTS.media,
-    id,
+    id: recordId,
     field_config: 'custom',
     fields: MEDIA_FIELDS,
   })
-  return mapMediaAsset(assertSuccess(response, 'Load media asset'))
+  return mapMediaAsset(assertSuccess(response, 'Load media asset record by UUID'))
+}
+
+async function saveMediaMetadata(mediaId: string, metadata: MediaMetadata) {
+  const expectedAltText = metadata.altText.trim()
+  const expectedCaption = metadata.caption.trim()
+  const response = await creatorCall('Update image details', sdk().DATA.invokeCustomApi({
+    api_name: 'update_media_metadata',
+    workspace_name: creatorWorkspaceName(),
+    http_method: 'POST',
+    content_type: 'application/json',
+    payload: {
+      mediaId,
+      altText: expectedAltText,
+      caption: expectedCaption,
+    },
+  }))
+  const result = customApiValue(response, 'Update image details')
+  const returnedAltText = text(result.altText)
+  const returnedCaption = text(result.caption)
+  if (returnedAltText !== expectedAltText || returnedCaption !== expectedCaption) {
+    throw new Error('Creator did not return the saved image details. Please retry after the media metadata function is updated.')
+  }
+
+  let verified = false
+  let verifyError: unknown
+  for (const retryDelay of VERIFY_DELAYS) {
+    if (retryDelay > 0) await delay(retryDelay)
+    try {
+      const verifyResponse = await sdk().DATA.getRecordById({
+        report_name: REPORTS.media,
+        id: mediaId,
+        field_config: 'custom',
+        fields: 'Alt_Text,Caption',
+      })
+      const record = assertSuccess(verifyResponse, 'Verify image details')
+      if (text(record.Alt_Text) === expectedAltText && text(record.Caption) === expectedCaption) {
+        verified = true
+        break
+      }
+    } catch (error) {
+      verifyError = error
+    }
+  }
+  if (!verified) {
+    throw new Error(errorMessage(verifyError, 'Creator did not verify the saved image details. Please retry after the media metadata report permissions are updated.'))
+  }
+  return result
 }
 
 async function readDocument(record: Record<string, unknown>): Promise<JSONContent> {
   const documentReference = record.Editor_Document
   const hasDocumentReference = Object.prototype.hasOwnProperty.call(record, 'Editor_Document')
-  if (hasDocumentReference && (documentReference == null || (typeof documentReference === 'string' && documentReference.trim() === ''))) {
+  const expectsDocument = Boolean(text(record.Document_Checksum) || documentReference)
+  if (!expectsDocument && hasDocumentReference && (documentReference == null || (typeof documentReference === 'string' && documentReference.trim() === ''))) {
     return EMPTY_DOCUMENT
   }
+  // An omitted report field is not proof that the saved body is empty.
   try {
     const response = await creatorCall('Read editor document', sdk().FILE.readFile({
       report_name: REPORTS.revisions,
@@ -399,7 +583,10 @@ async function readDocument(record: Record<string, unknown>): Promise<JSONConten
       field_name: 'Editor_Document',
     }))
     const responseCode = creatorErrorCode(response)
-    if (responseCode === 3730) return EMPTY_DOCUMENT
+    if (responseCode === 3730) {
+      if (expectsDocument) throw new Error('The saved editor document is missing or unavailable. Restore access to the file before editing this revision.')
+      return EMPTY_DOCUMENT
+    }
     if (responseCode != null && responseCode !== 3000) {
       const errorResponse = response as Record<string, unknown>
       throw Object.assign(
@@ -415,7 +602,7 @@ async function readDocument(record: Record<string, unknown>): Promise<JSONConten
     if (!parsedRawDocument) throw new Error('The editor document does not contain a valid document root.')
     return parsedRawDocument
   } catch (error) {
-    if (creatorErrorCode(error) === 3730) return EMPTY_DOCUMENT
+    if (creatorErrorCode(error) === 3730 && !expectsDocument) return EMPTY_DOCUMENT
     throw new Error(errorMessage(error, 'The saved editor document could not be read.'))
   }
 }
@@ -424,9 +611,98 @@ async function getRevisionById(id: string): Promise<Record<string, unknown>> {
   const response = await creatorCall('Load revision record', sdk().DATA.getRecordById({
     report_name: REPORTS.revisions,
     id,
-    field_config: 'all',
+    field_config: 'custom',
+    fields: REVISION_FIELDS,
   }))
   return assertSuccess(response, 'Load revision')
+}
+
+async function getRevisionAtExpectedVersion(
+  id: string,
+  expectedChecksum: string,
+  expectedVersionToken: string,
+): Promise<Record<string, unknown>> {
+  let record: Record<string, unknown> | undefined
+  for (const retryDelay of SAVE_PRECONDITION_DELAYS) {
+    if (retryDelay > 0) await delay(retryDelay)
+    record = await getRevisionById(id)
+    if (text(record.Revision_State) !== 'Draft') {
+      throw new Error('This revision is no longer editable. Reload the workspace to see its current state.')
+    }
+    if (
+      text(record.Document_Checksum) === expectedChecksum
+      && revisionVersionToken(record) === expectedVersionToken
+    ) {
+      return record
+    }
+  }
+  if (text(record?.Document_Checksum) !== expectedChecksum) {
+    throw new Error('This draft changed in another tab or session. Reload before continuing so newer work is not overwritten.')
+  }
+  throw new Error('This draft metadata changed in another tab or session. Reload before continuing so newer work is not overwritten.')
+}
+
+const MERGEABLE_METADATA_FIELDS = [
+  'title', 'slug', 'excerpt', 'seoTitle', 'seoDescription', 'robotsDirective',
+  'wordCount', 'readingTimeMinutes', 'featuredMediaId',
+] as const satisfies ReadonlyArray<keyof RevisionVersionSnapshot>
+
+const METADATA_FIELD_LABELS: Record<(typeof MERGEABLE_METADATA_FIELDS)[number], string> = {
+  title: 'title',
+  slug: 'slug',
+  excerpt: 'excerpt',
+  seoTitle: 'SEO title',
+  seoDescription: 'SEO description',
+  robotsDirective: 'robots directive',
+  wordCount: 'word count',
+  readingTimeMinutes: 'reading time',
+  featuredMediaId: 'cover image',
+}
+
+async function resolveRevisionSaveBase(
+  id: string,
+  expectedChecksum: string,
+  expectedVersionToken: string,
+  local: RevisionVersionSnapshot,
+): Promise<{ record: Record<string, unknown>; effective: RevisionVersionSnapshot }> {
+  let record: Record<string, unknown> | undefined
+  for (const retryDelay of SAVE_PRECONDITION_DELAYS) {
+    if (retryDelay > 0) await delay(retryDelay)
+    record = await getRevisionById(id)
+    if (text(record.Revision_State) !== 'Draft') {
+      throw new Error('This revision is no longer editable. Reload the workspace to see its current state.')
+    }
+    if (text(record.Document_Checksum) === expectedChecksum && revisionVersionToken(record) === expectedVersionToken) {
+      return { record, effective: local }
+    }
+  }
+
+  if (!record || text(record.Document_Checksum) !== expectedChecksum) {
+    throw new Error('This draft body changed in another tab or session. Reload before continuing so newer work is not overwritten.')
+  }
+
+  const base = parseRevisionVersionToken(expectedVersionToken)
+  const server = revisionVersionSnapshot(record)
+  if (!base || server.referencedMediaUuids !== base.referencedMediaUuids) {
+    throw new Error('This draft media changed in another tab or session. Reload before continuing so newer work is not overwritten.')
+  }
+
+  const conflicts = MERGEABLE_METADATA_FIELDS.filter((field) => (
+    server[field] !== base[field]
+    && local[field] !== base[field]
+    && local[field] !== server[field]
+  ))
+  if (conflicts.length > 0) {
+    throw new Error(`This draft changed elsewhere in: ${conflicts.map((field) => METADATA_FIELD_LABELS[field]).join(', ')}. Reload before continuing so newer work is not overwritten.`)
+  }
+
+  const effective = { ...local }
+  for (const field of MERGEABLE_METADATA_FIELDS) {
+    if (server[field] !== base[field] && local[field] === base[field]) {
+      ;(effective[field] as string | number) = server[field]
+    }
+  }
+  return { record, effective }
 }
 
 async function findFirstRevision(articleId: string): Promise<Record<string, unknown> | undefined> {
@@ -444,8 +720,7 @@ async function findFirstRevision(articleId: string): Promise<Record<string, unkn
     throw new Error(`Find initial revision: ${errorMessage(error, 'Creator request rejected.')}`)
   }
   if (NO_RECORD_CODES.has(Number(response.code))) return undefined
-  if (Number(response.code) !== 3000) return undefined
-  return response.data[0]
+  return assertSuccess(response, 'Find initial revision')[0]
 }
 
 async function findLatestRevisionByState(articleId: string, state: Revision['state']): Promise<Record<string, unknown> | undefined> {
@@ -459,13 +734,36 @@ async function findLatestRevisionByState(articleId: string, state: Revision['sta
     .sort((a, b) => Number(b.Revision_Number || 0) - Number(a.Revision_Number || 0))[0]
 }
 
+async function findRevisionByNumber(articleId: string, revisionNumber: number): Promise<Record<string, unknown> | undefined> {
+  const records = await getRecordsOrEmpty({
+    report_name: REPORTS.revisions,
+    criteria: `Article == ${articleId} && Revision_Number == ${revisionNumber}`,
+    field_config: 'all',
+    max_records: 200,
+  }, `Find revision ${revisionNumber}`)
+  return records[0]
+}
+
 async function getRecordsOrEmpty(config: ZohoCreatorConfig, operation: string): Promise<Record<string, unknown>[]> {
+  const records = new Map<string, Record<string, unknown>>()
+  const cursors = new Set<string>()
+  let cursor: string | undefined
   try {
-    const response = await creatorCall(operation, sdk().DATA.getRecords(config))
-    if (NO_RECORD_CODES.has(Number(response.code))) return []
-    return assertSuccess(response, operation)
+    do {
+      const response = await creatorCall(operation, sdk().DATA.getRecords({
+        ...config, max_records: 1000, ...(cursor ? { record_cursor: cursor } : {}),
+      }))
+      if (NO_RECORD_CODES.has(Number(response.code))) break
+      const page = assertSuccess(response, operation)
+      for (const record of page) records.set(text(record.ID), record)
+      cursor = response.record_cursor || undefined
+      if (cursor && cursors.has(cursor)) throw new Error(`${operation}: Creator repeated a page cursor. Refresh before relying on these results.`)
+      if (cursor) cursors.add(cursor)
+      if (cursors.size > 100) throw new Error(`${operation}: this report needs a filtered server-side view before it can be loaded completely.`)
+    } while (cursor)
+    return [...records.values()]
   } catch (error) {
-    if (isNoRecordsError(error)) return []
+    if (isNoRecordsError(error)) return [...records.values()]
     throw error
   }
 }
@@ -614,6 +912,34 @@ function retractArticleResult(response: ZohoCustomApiResponse): RetractArticleRe
   }
 }
 
+function taxonomyTermResult(response: ZohoCustomApiResponse): TaxonomyTermResult {
+  const result = customApiValue(response, 'Create taxonomy term')
+  const kind = text(result.kind).toLowerCase()
+  if (kind !== 'category' && kind !== 'tag') throw new Error('Creator returned an invalid taxonomy type.')
+  const id = text(result.termId)
+  const name = text(result.name)
+  if (!id || !name) throw new Error('Creator did not return the created taxonomy term.')
+  return {
+    ok: true,
+    message: text(result.message),
+    kind,
+    term: { ID: id, zc_display_value: name },
+    created: truthy(result.created),
+  }
+}
+
+function articleLifecycleResult(response: ZohoCustomApiResponse, operation: string): ArticleLifecycleResult {
+  const result = customApiValue(response, operation)
+  return {
+    ok: true,
+    message: text(result.message),
+    articleId: text(result.articleId),
+    articleState: text(result.articleState),
+    archivedAt: text(result.archivedAt) || undefined,
+  }
+}
+
+
 function mapReviewAssignment(record: Record<string, unknown>): ReviewAssignment {
   const article = lookup(record.Article)
   const revision = lookup(record.Revision)
@@ -687,6 +1013,7 @@ function mapAuditEvent(record: Record<string, unknown>): AuditEvent {
 async function loadCurrentEmployee(): Promise<CurrentEmployee | undefined> {
   const init: Record<string, unknown> = await sdk().UTIL.getInitParams().catch(() => ({}))
   const loginEmail = text(init['loginUser']).trim().toLowerCase()
+  if (!loginEmail) throw new Error('Your Creator login could not be verified. Reload the application and sign in again.')
   const employees = await getRecordsOrEmpty({
     report_name: REPORTS.employees,
     criteria: 'Status == "Active"',
@@ -698,7 +1025,7 @@ async function loadCurrentEmployee(): Promise<CurrentEmployee | undefined> {
     text(record.Work_Email).trim().toLowerCase() === loginEmail
     || text(record.Creator_Username).trim().toLowerCase() === loginEmail
   ))
-  if (!employee) return undefined
+  if (!employee) throw new Error('Your Creator login is not mapped to an active editorial employee. Ask an administrator to check your access.')
   const roleAssignments = await getRecordsOrEmpty({
     report_name: REPORTS.editorialRoles,
     criteria: `Employee == ${text(employee.ID)} && Active == true`,
@@ -746,6 +1073,38 @@ async function loadReviewContext(article: Article, revision: Revision, currentEm
   return { currentEmployee, assignment, comments: commentRecords.map(mapReviewComment), canReview }
 }
 
+async function loadReviewFeedback(articleId: string): Promise<ReviewFeedback[]> {
+  const records = await getRecordsOrEmpty({
+    report_name: REPORTS.reviewAssignments,
+    criteria: `Article == ${articleId}`,
+    field_config: 'all',
+    max_records: 200,
+  }, 'Load article review feedback').catch(() => [])
+  const assignments = records.map(mapReviewAssignment)
+  const commentsByAssignment = await Promise.all(assignments.map(async (assignment) => {
+    const comments = await getRecordsOrEmpty({
+      report_name: REPORTS.reviewComments,
+      criteria: `Assignment == ${assignment.id}`,
+      field_config: 'all',
+      max_records: 200,
+    }, 'Load review feedback comments').catch(() => [])
+    return comments.map(mapReviewComment)
+  }))
+  return assignments.map((assignment, index) => ({
+    id: assignment.id,
+    revisionId: assignment.revisionId,
+    reviewerName: assignment.reviewerName || 'Shared review queue',
+    status: assignment.status,
+    decisionSummary: assignment.decisionSummary,
+    decidedAt: assignment.decidedAt,
+    comments: commentsByAssignment[index],
+  })).filter((entry) => entry.decisionSummary || entry.comments.length > 0)
+}
+
+function shouldLoadReviewFeedback(article: Article): boolean {
+  return article.workflowState !== 'Draft'
+}
+
 export class CreatorEditorialRepository implements EditorialRepository {
   readonly source = 'creator' as const
 
@@ -768,6 +1127,11 @@ export class CreatorEditorialRepository implements EditorialRepository {
   }
 
   async loadDashboard(): Promise<DashboardData> {
+    const warnings: string[] = []
+    const optionalReport = (label: string) => (error: unknown): Record<string, unknown>[] => {
+      warnings.push(`${label} could not be loaded. ${errorMessage(error, 'Refresh to retry.')}`)
+      return []
+    }
     const [currentEmployee, articleRecords, publicationJobRecords, assignmentRecords, auditEventRecords, categoryRecords, policyRecords] = await Promise.all([
       loadCurrentEmployee(),
       getRecordsOrEmpty({
@@ -778,11 +1142,10 @@ export class CreatorEditorialRepository implements EditorialRepository {
       }, 'Load dashboard articles'),
       getRecordsOrEmpty({
         report_name: REPORTS.publicationJobs,
-        criteria: '(Status == "Queued" || Status == "Processing")',
         field_config: 'custom',
         fields: PUBLICATION_JOB_FIELDS,
         max_records: 200,
-      }, 'Load active publication jobs').catch(() => []),
+      }, 'Load publication jobs'),
       getRecordsOrEmpty({
         report_name: REPORTS.reviewAssignments,
         field_config: 'all',
@@ -793,23 +1156,24 @@ export class CreatorEditorialRepository implements EditorialRepository {
         field_config: 'custom',
         fields: AUDIT_EVENT_FIELDS,
         max_records: 200,
-      }, 'Load dashboard audit events').catch(() => []),
+      }, 'Load dashboard audit events').catch(optionalReport('Activity history')),
       getRecordsOrEmpty({
         report_name: REPORTS.categories,
         criteria: 'Active == true',
         field_config: 'custom',
         fields: CATEGORY_FIELDS,
         max_records: 200,
-      }, 'Load dashboard categories').catch(() => []),
+      }, 'Load dashboard categories').catch(optionalReport('Categories')),
       getRecordsOrEmpty({
         report_name: REPORTS.approvalPolicies,
         criteria: 'Active == true',
         field_config: 'custom',
         fields: APPROVAL_POLICY_FIELDS,
         max_records: 200,
-      }, 'Load dashboard approval policies').catch(() => []),
+      }, 'Load dashboard approval policies').catch(optionalReport('Approval policies')),
     ])
     return {
+      warnings,
       currentEmployee,
       articles: articleRecords.map(mapArticle),
       publicationJobs: publicationJobRecords.map(mapPublicationJob),
@@ -838,7 +1202,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
           Working_Title: title,
           Owner: currentEmployee.id,
           Primary_Author: currentEmployee.id,
-          Primary_Category: input.categoryId || '',
+          ...(input.categoryId ? { Primary_Category: input.categoryId } : {}),
           Approval_Policy: input.approvalPolicyId,
           Workflow_State: 'Draft',
         },
@@ -846,6 +1210,17 @@ export class CreatorEditorialRepository implements EditorialRepository {
     }))
     const record = assertSuccess(response, 'Create draft article')
     return { articleId: text(record.ID) }
+  }
+
+  async createTaxonomyTerm(kind: TaxonomyKind, name: string): Promise<TaxonomyTermResult> {
+    const response = await creatorCall('Create taxonomy term', sdk().DATA.invokeCustomApi({
+      api_name: 'create_editorial_taxonomy_term',
+      workspace_name: creatorWorkspaceName(),
+      http_method: 'POST',
+      content_type: 'application/json',
+      payload: { termType: kind, termName: name },
+    }))
+    return taxonomyTermResult(response)
   }
 
   async loadWorkspace(articleId: string, revisionId?: string): Promise<WorkspaceData> {
@@ -898,7 +1273,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
     if (!revisionRecord) revisionRecord = await findFirstRevision(article.id)
 
     if (!revisionRecord) {
-      if (!managesArticle) {
+      if (!managesArticle || article.workflowState !== 'Draft') {
         throw new Error('This article has no revision available to your editorial role.')
       }
       const revisionUuid = `REV-${article.uuid}-0001`
@@ -941,21 +1316,109 @@ export class CreatorEditorialRepository implements EditorialRepository {
     if (revision.featuredMediaId) {
       revision.featuredMedia = await getMediaAsset(revision.featuredMediaId).catch(() => undefined)
     }
-    const workspace = {
+    let previousRevision: Revision | undefined
+    if (revision.number > 1) {
+      const previousRecord = await findRevisionByNumber(article.id, revision.number - 1).catch(() => undefined)
+      if (previousRecord) {
+        const previousDocument = await this.hydrateDocument(await readDocument(previousRecord)).catch(() => EMPTY_DOCUMENT)
+        previousRevision = mapRevision(previousRecord, previousDocument)
+        if (previousRevision.featuredMediaId) {
+          previousRevision.featuredMedia = await getMediaAsset(previousRevision.featuredMediaId).catch(() => undefined)
+        }
+      }
+    }
+    const needsReviewFeedback = shouldLoadReviewFeedback(article)
+    const [eligibleReviewers, categoryRecords, tagRecords, review, feedback, auditEventRecords] = await Promise.all([
+      managesArticle ? loadEligibleReviewers(article.primaryAuthor.ID) : Promise.resolve([]),
+      getRecordsOrEmpty({
+        report_name: REPORTS.categories,
+        criteria: 'Active == true',
+        field_config: 'custom',
+        fields: CATEGORY_FIELDS,
+        max_records: 200,
+      }, 'Load article categories').catch(() => []),
+      getRecordsOrEmpty({
+        report_name: REPORTS.tags,
+        criteria: 'Active == true',
+        field_config: 'custom',
+        fields: TAG_FIELDS,
+        max_records: 200,
+      }, 'Load article tags').catch(() => []),
+      loadReviewContext(article, revision, currentEmployee),
+      needsReviewFeedback ? loadReviewFeedback(article.id) : Promise.resolve([]),
+      getRecordsOrEmpty({
+        report_name: REPORTS.auditEvents,
+        criteria: `Entity_UUID == "${article.uuid}"`,
+        field_config: 'custom',
+        fields: AUDIT_EVENT_FIELDS,
+        max_records: 200,
+      }, 'Load article workflow history').catch(() => []),
+    ])
+    return {
       article,
       revision,
-      eligibleReviewers: managesArticle
-        ? await loadEligibleReviewers(article.primaryAuthor.ID)
-        : [],
-      review: { currentEmployee, comments: [], canReview: false } as ReviewContext,
+      previousRevision,
+      eligibleReviewers,
+      categories: categoryRecords.map(mapCategory).sort((a, b) => text(a.zc_display_value).localeCompare(text(b.zc_display_value))),
+      tags: tagRecords.map(mapTag).sort((a, b) => text(a.zc_display_value).localeCompare(text(b.zc_display_value))),
+      review,
+      feedback,
+      auditEvents: auditEventRecords.map(mapAuditEvent),
       source: this.source,
     }
-    workspace.review = await loadReviewContext(article, revision, currentEmployee)
-    return workspace
   }
 
   async saveDraft(input: SaveRevisionInput): Promise<Revision> {
-    const currentRecord = await getRevisionById(input.id)
+    const normalizedLocalInput = {
+      ...input,
+      title: normalizedField(input.title),
+      slug: normalizedField(input.slug),
+      excerpt: normalizedField(input.excerpt),
+      seoTitle: normalizedField(input.seoTitle),
+      seoDescription: normalizedField(input.seoDescription),
+      robotsDirective: normalizedField(input.robotsDirective) as SaveRevisionInput['robotsDirective'],
+    }
+    const canonicalDocument = canonicalizeMedia(input.document)
+    const serialized = JSON.stringify(canonicalDocument)
+    const checksum = await sha256(serialized)
+    const localReferencedMediaUuids = collectMediaIds(canonicalDocument).sort().join(',')
+    const localVersion: RevisionVersionSnapshot = {
+      state: 'Draft',
+      title: normalizedLocalInput.title,
+      slug: normalizedLocalInput.slug,
+      excerpt: normalizedLocalInput.excerpt,
+      seoTitle: normalizedLocalInput.seoTitle,
+      seoDescription: normalizedLocalInput.seoDescription,
+      robotsDirective: normalizedLocalInput.robotsDirective,
+      wordCount: input.wordCount,
+      readingTimeMinutes: input.readingTimeMinutes,
+      checksum,
+      featuredMediaId: text(input.featuredMediaId),
+      referencedMediaUuids: localReferencedMediaUuids,
+    }
+    // A queued autosave can legitimately start from an older metadata token even
+    // when the canonical document has not changed. Merge non-overlapping metadata
+    // updates, but continue to reject body/media changes and same-field conflicts.
+    const { record: currentRecord, effective } = await resolveRevisionSaveBase(
+      input.id,
+      input.expectedChecksum,
+      input.expectedVersionToken,
+      localVersion,
+    )
+    const saveBaseVersionToken = revisionVersionToken(currentRecord)
+    const normalizedInput = {
+      ...normalizedLocalInput,
+      title: effective.title,
+      slug: effective.slug,
+      excerpt: effective.excerpt,
+      seoTitle: effective.seoTitle,
+      seoDescription: effective.seoDescription,
+      robotsDirective: effective.robotsDirective as SaveRevisionInput['robotsDirective'],
+      wordCount: effective.wordCount,
+      readingTimeMinutes: effective.readingTimeMinutes,
+      featuredMediaId: effective.featuredMediaId || undefined,
+    }
+    const referencedMediaUuids = effective.referencedMediaUuids
     const articleId = lookup(currentRecord.Article).ID
     const [currentEmployee, articleResponse] = await Promise.all([
       loadCurrentEmployee(),
@@ -970,29 +1433,12 @@ export class CreatorEditorialRepository implements EditorialRepository {
     if (!canManageArticle(article, currentEmployee)) {
       throw new Error('Your editorial role cannot edit this draft.')
     }
-    if (text(currentRecord.Revision_State) !== 'Draft') {
-      throw new Error('This revision is no longer editable. Reload the workspace to see its current state.')
+    if (!['Draft', 'Changes Requested'].includes(article.workflowState)
+      || article.activeDraftRevisionId !== input.id) {
+      throw new Error('This is no longer the active editable draft. Reload before continuing.')
     }
-    if (text(currentRecord.Document_Checksum) !== input.expectedChecksum) {
-      throw new Error('This draft changed in another tab or session. Reload before continuing so newer work is not overwritten.')
-    }
-    if (revisionVersionToken(currentRecord) !== input.expectedVersionToken) {
-      throw new Error('This draft metadata changed in another tab or session. Reload before continuing so newer work is not overwritten.')
-    }
-
-    const normalizedInput = {
-      ...input,
-      title: normalizedField(input.title),
-      slug: normalizedField(input.slug),
-      excerpt: normalizedField(input.excerpt),
-      seoTitle: normalizedField(input.seoTitle),
-      seoDescription: normalizedField(input.seoDescription),
-      robotsDirective: normalizedField(input.robotsDirective) as SaveRevisionInput['robotsDirective'],
-    }
-    const canonicalDocument = canonicalizeMedia(input.document)
-    const serialized = JSON.stringify(canonicalDocument)
-    const checksum = await sha256(serialized)
-    const referencedMediaUuids = collectMediaIds(canonicalDocument).sort().join(',')
+    const primaryCategoryId = text(input.primaryCategoryId)
+    const tagIds = Array.from(new Set(input.tagIds.map(text).filter(Boolean))).sort()
     const documentFile = new File([serialized], `revision-${input.id}.json`, {
       type: 'application/json',
     })
@@ -1004,13 +1450,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
     })
     assertSuccess(uploadResponse, 'Upload editor document')
 
-    const stateAfterUpload = await getRevisionById(input.id)
-    if (text(stateAfterUpload.Revision_State) !== 'Draft') {
-      throw new Error('The revision left Draft while it was being saved. Reload the workspace before continuing.')
-    }
-    if (revisionVersionToken(stateAfterUpload) !== input.expectedVersionToken) {
-      throw new Error('This draft changed while it was being saved. Reload before continuing so newer work is not overwritten.')
-    }
+    await getRevisionAtExpectedVersion(input.id, input.expectedChecksum, saveBaseVersionToken)
 
     const updateResponse = await sdk().DATA.updateRecordById({
       report_name: REPORTS.revisions,
@@ -1023,16 +1463,35 @@ export class CreatorEditorialRepository implements EditorialRepository {
           SEO_Title: normalizedInput.seoTitle,
           SEO_Description: normalizedInput.seoDescription,
           Robots_Directive: normalizedInput.robotsDirective,
-          Word_Count: input.wordCount,
-          Reading_Time_Minutes: input.readingTimeMinutes,
+          Word_Count: normalizedInput.wordCount,
+          Reading_Time_Minutes: normalizedInput.readingTimeMinutes,
           Plain_Text_Extract: documentText(input.document),
           Document_Checksum: checksum,
           Referenced_Media_UUIDs: referencedMediaUuids,
-          Featured_Media: input.featuredMediaId || '',
+          Featured_Media: normalizedInput.featuredMediaId || '',
         },
       },
     })
     assertSuccess(updateResponse, 'Save revision metadata')
+
+    if (input.saveTaxonomy) {
+      // Route lookup persistence through Deluge. Creator's record-update SDK can
+      // reject a freshly created multi-select lookup with code 3001 even though
+      // the Tag row exists. The server function validates text IDs, converts them
+      // to the Number list required by Creator, and applies the update in Creator.
+      const taxonomyResponse = await creatorCall('Save article category and tags', sdk().DATA.invokeCustomApi({
+        api_name: 'save_article_taxonomy',
+        workspace_name: creatorWorkspaceName(),
+        http_method: 'POST',
+        content_type: 'application/json',
+        payload: {
+          articleId,
+          primaryCategoryId,
+          tagIdsCsv: tagIds.join(','),
+        },
+      }))
+      customApiValue(taxonomyResponse, 'Save article category and tags')
+    }
 
     let documentVerified = false
     for (const retryDelay of VERIFY_DELAYS) {
@@ -1059,11 +1518,11 @@ export class CreatorEditorialRepository implements EditorialRepository {
       SEO_Description: normalizedInput.seoDescription,
       Robots_Directive: normalizedInput.robotsDirective,
       Plain_Text_Extract: documentText(input.document),
-      Word_Count: input.wordCount,
-      Reading_Time_Minutes: input.readingTimeMinutes,
+      Word_Count: normalizedInput.wordCount,
+      Reading_Time_Minutes: normalizedInput.readingTimeMinutes,
       Document_Checksum: checksum,
       Referenced_Media_UUIDs: referencedMediaUuids,
-      Featured_Media: input.featuredMediaId || '',
+      Featured_Media: normalizedInput.featuredMediaId || '',
     }
     let record = await getRevisionById(input.id)
     let unverifiedFields: string[] = []
@@ -1094,6 +1553,36 @@ export class CreatorEditorialRepository implements EditorialRepository {
     if (unverifiedFields.length > 0) {
       throw new Error(`Creator did not verify the saved values for: ${unverifiedFields.join(', ')}.`)
     }
+
+    if (input.saveTaxonomy) {
+      let taxonomyVerified = false
+      for (const retryDelay of VERIFY_DELAYS) {
+        if (retryDelay > 0) await delay(retryDelay)
+        const articleVerification = await creatorCall('Verify article category and tags', sdk().DATA.getRecordById({
+          report_name: REPORTS.articles,
+          id: articleId,
+          field_config: 'custom',
+          fields: 'Primary_Category,Tags',
+        }))
+        const articleRecord = assertSuccess(articleVerification, 'Verify article category and tags')
+        const persistedCategoryId = articleRecord.Primary_Category ? lookup(articleRecord.Primary_Category).ID : ''
+        const persistedTagIds = lookupList(articleRecord.Tags).map((tag) => tag.ID).filter(Boolean).sort()
+        // Some Creator report layouts omit a multi-select lookup from a custom
+        // read even though the preceding update succeeded. Verify Tags whenever
+        // Creator returns the field; do not turn an omitted readback field into a
+        // false Save failed state.
+        const tagsReturned = Object.prototype.hasOwnProperty.call(articleRecord, 'Tags')
+        const categoryMatches = persistedCategoryId === primaryCategoryId
+        const tagsMatch = !tagsReturned || JSON.stringify(persistedTagIds) === JSON.stringify(tagIds)
+        if (categoryMatches && tagsMatch) {
+          taxonomyVerified = true
+          break
+        }
+      }
+      if (!taxonomyVerified) {
+        throw new Error('Creator did not verify the saved category and tags.')
+      }
+    }
     const revision = {
       ...mapRevision(record, await this.hydrateDocument(canonicalDocument)),
       title: normalizedInput.title,
@@ -1102,9 +1591,9 @@ export class CreatorEditorialRepository implements EditorialRepository {
       seoTitle: normalizedInput.seoTitle,
       seoDescription: normalizedInput.seoDescription,
       robotsDirective: normalizedInput.robotsDirective,
-      wordCount: input.wordCount,
-      readingTimeMinutes: input.readingTimeMinutes,
-      featuredMediaId: input.featuredMediaId,
+      wordCount: normalizedInput.wordCount,
+      readingTimeMinutes: normalizedInput.readingTimeMinutes,
+      featuredMediaId: normalizedInput.featuredMediaId,
     }
     if (revision.featuredMediaId) {
       revision.featuredMedia = await getMediaAsset(revision.featuredMediaId).catch(() => undefined)
@@ -1115,7 +1604,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
   async submitForReview(articleId: string, reviewerIds: string[]): Promise<SubmitForReviewResult> {
     const response = await creatorCall('Submit article for review', sdk().DATA.invokeCustomApi({
       api_name: 'submit_article_for_review',
-      workspace_name: 'opensourceindia22',
+      workspace_name: creatorWorkspaceName(),
       http_method: 'POST',
       content_type: 'application/json',
       payload: {
@@ -1130,7 +1619,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
   async claimReviewAssignment(assignmentId: string): Promise<ReviewActionResult> {
     const response = await creatorCall('Claim review assignment', sdk().DATA.invokeCustomApi({
       api_name: 'claim_review_assignment',
-      workspace_name: 'opensourceindia22',
+      workspace_name: creatorWorkspaceName(),
       http_method: 'POST',
       content_type: 'application/json',
       payload: { assignmentId },
@@ -1141,7 +1630,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
   async addReviewComment(assignmentId: string, type: ReviewComment['type'], body: string, documentAnchor = ''): Promise<ReviewComment> {
     const response = await creatorCall('Add review comment', sdk().DATA.invokeCustomApi({
       api_name: 'add_review_comment',
-      workspace_name: 'opensourceindia22',
+      workspace_name: creatorWorkspaceName(),
       http_method: 'POST',
       content_type: 'application/json',
       payload: { assignmentId, commentType: type, commentBody: body, documentAnchor, parentCommentId: 0 },
@@ -1164,7 +1653,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
   async recordReviewDecision(assignmentId: string, decision: NonNullable<ReviewAssignment['decision']>, summary: string): Promise<ReviewActionResult> {
     const response = await creatorCall('Record review decision', sdk().DATA.invokeCustomApi({
       api_name: 'record_review_decision',
-      workspace_name: 'opensourceindia22',
+      workspace_name: creatorWorkspaceName(),
       http_method: 'POST',
       content_type: 'application/json',
       payload: { assignmentId, decision, decisionSummary: summary },
@@ -1175,7 +1664,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
   async publishArticle(articleId: string): Promise<PublishArticleResult> {
     const response = await creatorCall('Publish article', sdk().DATA.invokeCustomApi({
       api_name: 'publish_approved_article',
-      workspace_name: 'opensourceindia22',
+      workspace_name: creatorWorkspaceName(),
       http_method: 'POST',
       content_type: 'application/json',
       payload: { articleId },
@@ -1186,7 +1675,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
   async scheduleArticle(articleId: string, scheduledAt: string): Promise<ScheduleArticleResult> {
     const response = await creatorCall('Schedule article', sdk().DATA.invokeCustomApi({
       api_name: 'schedule_approved_article',
-      workspace_name: 'opensourceindia22',
+      workspace_name: creatorWorkspaceName(),
       http_method: 'POST',
       content_type: 'application/json',
       payload: { articleId, scheduledAtText: scheduledAt },
@@ -1197,7 +1686,7 @@ export class CreatorEditorialRepository implements EditorialRepository {
   async retractArticle(articleId: string, reason: string, replacementPath: string): Promise<RetractArticleResult> {
     const response = await creatorCall('Retract article', sdk().DATA.invokeCustomApi({
       api_name: 'retract_published_article',
-      workspace_name: 'opensourceindia22',
+      workspace_name: creatorWorkspaceName(),
       http_method: 'POST',
       content_type: 'application/json',
       payload: { articleId, reason, replacementPath },
@@ -1205,11 +1694,48 @@ export class CreatorEditorialRepository implements EditorialRepository {
     return retractArticleResult(response)
   }
 
+  async archiveDraftArticle(articleId: string): Promise<ArticleLifecycleResult> {
+    const response = await creatorCall('Move draft to trash', sdk().DATA.invokeCustomApi({
+      api_name: 'archive_draft_article',
+      workspace_name: creatorWorkspaceName(),
+      http_method: 'POST',
+      content_type: 'application/json',
+      payload: { articleId },
+    }))
+    return articleLifecycleResult(response, 'Move draft to trash')
+  }
+
+  async restoreArchivedArticle(articleId: string): Promise<ArticleLifecycleResult> {
+    const response = await creatorCall('Restore draft', sdk().DATA.invokeCustomApi({
+      api_name: 'restore_archived_article',
+      workspace_name: creatorWorkspaceName(),
+      http_method: 'POST',
+      content_type: 'application/json',
+      payload: { articleId },
+    }))
+    return articleLifecycleResult(response, 'Restore draft')
+  }
+
+  async resetTestContent(_confirmation: string): Promise<WorkspaceResetResult> {
+    throw new Error('Bulk content reset is disabled in Creator. Use recoverable draft archival for individual articles.')
+  }
+
   async hydrateDocument(document: JSONContent): Promise<JSONContent> {
-    const ids = collectMediaIds(document)
-    const results = await Promise.allSettled(ids.map((id) => getMediaAsset(id)))
+    // A freshly created media row can be available by Creator record ID before
+    // report criteria expose its MED-* UUID. Preserve both references so the
+    // first autosave never depends on eventually consistent UUID filtering.
+    const references = Array.from(new Set([
+      ...collectCreatorMediaRecordIds(document),
+      ...collectMediaIds(document),
+    ]))
+    const results = await Promise.allSettled(references.map((id) => getMediaAsset(id)))
     const assets = results.flatMap((result) => result.status === 'fulfilled' ? [result.value] : [])
-    return hydrateMedia(document, new Map(assets.map((asset) => [asset.id, asset])))
+    const assetsByReference = new Map<string, MediaAsset>()
+    for (const asset of assets) {
+      assetsByReference.set(asset.id, asset)
+      assetsByReference.set(asset.uuid, asset)
+    }
+    return hydrateMedia(document, assetsByReference)
   }
 
   async createImageAsset(file: File, metadata: MediaMetadata, uploadedById: string): Promise<MediaAsset> {
@@ -1229,7 +1755,6 @@ export class CreatorEditorialRepository implements EditorialRepository {
           Checksum: await sha256Blob(file),
           Alt_Text: metadata.altText,
           Caption: metadata.caption,
-          Credit: metadata.credit,
           Status: 'Draft',
           Uploaded_By: uploadedById,
         },
@@ -1252,6 +1777,10 @@ export class CreatorEditorialRepository implements EditorialRepository {
       }).catch(() => undefined)
       throw error
     }
+    // Creator can accept the media row while silently omitting a Caption
+    // written through addRecords. Reapply both editable metadata fields
+    // through the guarded Deluge mutation used by later edits.
+    await saveMediaMetadata(record.ID, metadata)
     let mediaAsset: MediaAsset | undefined
     let mediaError: unknown
     for (const retryDelay of VERIFY_DELAYS) {
@@ -1266,26 +1795,22 @@ export class CreatorEditorialRepository implements EditorialRepository {
     if (!mediaAsset?.previewUrl) {
       throw new Error(errorMessage(mediaError, 'Creator stored the image but did not make it available for preview.'))
     }
-    return mediaAsset
+    // Keep the newly inserted image independent of any host-owned preview URL
+    // while autosave rehydrates it from Creator's stored bytes.
+    return {
+      ...mediaAsset,
+      altText: metadata.altText,
+      caption: metadata.caption,
+      previewUrl: URL.createObjectURL(file),
+    }
   }
 
   async updateImageAsset(asset: MediaAsset, metadata: MediaMetadata): Promise<MediaAsset> {
-    const response = await sdk().DATA.updateRecordById({
-      report_name: REPORTS.media,
-      id: asset.id,
-      payload: { data: { Alt_Text: metadata.altText, Caption: metadata.caption, Credit: metadata.credit } },
-    })
-    assertSuccess(response, 'Update media details')
-    let stored = await getMediaAsset(asset.id)
-    for (const retryDelay of VERIFY_DELAYS) {
-      if (retryDelay > 0) {
-        await delay(retryDelay)
-        stored = await getMediaAsset(asset.id)
-      }
-      if (stored.altText === metadata.altText && stored.caption === metadata.caption && stored.credit === metadata.credit) {
-        return stored
-      }
+    const result = await saveMediaMetadata(asset.id, metadata)
+    return {
+      ...asset,
+      altText: text(result.altText) || metadata.altText,
+      caption: Object.prototype.hasOwnProperty.call(result, 'caption') ? text(result.caption) : metadata.caption,
     }
-    throw new Error('Creator did not verify the updated image details.')
   }
 }

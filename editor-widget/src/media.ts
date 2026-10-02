@@ -15,6 +15,18 @@ export function collectMediaIds(document: JSONContent): string[] {
   return [...ids]
 }
 
+export function collectCreatorMediaRecordIds(document: JSONContent): string[] {
+  const ids = new Set<string>()
+  const visit = (node: JSONContent) => {
+    if (node.type === 'mediaImage' && typeof node.attrs?.creatorRecordId === 'string' && /^\d+$/.test(node.attrs.creatorRecordId)) {
+      ids.add(node.attrs.creatorRecordId)
+    }
+    node.content?.forEach(visit)
+  }
+  visit(document)
+  return [...ids]
+}
+
 export function canonicalizeMedia(document: JSONContent): JSONContent {
   const visit = (node: JSONContent): JSONContent => {
     const next = { ...node }
@@ -37,6 +49,11 @@ export function hydrateMedia(document: JSONContent, assets: Map<string, MediaAss
       if (asset) {
         next.attrs = {
           ...next.attrs,
+          // Creator record IDs were used by the first widget release. Normalize
+          // every loaded document to the portable MED-* identity before its next
+          // save so Creator and Catalyst resolve the same asset.
+          mediaId: asset.uuid || asset.id,
+          creatorRecordId: asset.id,
           src: asset.previewUrl,
           alt: asset.altText,
           caption: asset.caption,

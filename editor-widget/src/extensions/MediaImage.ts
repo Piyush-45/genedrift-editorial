@@ -1,4 +1,7 @@
 import { mergeAttributes, Node } from '@tiptap/core'
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import { isCreatorImageSource } from '../creatorImageSource'
+import { MediaImageNodeView } from '../components/MediaImageNodeView'
 
 export const MediaImage = Node.create({
   name: 'mediaImage',
@@ -10,6 +13,7 @@ export const MediaImage = Node.create({
   addAttributes() {
     return {
       mediaId: { default: '' },
+      creatorRecordId: { default: '' },
       src: { default: '' },
       alt: { default: '' },
       caption: { default: '' },
@@ -23,16 +27,24 @@ export const MediaImage = Node.create({
     return [{ tag: 'figure[data-media-id]' }]
   },
 
+  addNodeView() {
+    return ReactNodeViewRenderer(MediaImageNodeView)
+  },
+
   renderHTML({ HTMLAttributes }) {
-    const caption = [HTMLAttributes.caption, HTMLAttributes.credit].filter(Boolean).join(' · ')
+    const caption = String(HTMLAttributes.caption || '')
+    const imageAttributes = isCreatorImageSource(String(HTMLAttributes.src || ''))
+      ? { alt: HTMLAttributes.alt, loading: 'lazy' }
+      : { src: HTMLAttributes.src, alt: HTMLAttributes.alt, loading: 'lazy' }
     return [
       'figure',
       mergeAttributes({
         'data-media-id': HTMLAttributes.mediaId,
+        'data-creator-record-id': HTMLAttributes.creatorRecordId,
         'data-size': HTMLAttributes.displaySize,
         'data-alignment': HTMLAttributes.alignment,
       }),
-      ['img', { src: HTMLAttributes.src, alt: HTMLAttributes.alt, loading: 'lazy' }],
+      ['img', imageAttributes],
       ...(caption ? [['figcaption', {}, caption]] : []),
     ]
   },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Mail, Share2 } from "lucide-react";
+import { Check, ChevronDown, Copy, Mail, Share2 } from "lucide-react";
 
 export type ArticleHeading = {
   id: string;
@@ -63,24 +63,34 @@ export function ArticleToc({ headings }: { headings: ArticleHeading[] }) {
 
   if (!headings.length) return null;
 
+  const links = headings.map((heading) => (
+    <li key={heading.id} className={heading.level === 3 ? "article-toc-child" : undefined}>
+      <a className={activeId === heading.id ? "is-active" : undefined} href={`#${heading.id}`}>
+        {heading.label}
+      </a>
+    </li>
+  ));
+
   return (
-    <nav className="article-toc" aria-label="On this page">
-      <p>On this page</p>
-      <ol>
-        {headings.map((heading) => (
-          <li key={heading.id} className={heading.level === 3 ? "article-toc-child" : undefined}>
-            <a className={activeId === heading.id ? "is-active" : undefined} href={`#${heading.id}`}>
-              {heading.label}
-            </a>
-          </li>
-        ))}
-      </ol>
-    </nav>
+    <>
+      <nav className="article-toc article-toc-desktop" aria-label="On this page">
+        <p>In this insight</p>
+        <ol>{links}</ol>
+      </nav>
+      <details className="article-toc-mobile">
+        <summary>
+          <span>In this insight</span>
+          <small>{headings.length} {headings.length === 1 ? "section" : "sections"}</small>
+          <ChevronDown aria-hidden="true" size={18} />
+        </summary>
+        <nav aria-label="On this page"><ol>{links}</ol></nav>
+      </details>
+    </>
   );
 }
 
 export function ArticleShare({ title }: { title: string }) {
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
   const [url, setUrl] = useState("");
 
   useEffect(() => {
@@ -99,9 +109,13 @@ export function ArticleShare({ title }: { title: string }) {
   }
 
   async function copy() {
-    await navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("error");
+    }
+    window.setTimeout(() => setCopyStatus("idle"), 1800);
   }
 
   return (
@@ -122,9 +136,11 @@ export function ArticleShare({ title }: { title: string }) {
         <Mail aria-hidden="true" size={17} />
       </a>
       <button type="button" onClick={copy} aria-label="Copy article link">
-        {copied ? <Check aria-hidden="true" size={17} /> : <Copy aria-hidden="true" size={17} />}
+        {copyStatus === "copied" ? <Check aria-hidden="true" size={17} /> : <Copy aria-hidden="true" size={17} />}
       </button>
-      <small aria-live="polite">{copied ? "Link copied" : ""}</small>
+      <small aria-live="polite">
+        {copyStatus === "copied" ? "Link copied" : copyStatus === "error" ? "Copy failed" : ""}
+      </small>
     </div>
   );
 }

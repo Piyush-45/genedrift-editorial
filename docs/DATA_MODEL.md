@@ -121,9 +121,10 @@ client's existing Employee / Team records.
   media live in a separate public-read Stratus bucket under content-addressed
   immutable keys.
 
-The public frontend still needs a read/index projection with stable slug,
-author snapshot, category/tag slugs, published time, and summary fields. It must
-resolve only the current pointer and must not expose Data Store credentials.
+The public frontend now reads through the Catalyst public content API and
+maintained `GD_Public_Index` projection. The projection provides stable slug,
+status, category/tag, published time, summary/search, and current-pointer fields
+without exposing private Data Store credentials to the browser.
 
 AppSail `0.2.0` implements retraction using `Serving_Status`, `Retracted_At`,
 `Retraction_Reason`, `Retraction_Event_ID`, and `Replacement_Path` on the mutable

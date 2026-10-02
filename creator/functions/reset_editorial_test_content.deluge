@@ -1,0 +1,10 @@
+map reset_editorial_test_content(string confirmation)
+{
+	// Disabled for the production candidate: the old implementation deleted every
+	// article, revision, media record, publication job, and audit event regardless
+	// of whether it was test content. Local mock reset remains in the widget.
+	result = Map();
+	result.put("ok",false);
+	result.put("message","Bulk content reset is disabled. Use recoverable draft archival for individual articles.");
+	return result;
+}

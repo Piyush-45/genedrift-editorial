@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genedrift — Hero, Pathway</title>
+  <meta charset="utf-8">
+  
+</head>
+<body style="margin:0">
+
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #5B3FD2; text-decoration: none; }
+    a:hover { color: #241653; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.03em; }
+
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes nodein { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+    .draw { animation: draw 3.4s cubic-bezier(.35,.1,.25,1) .25s both; }
+    .node { opacity: 0; transform-box: fill-box; transform-origin: center; animation: nodein .5s cubic-bezier(.2,.8,.3,1) both; }
+    .rise { animation: rise .9s cubic-bezier(.2,.7,.3,1) both; }
+    .d1 { animation-delay: .05s } .d2 { animation-delay: .18s } .d3 { animation-delay: .31s } .d4 { animation-delay: .44s }
+    @media (prefers-reduced-motion: reduce) {
+      .draw { animation: none; stroke-dashoffset: 0 !important; }
+      .node, .rise { animation: none; opacity: 1; transform: none; }
+    }
+  </style>
+
+
+<div style="width: 1440px; height: 880px; background: #241653; color: #FFFFFF; position: relative; overflow: hidden">
+
+  <div style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 26px 96px">
+    <span style="font-size: 22px; font-weight: 700; letter-spacing: -0.03em">genedrift</span>
+    <div style="display: flex; align-items: center; gap: 32px; font-size: 15px; font-weight: 500; color: #DCD6F5">
+      <span>Explore</span><span>Expertise</span><span>Markets</span><span>Knowledge Hub</span><span>Client Success</span><span>Company</span><span>Careers</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#DCD6F5" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+      <div style="background: #5B3FD2; color: #FFFFFF; font-size: 14.5px; font-weight: 600; padding: 11px 20px; border-radius: 8px">Speak to an Expert</div>
+    </div>
+  </div>
+
+  <div style="position: relative; padding: 80px 96px 0; display: flex; gap: 80px; align-items: flex-end">
+    <div style="max-width: 720px">
+      <div class="rise d1" style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A794FF">The regulatory pathway</div>
+      <h1 class="rise d2" style="margin-top: 24px; font-size: 68px; line-height: 1.02">From molecule<br>to marketed<br>product.</h1>
+      <div class="rise d3" style="width: 88px; height: 2px; background: #7C63E8; margin-top: 34px"></div>
+    </div>
+    <div class="rise d4" style="padding-bottom: 10px">
+      <p style="font-size: 19px; line-height: 1.6; color: #CFC8EC; max-width: 420px">
+        Twelve stages, one accountable team. The specialists who write your dossier are the ones answering the authority's queries and filing your variations four years later.
+      </p>
+      <div style="display: flex; align-items: center; gap: 30px; margin-top: 34px">
+        <div style="background: #5B3FD2; color: #FFFFFF; font-size: 16px; font-weight: 600; padding: 16px 30px; border-radius: 9px">Speak to an Expert</div>
+        <div style="display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 600; color: #FFFFFF">
+          See how we work
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 74px">
+    <svg viewBox="0 0 1440 420" style="width:100%; height:420px; display:block; overflow:visible"><path d="M-60,372 C300,372 470,300 740,252 C1020,204 1180,168 1500,112" fill="none" stroke="rgba(150,122,255,0.22)" stroke-width="1.1"/><path class="draw" d="M-60,372 C300,372 470,300 740,252 C1020,204 1180,168 1500,112" fill="none" stroke="#7C63E8" stroke-width="2.4" stroke-linecap="round" style="stroke-dasharray:1584; stroke-dashoffset:1584"/><g class="node" style="animation-delay:0.55s"><circle cx="115.4" cy="365.7" r="17" fill="#241653" stroke="#7C63E8" stroke-width="1.4"/><circle cx="115.4" cy="365.7" r="6" fill="#7C63E8"/><line x1="115.4" y1="348.7" x2="115.4" y2="313.7" stroke="rgba(150,122,255,0.35)" stroke-width="1"/><text x="115.4" y="275.7" text-anchor="middle" fill="#9C92C9" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.6">01</text><text x="115.4" y="299.7" text-anchor="middle" fill="#FFFFFF" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">Regulatory Strategy</text></g><g class="node" style="animation-delay:0.89s"><circle cx="362.8" cy="332.1" r="17" fill="#241653" stroke="#7C63E8" stroke-width="1.4"/><circle cx="362.8" cy="332.1" r="6" fill="#7C63E8"/><line x1="362.8" y1="315.1" x2="362.8" y2="280.1" stroke="rgba(150,122,255,0.35)" stroke-width="1"/><text x="362.8" y="242.1" text-anchor="middle" fill="#9C92C9" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.6">02</text><text x="362.8" y="266.1" text-anchor="middle" fill="#FFFFFF" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">Dossier Preparation</text></g><g class="node" style="animation-delay:1.23s"><circle cx="607.7" cy="278.5" r="17" fill="#241653" stroke="#7C63E8" stroke-width="1.4"/><circle cx="607.7" cy="278.5" r="6" fill="#7C63E8"/><line x1="607.7" y1="261.5" x2="607.7" y2="226.5" stroke="rgba(150,122,255,0.35)" stroke-width="1"/><text x="607.7" y="188.5" text-anchor="middle" fill="#9C92C9" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.6">03</text><text x="607.7" y="212.5" text-anchor="middle" fill="#FFFFFF" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">eCTD Publishing</text></g><g class="node" style="animation-delay:1.57s"><circle cx="853.2" cy="232.1" r="17" fill="#241653" stroke="#7C63E8" stroke-width="1.4"/><circle cx="853.2" cy="232.1" r="6" fill="#7C63E8"/><line x1="853.2" y1="215.1" x2="853.2" y2="180.1" stroke="rgba(150,122,255,0.35)" stroke-width="1"/><text x="853.2" y="142.1" text-anchor="middle" fill="#9C92C9" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.6">04</text><text x="853.2" y="166.1" text-anchor="middle" fill="#FFFFFF" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">Submission &amp; Authority</text></g><g class="node" style="animation-delay:1.91s"><circle cx="1099.8" cy="186.0" r="17" fill="#241653" stroke="#7C63E8" stroke-width="1.4"/><circle cx="1099.8" cy="186.0" r="6" fill="#7C63E8"/><line x1="1099.8" y1="169.0" x2="1099.8" y2="134.0" stroke="rgba(150,122,255,0.35)" stroke-width="1"/><text x="1099.8" y="96.0" text-anchor="middle" fill="#9C92C9" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.6">05</text><text x="1099.8" y="120.0" text-anchor="middle" fill="#FFFFFF" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">Approval</text></g><g class="node" style="animation-delay:2.25s"><circle cx="1345.2" cy="139.7" r="17" fill="#241653" stroke="#7C63E8" stroke-width="1.4"/><circle cx="1345.2" cy="139.7" r="6" fill="#7C63E8"/><line x1="1345.2" y1="122.7" x2="1345.2" y2="87.7" stroke="rgba(150,122,255,0.35)" stroke-width="1"/><text x="1345.2" y="49.7" text-anchor="middle" fill="#9C92C9" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="1.6">06</text><text x="1345.2" y="73.7" text-anchor="middle" fill="#FFFFFF" font-family="Archivo, Helvetica, Arial, sans-serif" font-size="16" font-weight="600">Lifecycle &amp; PV</text></g></svg>
+
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid rgba(240,238,251,0.14); padding: 22px 96px 24px; display: flex; align-items: center; gap: 54px">
+    <span style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #9C92C9">Certified &amp; compliant</span>
+    <div style="display: flex; gap: 40px; align-items: center; font-size: 14.5px; font-weight: 600; color: #CFC8EC">
+      <span>ISO 9001:2000</span><span>ISO 27001:2022</span><span>GDPR</span><span>21 CFR Part 11</span><span>SOC 2 Type II</span>
+    </div>
+    <span style="margin-left: auto; font-size: 14px; color: #9C92C9; font-style: italic">Invent. Reinvent.</span>
+  </div>
+
+</div>
+
+</body>
+</html>

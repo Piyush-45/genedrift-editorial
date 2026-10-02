@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import {
   ArrowRight,
   ArrowUpRight,
+  BookOpenText,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
   Clock3,
-  FileCheck2
+  FileCheck2,
+  RotateCcw
 } from "lucide-react";
 import { ArticleCard } from "@/components/article-card";
 import {
@@ -140,8 +142,8 @@ export default async function ArticlePage({ params }: Props) {
     keywords: article.article.tags.join(", "),
     wordCount: article.revision.wordCount,
     image: featuredMedia?.publishedUrl,
-    author: { "@type": "Organization", name: "GeneDrift Insights" },
-    publisher: { "@type": "Organization", name: "GeneDrift" }
+    author: { "@type": "Organization", name: "Genedrift Insights" },
+    publisher: { "@type": "Organization", name: "Genedrift" }
   };
 
   return (
@@ -164,13 +166,14 @@ export default async function ArticlePage({ params }: Props) {
               <div className="article-byline">
                 <div className="article-author-mark" aria-hidden="true">GD</div>
                 <div>
-                  <strong>GeneDrift Insights</strong>
+                  <strong>Genedrift Insights</strong>
                   <span>Editorial analysis and industry intelligence</span>
                 </div>
               </div>
               <div className="article-meta article-meta-primary">
                 <span><CalendarDays aria-hidden="true" size={15} /><time dateTime={article.publishedAt}>{formatPublishedDate(article.publishedAt)}</time></span>
                 <span><Clock3 aria-hidden="true" size={15} />{article.revision.readingTimeMinutes} min read</span>
+                <span><BookOpenText aria-hidden="true" size={15} />{article.revision.wordCount.toLocaleString("en")} words</span>
                 <span><FileCheck2 aria-hidden="true" size={15} />Editorially approved</span>
               </div>
             </div>
@@ -184,8 +187,8 @@ export default async function ArticlePage({ params }: Props) {
                   width={featuredMedia.widthPixels}
                   height={featuredMedia.heightPixels}
                 />
-                {(featuredMedia.caption || featuredMedia.credit) ? (
-                  <figcaption>{[featuredMedia.caption, featuredMedia.credit].filter(Boolean).join(" · ")}</figcaption>
+                {featuredMedia.caption ? (
+                  <figcaption>{featuredMedia.caption}</figcaption>
                 ) : null}
               </figure>
             ) : (
@@ -199,7 +202,20 @@ export default async function ArticlePage({ params }: Props) {
 
         <div className="shell article-reading-layout" data-article-body>
           <aside className="article-aside article-aside-left">
-            <ArticleToc headings={prepared.headings} />
+            <div className="article-aside-stack">
+              <ArticleToc headings={prepared.headings} />
+              <section className="article-document-details" aria-labelledby="document-details-title">
+                <p id="document-details-title">Document details</p>
+                <dl>
+                  <div><dt>Revision</dt><dd>{article.revision.number}</dd></div>
+                  <div><dt>Length</dt><dd>{article.revision.wordCount.toLocaleString("en")} words</dd></div>
+                  <div>
+                    <dt>Last reviewed</dt>
+                    <dd><RotateCcw aria-hidden="true" size={12} />{formatPublishedDate(article.revision.approvedAt)}</dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
           </aside>
 
           <div className="article-main-column">
@@ -218,10 +234,10 @@ export default async function ArticlePage({ params }: Props) {
             <section className="article-publication-standard" aria-label="Publication information">
               <div className="publication-standard-icon"><CheckCircle2 aria-hidden="true" size={22} /></div>
               <div>
-                <span>GeneDrift editorial standard</span>
+                <span>Genedrift editorial standard</span>
                 <h2>Carefully reviewed. Responsibly published.</h2>
                 <p>
-                  This insight was approved through GeneDrift’s controlled editorial workflow. Public author and reviewer
+                  This insight was approved through Genedrift’s controlled editorial workflow. Public author and reviewer
                   credentials are displayed when verified attribution is supplied with the publication.
                 </p>
               </div>
@@ -257,7 +273,7 @@ export default async function ArticlePage({ params }: Props) {
             <h2>Need clarity on a regulatory or market question?</h2>
           </div>
           <div>
-            <p>Connect with GeneDrift for practical guidance shaped around your product, market and operating context.</p>
+            <p>Connect with Genedrift for practical guidance shaped around your product, market and operating context.</p>
             <a className="gd-button gd-button-secondary gd-button-lg" href="mailto:cs@genedrift.com?subject=Regulatory%20consultation">
               Speak to an expert <ArrowUpRight aria-hidden="true" size={17} />
             </a>

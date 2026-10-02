@@ -1,0 +1,90 @@
+map add_review_comment(int assignmentId, string commentType, string commentBody, string documentAnchor, int parentCommentId)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+	assignment = Review_Assignments[ID == assignmentId];
+	if(assignment.count() == 0)
+	{
+		result.put("message","Review assignment not found.");
+		return result;
+	}
+	article = Articles[ID == assignment.Article.ID];
+	revision = Article_Revisions[ID == assignment.Revision.ID];
+	if(article.count() == 0 || revision.count() == 0)
+	{
+		result.put("message","The article or revision for this review no longer exists.");
+		return result;
+	}
+	if(article.Workflow_State != "In Review" || revision.Revision_State != "Submitted" || assignment.Status == "Cancelled" || assignment.Status == "Approved" || assignment.Status == "Changes Requested" || assignment.Status == "Rejected")
+	{
+		result.put("message","This review discussion is no longer open for new comments.");
+		return result;
+	}
+	actorIsAdmin = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	actorIsAuthor = actor.ID == article.Owner.ID || actor.ID == article.Primary_Author.ID;
+	actorIsAssignedReviewer = assignment.Reviewer != null && assignment.Reviewer.ID == actor.ID;
+	if(!actorIsAuthor && !actorIsAssignedReviewer && actorIsAdmin.count() == 0)
+	{
+		result.put("message","You do not have access to this review discussion.");
+		return result;
+	}
+	if(commentBody == null || commentBody.trim() == "")
+	{
+		result.put("message","A comment is required.");
+		return result;
+	}
+	if(commentBody.length() > 8000)
+	{
+		result.put("message","Review comments must be within 8,000 characters.");
+		return result;
+	}
+	if(commentType != "General" && commentType != "Change Request" && commentType != "Reply" && commentType != "Resolution")
+	{
+		result.put("message","Unsupported review comment type.");
+		return result;
+	}
+	if(documentAnchor != null && documentAnchor.length() > 255)
+	{
+		result.put("message","The document anchor must be within 255 characters.");
+		return result;
+	}
+	if(parentCommentId != null && parentCommentId > 0)
+	{
+		parentComment = Review_Comments[ID == parentCommentId && Assignment == assignment.ID && Revision == revision.ID];
+		if(parentComment.count() == 0)
+		{
+			result.put("message","The parent comment does not belong to this review.");
+			return result;
+		}
+	}
+
+	commentId = insert into Review_Comments
+	[
+		Assignment = assignment.ID
+		Revision = revision.ID
+		Author_Employee = actor.ID
+		Comment_Type = commentType
+		Comment_Body = commentBody.trim()
+		Document_Anchor = ifnull(documentAnchor,"").trim()
+		Parent_Comment = if(parentCommentId != null && parentCommentId > 0,parentCommentId,null)
+		Resolved = false
+	];
+
+	result.put("ok",true);
+	result.put("message","Review comment added.");
+	result.put("commentId",commentId);
+	result.put("assignmentId",assignment.ID);
+	result.put("revisionId",revision.ID);
+	return result;
+}

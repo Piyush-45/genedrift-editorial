@@ -33,6 +33,10 @@ in Development. Version `0.4.0` adds the maintained public index described below
 The deployed Development service remains `0.3.1` until the new table is
 provisioned, rebuilt, and live verified.
 
+Version `0.4.3` simplifies image attribution: Caption remains part of the
+immutable published document, while legacy Credit data is retained in the
+handoff for compatibility but is no longer rendered into article HTML.
+
 These are application-level immutability guarantees. Restrict Catalyst console,
 Data Store, and Stratus delete/update privileges to the deployment operators;
 do not grant the runtime or editorial users general mutation access.

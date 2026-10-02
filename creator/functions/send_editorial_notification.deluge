@@ -52,15 +52,36 @@ map send_editorial_notification(string eventType, int articleId, int assignmentI
 		actorId = actor.ID;
 	}
 
-	subject = "GeneDrift editorial update: " + eventType;
-	messageBody = "Article: " + article.Working_Title + "\n";
-	messageBody = messageBody + "Event: " + eventType + "\n";
-	messageBody = messageBody + "Actor: " + actorName + "\n";
-	if(detail != null && detail.trim() != "")
+	safeTitle = ifnull(article.Working_Title,"Untitled article").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+	safeEventType = ifnull(eventType,"Editorial update").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+	safeActorName = actorName.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+	safeDetail = ifnull(detail,"").trim().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll("\n","<br />");
+	workspaceUrl = "https://creatorapp.zoho.in" + zoho.appuri + "#Article_Workspace?articleId=" + article.ID;
+	actionLabel = "Open article";
+	if(eventType.toLowerCase().contains("review"))
 	{
-		messageBody = messageBody + "\n" + detail.trim() + "\n";
+		actionLabel = "Open review";
 	}
-	messageBody = messageBody + "\nOpen the GeneDrift Editorial Workspace in Zoho Creator to continue.";
+	else if(eventType.toLowerCase().contains("publish") || eventType.toLowerCase().contains("scheduled"))
+	{
+		actionLabel = "Open publishing workspace";
+	}
+
+	subject = "[GeneDrift] " + eventType + ": " + article.Working_Title;
+	messageBody = "<div style='margin:0;background:#f5f3fb;padding:28px 12px;font-family:Arial,sans-serif;color:#241653;'>";
+	messageBody = messageBody + "<div style='max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e3def2;border-radius:12px;overflow:hidden;'>";
+	messageBody = messageBody + "<div style='padding:18px 24px;background:#241653;color:#ffffff;'><strong style='font-size:18px;'>GeneDrift Editorial</strong><div style='margin-top:4px;font-size:12px;color:#d9d2f2;'>Workflow notification</div></div>";
+	messageBody = messageBody + "<div style='padding:26px 24px;'>";
+	messageBody = messageBody + "<div style='display:inline-block;padding:5px 9px;border-radius:999px;background:#f0eefb;color:#5b3fd2;font-size:11px;font-weight:bold;'>" + safeEventType + "</div>";
+	messageBody = messageBody + "<h1 style='margin:14px 0 8px;font-size:24px;line-height:1.25;color:#241653;'>" + safeTitle + "</h1>";
+	messageBody = messageBody + "<p style='margin:0 0 18px;color:#655d78;font-size:14px;line-height:1.6;'>This workflow update was recorded by " + safeActorName + ".</p>";
+	if(safeDetail != "")
+	{
+		messageBody = messageBody + "<div style='margin:0 0 20px;padding:14px 16px;border-left:4px solid #5b3fd2;background:#f8f7fc;color:#403757;font-size:14px;line-height:1.55;'>" + safeDetail + "</div>";
+	}
+	messageBody = messageBody + "<a href='" + workspaceUrl + "' style='display:inline-block;padding:11px 16px;border-radius:6px;background:#5b3fd2;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;'>" + actionLabel + "</a>";
+	messageBody = messageBody + "<p style='margin:22px 0 0;color:#8a8398;font-size:11px;line-height:1.5;'>You received this operational message because you are part of the GeneDrift editorial workflow.</p>";
+	messageBody = messageBody + "</div></div></div>";
 
 	metadata = Map();
 	metadata.put("eventType",eventType);
@@ -78,6 +99,7 @@ map send_editorial_notification(string eventType, int articleId, int assignmentI
 			to : recipientEmails
 			subject : subject
 			message : messageBody
+			content type : HTML
 		]
 
 		insert into Audit_Events

@@ -3,7 +3,9 @@ import { CreatorEditorialRepository } from './creatorRepository'
 import { MockEditorialRepository } from './mockRepository'
 
 export function createRepository(): EditorialRepository {
-  return !import.meta.env.DEV && window.ZOHO?.CREATOR?.DATA
-    ? new CreatorEditorialRepository()
-    : new MockEditorialRepository()
+  if (import.meta.env.DEV) return new MockEditorialRepository()
+  if (!window.ZOHO?.CREATOR?.DATA) {
+    throw new Error('Zoho Creator SDK is unavailable. Reload the Creator application to reconnect.')
+  }
+  return new CreatorEditorialRepository()
 }

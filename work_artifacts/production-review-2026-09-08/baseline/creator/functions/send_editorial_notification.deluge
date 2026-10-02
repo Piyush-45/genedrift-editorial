@@ -1,0 +1,147 @@
+map send_editorial_notification(string eventType, int articleId, int assignmentId, string recipientIdsCsv, string detail)
+{
+	result = Map();
+	result.put("ok",false);
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+
+	recipientEmails = List();
+	recipientNames = List();
+	if(recipientIdsCsv != null && recipientIdsCsv.trim() != "")
+	{
+		recipientIds = recipientIdsCsv.toList(",");
+		for each recipientIdText in recipientIds
+		{
+			cleanRecipientId = recipientIdText.trim();
+			if(cleanRecipientId != "")
+			{
+				recipient = Demo_Employees[ID == cleanRecipientId.toLong() && Status == "Active"];
+				if(recipient.count() > 0 && recipient.Work_Email != null && recipient.Work_Email.trim() != "" && !recipientEmails.contains(recipient.Work_Email))
+				{
+					recipientEmails.add(recipient.Work_Email);
+					recipientNames.add(recipient.Display_Name);
+				}
+			}
+		}
+	}
+
+	if(recipientEmails.size() == 0)
+	{
+		result.put("ok",true);
+		result.put("message","No notification recipients were available.");
+		result.put("recipientCount",0);
+		return result;
+	}
+
+	actorName = "Editorial system";
+	actorId = if(article.Owner != null,article.Owner.ID,null);
+	if(actor.count() > 0)
+	{
+		actorName = actor.Display_Name;
+		actorId = actor.ID;
+	}
+
+	safeTitle = ifnull(article.Working_Title,"Untitled article").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+	safeEventType = ifnull(eventType,"Editorial update").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+	safeActorName = actorName.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+	safeDetail = ifnull(detail,"").trim().replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll("\n","<br />");
+	workspaceUrl = "https://creatorapp.zoho.in" + zoho.appuri + "#Article_Workspace?articleId=" + article.ID;
+	actionLabel = "Open article";
+	if(eventType.toLowerCase().contains("review"))
+	{
+		actionLabel = "Open review";
+	}
+	else if(eventType.toLowerCase().contains("publish") || eventType.toLowerCase().contains("scheduled"))
+	{
+		actionLabel = "Open publishing workspace";
+	}
+
+	subject = "[GeneDrift] " + eventType + ": " + article.Working_Title;
+	messageBody = "<div style='margin:0;background:#f5f3fb;padding:28px 12px;font-family:Arial,sans-serif;color:#241653;'>";
+	messageBody = messageBody + "<div style='max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e3def2;border-radius:12px;overflow:hidden;'>";
+	messageBody = messageBody + "<div style='padding:18px 24px;background:#241653;color:#ffffff;'><strong style='font-size:18px;'>GeneDrift Editorial</strong><div style='margin-top:4px;font-size:12px;color:#d9d2f2;'>Workflow notification</div></div>";
+	messageBody = messageBody + "<div style='padding:26px 24px;'>";
+	messageBody = messageBody + "<div style='display:inline-block;padding:5px 9px;border-radius:999px;background:#f0eefb;color:#5b3fd2;font-size:11px;font-weight:bold;'>" + safeEventType + "</div>";
+	messageBody = messageBody + "<h1 style='margin:14px 0 8px;font-size:24px;line-height:1.25;color:#241653;'>" + safeTitle + "</h1>";
+	messageBody = messageBody + "<p style='margin:0 0 18px;color:#655d78;font-size:14px;line-height:1.6;'>This workflow update was recorded by " + safeActorName + ".</p>";
+	if(safeDetail != "")
+	{
+		messageBody = messageBody + "<div style='margin:0 0 20px;padding:14px 16px;border-left:4px solid #5b3fd2;background:#f8f7fc;color:#403757;font-size:14px;line-height:1.55;'>" + safeDetail + "</div>";
+	}
+	messageBody = messageBody + "<a href='" + workspaceUrl + "' style='display:inline-block;padding:11px 16px;border-radius:6px;background:#5b3fd2;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;'>" + actionLabel + "</a>";
+	messageBody = messageBody + "<p style='margin:22px 0 0;color:#8a8398;font-size:11px;line-height:1.5;'>You received this operational message because you are part of the GeneDrift editorial workflow.</p>";
+	messageBody = messageBody + "</div></div></div>";
+
+	metadata = Map();
+	metadata.put("eventType",eventType);
+	metadata.put("articleId",article.ID);
+	metadata.put("assignmentId",assignmentId);
+	metadata.put("recipientIdsCsv",recipientIdsCsv);
+	metadata.put("recipientCount",recipientEmails.size());
+	metadata.put("recipients",recipientNames);
+
+	try
+	{
+		sendmail
+		[
+			from : zoho.adminuserid
+			to : recipientEmails
+			subject : subject
+			message : messageBody
+			content type : HTML
+		]
+
+		insert into Audit_Events
+		[
+			Event_UUID = "EVT-NOTIFY-" + article.ID + "-" + zoho.currenttime.toLong()
+			Entity_Type = "Article"
+			Entity_UUID = article.Article_UUID
+			Event_Type = "Notification Handoff"
+			Actor_Employee = actorId
+			Previous_State = article.Workflow_State
+			New_State = article.Workflow_State
+			Event_Summary = eventType + " notification handed to Zoho for " + recipientEmails.size() + " recipient(s)."
+			Event_Metadata = metadata.toString()
+			Occurred_At = zoho.currenttime
+		];
+
+		result.put("ok",true);
+		result.put("message","Notification handed to Zoho.");
+		result.put("recipientCount",recipientEmails.size());
+		return result;
+	}
+	catch (notificationError)
+	{
+		metadata.put("error",notificationError.message);
+		metadata.put("errorLine",notificationError.lineNo);
+		insert into Audit_Events
+		[
+			Event_UUID = "EVT-NOTIFY-FAILED-" + article.ID + "-" + zoho.currenttime.toLong()
+			Entity_Type = "Article"
+			Entity_UUID = article.Article_UUID
+			Event_Type = "Notification Failed"
+			Actor_Employee = actorId
+			Previous_State = article.Workflow_State
+			New_State = article.Workflow_State
+			Event_Summary = eventType + " notification failed before handoff."
+			Event_Metadata = metadata.toString()
+			Occurred_At = zoho.currenttime
+		];
+
+		result.put("message","Notification failed before handoff: " + notificationError.message);
+		result.put("recipientCount",recipientEmails.size());
+		return result;
+	}
+	return result;
+}

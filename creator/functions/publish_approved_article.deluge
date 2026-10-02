@@ -37,6 +37,23 @@ map publish_approved_article(int articleId)
 		result.put("articleState",article.Workflow_State);
 		return result;
 	}
+	if(article.Workflow_State == "Scheduled" && approvedRevisionId != "")
+	{
+		scheduledRevision = Article_Revisions[ID == approvedRevisionId.toLong()];
+		if(scheduledRevision.count() > 0 && scheduledRevision.Revision_State == "Approved")
+		{
+			existingScheduledJob = Publication_Jobs[Article == article.ID && Revision == scheduledRevision.ID && Action == "Schedule" && (Status == "Queued" || Status == "Processing")];
+			if(existingScheduledJob.count() > 0)
+			{
+				// A scheduled publication may already have been accepted by
+				// Catalyst while Creator is still waiting on the callback. The
+				// dashboard's Reconcile button should redeliver that existing
+				// schedule job instead of treating the Scheduled article as an
+				// ordinary immediate-publish request.
+				return thisapp.handoff_publication_to_catalyst(existingScheduledJob.ID);
+			}
+		}
+	}
 	if(article.Workflow_State != "Approved" || approvedRevisionId == "")
 	{
 		result.put("message","Only an article with an approved revision pointer can be published.");
@@ -52,16 +69,11 @@ map publish_approved_article(int articleId)
 	existingOpenJob = Publication_Jobs[Article == article.ID && Revision == revision.ID && (Action == "Publish" || Action == "Schedule") && (Status == "Queued" || Status == "Processing")];
 	if(existingOpenJob.count() > 0)
 	{
-		if(existingOpenJob.Status == "Queued")
-		{
-			return thisapp.handoff_publication_to_catalyst(existingOpenJob.ID);
-		}
-		result.put("ok",true);
-		result.put("message","Catalyst is already processing this approved revision.");
-		result.put("articleId",article.ID);
-		result.put("revisionId",revision.ID);
-		result.put("jobId",existingOpenJob.ID);
-		return result;
+		// The handoff function treats a recent Processing job as already accepted,
+		// but safely redelivers one that has remained open for more than five
+		// minutes. Reusing this path lets the dashboard reconcile a dead-lettered
+		// callback without creating another Creator job or Catalyst publication.
+		return thisapp.handoff_publication_to_catalyst(existingOpenJob.ID);
 	}
 
 	idempotencyKey = "PUB-" + article.Article_UUID + "-" + revision.Revision_UUID;

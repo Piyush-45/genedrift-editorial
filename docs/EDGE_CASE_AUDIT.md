@@ -1,6 +1,14 @@
 # Editorial Edge-Case Audit
 
-Last updated: 2026-08-24
+Last updated: 2026-09-01
+
+2026-09-01 amendment: for the current resume state, read
+`docs/CURRENT_CHECKPOINT_2026-09-01.md` first. Since this audit began, live
+testing has passed the core editor/review/revision flow, separate-role visual UI
+matrix, scheduled publication, too-soon schedule rejection, public retraction
+behavior, and final dashboard polish. Direct API role-denial evidence, fresh DS
+audit, media-format validation, duplicate/idempotency stress, accessibility, and
+measured scale checks remain open.
 
 ## Release Scope
 
@@ -133,17 +141,21 @@ role-isolated permission/profile cleanup, notification handoffs, and scheduling.
     review history opens the submitted snapshot read-only, and the reviewer
     cannot open the author's N+1 Draft through article-only or explicit
     Draft-revision workspace URLs.
-16. [Pending] Verify least-privilege Creator profiles and Data Sharing with
-    separate Author-only, Reviewer-only, Publisher-only, and non-super-admin
-    Editorial Admin users.
+16. [Passed visually / API evidence pending] Verify least-privilege Creator
+    profiles and Data Sharing with separate Author-only, Reviewer-only,
+    Publisher-only, and non-super-admin Editorial Admin users.
 17. [Passed for Creator handoff] Notification sends were accepted for live
     submissions and direct Gmail delivery reached Spam. Production delivery logs
     and domain authentication remain outside this Creator transition test.
 18. [Superseded prototype test] The first Creator-local timed schedule ran, but
     its final revision/pointer and second-article checks were not completed. The
     production Catalyst path replaces the local executor.
-19. [Pending] Freshly verify Creator cleanup from a new DS export and run the
-    Author-only, Reviewer-only, Publisher-only, and non-super-admin Editorial
-    Admin negative role matrix.
-20. [Pending] Deploy and verify the Catalyst immediate/scheduled/duplicate/
-    revoked-approval/retry/stale-pointer/callback-outage/callback-replay matrix.
+19. [Pending] Freshly verify Creator cleanup from a new DS export. The
+    separate-role visual UI matrix has passed, but direct API/security evidence
+    remains part of the fresh audit.
+20. [Partially passed] Deploy and verify the Catalyst immediate/scheduled/
+    duplicate/revoked-approval/retry/stale-pointer/callback-outage/
+    callback-replay matrix. Immediate, normal scheduled, too-soon rejection, and
+    public retraction behavior have passed live functional checks; forced
+    duplicate/idempotency, stale-pointer/revoked approval, callback outage/replay,
+    and media-format checks remain open.

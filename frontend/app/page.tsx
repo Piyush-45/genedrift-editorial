@@ -3,7 +3,6 @@ import {
   Activity,
   ArrowRight,
   BriefcaseBusiness,
-  Building2,
   Check,
   FileCheck2,
   Globe2,
@@ -11,23 +10,15 @@ import {
   Layers3,
   MapPinned,
   Network,
-  Radar,
-  Scale,
   ShieldCheck,
-  UsersRound
 } from "lucide-react";
 import { BusinessNeeds } from "@/components/home/business-needs";
-import { HeroIntelligenceMap } from "@/components/home/hero-intelligence-map";
+import { FeaturedExpertise } from "@/components/home/featured-expertise";
+import { Hero } from "@/components/home/hero";
 import { MarketExplorer } from "@/components/home/market-explorer";
 import { Button } from "@/components/ui/button";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { Separator } from "@/components/ui/separator";
-
-const supportingExpertise = [
-  { icon: Building2, title: "MAH & Local Representation", text: "Accountable in-country representation, governance and lifecycle ownership." },
-  { icon: Radar, title: "Regulatory Intelligence", text: "Structured monitoring translated into decision-ready market insight." },
-  { icon: Layers3, title: "Managed Regulatory Services", text: "Scalable, governed support across submissions and portfolio operations." },
-  { icon: UsersRound, title: "Dedicated Regulatory Teams", text: "Experienced capacity that works within your operating model and standards." }
-];
 
 const intelligence = [
   { type: "Regulatory update", market: "Saudi Arabia", date: "28 Aug 2026", title: "Saudi Arabia updates requirements for pharmaceutical submissions" },
@@ -58,19 +49,19 @@ const caseStudies = [
   {
     client: "Leading Consumer Healthcare Company",
     context: "A growing portfolio required coordinated regulatory and pharmacovigilance support across several emerging markets.",
-    engagement: "GeneDrift established regional governance, local market ownership and a consistent delivery rhythm.",
+    engagement: "Genedrift established regional governance, local market ownership and a consistent delivery rhythm.",
     outcome: "The client gained one accountable operating view across regulatory and safety activities."
   },
   {
     client: "Leading US Regulatory Consulting Organization",
     context: "A trusted advisory partner needed dependable in-market execution without expanding permanent regional infrastructure.",
-    engagement: "GeneDrift provided dedicated local expertise, submission coordination and controlled client communication.",
+    engagement: "Genedrift provided dedicated local expertise, submission coordination and controlled client communication.",
     outcome: "Regional work moved through a clearer, scalable and fully governed delivery model."
   },
   {
     client: "Multinational Regulatory Intelligence Program",
     context: "Decision-makers needed relevant regulatory changes from multiple markets in one usable format.",
-    engagement: "GeneDrift designed a monitoring, interpretation and reporting process aligned to portfolio priorities.",
+    engagement: "Genedrift designed a monitoring, interpretation and reporting process aligned to portfolio priorities.",
     outcome: "Market signals became a consistent input to regulatory planning and leadership decisions."
   }
 ];
@@ -101,75 +92,15 @@ const operatingStages = [
   { name: "Ongoing", items: ["09 Lifecycle Management", "10 MAH / Local Representation", "11 Pharmacovigilance", "12 Dedicated Resource Augmentation"] }
 ];
 
-function SectionIntro({ eyebrow, title, copy, light = false }: { eyebrow: string; title: string; copy?: string; light?: boolean }) {
-  return (
-    <div className={`section-intro${light ? " section-intro-light" : ""}`}>
-      <span className="section-eyebrow">{eyebrow}</span>
-      <h2>{title}</h2>
-      {copy ? <p>{copy}</p> : null}
-    </div>
-  );
-}
-
 export default function HomePage() {
   return (
     <main className="corporate-home">
-      <section className="enterprise-hero">
-        <div className="site-shell hero-layout">
-          <div className="hero-content">
-            <span className="hero-eyebrow">Global regulatory consulting</span>
-            <h1>Global regulatory expertise.<br />Built for local execution.</h1>
-            <p>GeneDrift helps life-sciences organizations enter, operate and grow across regulated markets with integrated expertise, accountable delivery and precise local execution.</p>
-            <div className="hero-actions">
-              <Button asChild variant="secondary" size="lg"><Link href="#contact">Speak to an Expert <ArrowRight aria-hidden="true" size={18} /></Link></Button>
-              <Button asChild variant="dark" size="lg"><Link href="#expertise">Explore our expertise</Link></Button>
-            </div>
-            <div className="hero-proof" aria-label="GeneDrift proof points">
-              <div><strong>30+</strong><span>Markets</span><small>Active regional coverage</small></div>
-              <div><strong>20+</strong><span>MAH markets</span><small>Local representation capability</small></div>
-              <div><strong>Global</strong><span>Delivery model</span><small>Regional control, local execution</small></div>
-            </div>
-          </div>
-          <div className="hero-map-wrap">
-            <HeroIntelligenceMap />
-          </div>
-        </div>
-      </section>
-
-      <section id="expertise" className="enterprise-section expertise-section">
-        <div className="site-shell">
-          <div className="section-heading-row">
-            <SectionIntro eyebrow="Featured Expertise" title="Integrated expertise across the regulatory lifecycle." />
-            <p>Strategic interpretation and hands-on execution remain connected, so each market decision has a clear pathway and accountable owner.</p>
-          </div>
-          <div className="featured-expertise-grid">
-            <article className="major-expertise">
-              <div className="expertise-icon"><Scale aria-hidden="true" /></div>
-              <span>01 / Core capability</span>
-              <h3>Regulatory Affairs</h3>
-              <p>Market-entry strategy, classification, dossier preparation, submission coordination and lifecycle support across complex regulated categories.</p>
-              <Link href="#contact">Explore Regulatory Affairs <ArrowRight aria-hidden="true" size={17} /></Link>
-            </article>
-            <article className="major-expertise major-expertise-dark">
-              <div className="expertise-icon"><Activity aria-hidden="true" /></div>
-              <span>02 / Core capability</span>
-              <h3>Pharmacovigilance</h3>
-              <p>Integrated safety operations, compliant oversight and market-specific pharmacovigilance support across active product portfolios.</p>
-              <Link href="#contact">Explore Pharmacovigilance <ArrowRight aria-hidden="true" size={17} /></Link>
-            </article>
-          </div>
-          <div className="supporting-expertise-grid">
-            {supportingExpertise.map((item) => {
-              const Icon = item.icon;
-              return <article key={item.title}><Icon aria-hidden="true" /><h3>{item.title}</h3><p>{item.text}</p></article>;
-            })}
-          </div>
-        </div>
-      </section>
+      <Hero />
+      <FeaturedExpertise />
 
       <section id="business-needs" className="enterprise-section business-needs-section">
         <div className="site-shell">
-          <SectionIntro eyebrow="Explore Business Needs" title="Start with the regulatory problem, not the service catalogue." copy="Choose the business situation closest to yours. The pathway connects the decision to the regulatory capabilities needed to move forward." />
+          <SectionHeading eyebrow="Explore Business Needs" title="Start with the regulatory problem, not the service catalogue." copy="Choose the business situation closest to yours. The pathway connects the decision to the regulatory capabilities needed to move forward." />
           <BusinessNeeds />
         </div>
       </section>
@@ -177,8 +108,8 @@ export default function HomePage() {
       <section id="markets" className="enterprise-section markets-section">
         <div className="site-shell">
           <div className="section-heading-row">
-            <SectionIntro eyebrow="Explore Markets" title="Local intelligence. Regional control. Global consistency." />
-            <p>Explore active and upcoming GeneDrift markets across Asia Pacific, the Middle East, Africa and CIS.</p>
+            <SectionHeading eyebrow="Explore Markets" title="Local intelligence. Regional control. Global consistency." />
+            <p>Explore active and upcoming Genedrift markets across Asia Pacific, the Middle East, Africa and CIS.</p>
           </div>
           <MarketExplorer />
         </div>
@@ -187,7 +118,7 @@ export default function HomePage() {
       <section id="intelligence" className="enterprise-section intelligence-section">
         <div className="site-shell">
           <div className="section-heading-row intelligence-heading">
-            <SectionIntro eyebrow="Latest Regulatory Intelligence" title="Market change, interpreted for action." />
+            <SectionHeading eyebrow="Latest Regulatory Intelligence" title="Market change, interpreted for action." />
             <Link className="section-link" href="/insights">View all intelligence <ArrowRight aria-hidden="true" size={17} /></Link>
           </div>
           <div className="intelligence-feed">
@@ -206,7 +137,7 @@ export default function HomePage() {
       <section id="insights" className="enterprise-section insights-showcase">
         <div className="site-shell">
           <div className="section-heading-row">
-            <SectionIntro light eyebrow="Featured Insights" title="Perspectives for confident regulatory decisions." />
+            <SectionHeading light eyebrow="Featured Insights" title="Perspectives for confident regulatory decisions." />
             <Link className="section-link section-link-light" href="/insights">Explore the Knowledge Hub <ArrowRight aria-hidden="true" size={17} /></Link>
           </div>
           <div className="editorial-layout">
@@ -227,7 +158,7 @@ export default function HomePage() {
 
       <section id="client-success" className="enterprise-section client-success-section">
         <div className="site-shell">
-          <SectionIntro eyebrow="Client Success Highlights" title="Complex engagements. Clear operating outcomes." copy="Representative engagement patterns are presented without exposing client-sensitive details or unsupported claims." />
+          <SectionHeading eyebrow="Client Success Highlights" title="Complex engagements. Clear operating outcomes." copy="Representative engagement patterns are presented without exposing client-sensitive details or unsupported claims." />
           <div className="case-study-grid">
             {caseStudies.map((item, index) => (
               <article key={item.client}>
@@ -245,7 +176,7 @@ export default function HomePage() {
 
       <section className="enterprise-section product-expertise-section">
         <div className="site-shell product-expertise-layout">
-          <SectionIntro eyebrow="Industry / Product Expertise" title="Specialist support across regulated product categories." copy="Category knowledge remains connected to local market requirements, submission pathways and lifecycle obligations." />
+          <SectionHeading eyebrow="Industry / Product Expertise" title="Specialist support across regulated product categories." copy="Category knowledge remains connected to local market requirements, submission pathways and lifecycle obligations." />
           <div className="product-category-list">
             {productCategories.map((item, index) => <article key={item.title}><span>0{index + 1}</span><div><h3>{item.title}</h3><p>{item.detail}</p></div><ArrowRight aria-hidden="true" /></article>)}
             <p className="supporting-types">Supporting experience: Biologics · Biosimilars · Vaccines</p>
@@ -255,7 +186,7 @@ export default function HomePage() {
 
       <section id="why-genedrift" className="enterprise-section why-genedrift-section">
         <div className="site-shell">
-          <SectionIntro light eyebrow="Why GeneDrift" title="A delivery model designed for trust, control and continuity." />
+          <SectionHeading light eyebrow="Why Genedrift" title="A delivery model designed for trust, control and continuity." />
           <div className="proof-matrix">
             {reasons.map(([Icon, title], index) => <article key={title}><span>0{index + 1}</span><Icon aria-hidden="true" /><h3>{title}</h3></article>)}
           </div>
@@ -265,8 +196,8 @@ export default function HomePage() {
       <section id="operating-model" className="enterprise-section operating-model-section">
         <div className="site-shell">
           <div className="section-heading-row">
-            <SectionIntro eyebrow="Delivery / Operating Model" title="One connected architecture from strategy to ongoing compliance." />
-            <p>GeneDrift’s operating model keeps regulatory thinking, document preparation, submission management and post-approval activity in one governed pathway.</p>
+            <SectionHeading eyebrow="Delivery / Operating Model" title="One connected architecture from strategy to ongoing compliance." />
+            <p>Genedrift’s operating model keeps regulatory thinking, document preparation, submission management and post-approval activity in one governed pathway.</p>
           </div>
           <div className="operating-architecture">
             {operatingStages.map((stage, index) => (
@@ -282,7 +213,7 @@ export default function HomePage() {
       <section className="enterprise-section global-presence-section">
         <div className="site-shell global-presence-layout">
           <div>
-            <SectionIntro eyebrow="Global Presence" title="Global expertise. Local execution." copy="Regional project management brings market-specific work into one coherent delivery view while preserving local regulatory accountability." />
+            <SectionHeading eyebrow="Global Presence" title="Global expertise. Local execution." copy="Regional project management brings market-specific work into one coherent delivery view while preserving local regulatory accountability." />
             <div className="presence-metrics"><div><strong>4</strong><span>Operating regions</span></div><div><strong>30+</strong><span>Priority markets</span></div></div>
           </div>
           <div className="presence-regions">

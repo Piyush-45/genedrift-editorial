@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import Highlight from '@tiptap/extension-highlight'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
@@ -97,6 +97,36 @@ export function ArticleEditor({ initialDocument, revisionNumber, preview, onChan
     })
   }, [editor, initialDocument])
 
+  const openSelectedImageEditor = useCallback(() => {
+    if (!editor) return
+    const attrs = editor.getAttributes('mediaImage')
+    if (!attrs.mediaId && !attrs.creatorRecordId) return
+    setEditingAsset({
+      id: String(attrs.creatorRecordId || attrs.mediaId || ''),
+      uuid: String(attrs.mediaId || ''),
+      originalFilename: '',
+      mimeType: '',
+      fileSizeBytes: 0,
+      widthPixels: 0,
+      heightPixels: 0,
+      status: 'Draft',
+      previewUrl: String(attrs.src || ''),
+      altText: String(attrs.alt || ''),
+      caption: String(attrs.caption || ''),
+      credit: String(attrs.credit || ''),
+    })
+    setMediaError('')
+    setDialogOpen(true)
+  }, [editor])
+
+  useEffect(() => {
+    const editorElement = editor?.view.dom
+    if (!editorElement) return
+    const handleEditMedia = () => openSelectedImageEditor()
+    editorElement.addEventListener('genedrift:edit-media', handleEditMedia)
+    return () => editorElement.removeEventListener('genedrift:edit-media', handleEditMedia)
+  }, [editor, openSelectedImageEditor])
+
   if (!editor) return <div className="editor-loading">Preparing editor…</div>
 
   return (
@@ -111,23 +141,7 @@ export function ArticleEditor({ initialDocument, revisionNumber, preview, onChan
             setDialogOpen(true)
           }}
           onEditImage={() => {
-            const attrs = editor.getAttributes('mediaImage')
-            setEditingAsset({
-              id: String(attrs.mediaId || ''),
-              uuid: '',
-              originalFilename: '',
-              mimeType: '',
-              fileSizeBytes: 0,
-              widthPixels: 0,
-              heightPixels: 0,
-              status: 'Draft',
-              previewUrl: String(attrs.src || ''),
-              altText: String(attrs.alt || ''),
-              caption: String(attrs.caption || ''),
-              credit: String(attrs.credit || ''),
-            })
-            setMediaError('')
-            setDialogOpen(true)
+            openSelectedImageEditor()
           }}
         />
       )}
@@ -153,17 +167,16 @@ export function ArticleEditor({ initialDocument, revisionNumber, preview, onChan
               editor.chain().focus().updateAttributes('mediaImage', {
                 alt: asset.altText,
                 caption: asset.caption,
-                credit: asset.credit,
               }).run()
             } else {
               editor.chain().focus().insertContent({
                 type: 'mediaImage',
                 attrs: {
-                  mediaId: asset.id,
+                  mediaId: asset.uuid,
+                  creatorRecordId: asset.id,
                   src: asset.previewUrl,
                   alt: asset.altText,
                   caption: asset.caption,
-                  credit: asset.credit,
                   displaySize: 'large',
                   alignment: 'center',
                 },

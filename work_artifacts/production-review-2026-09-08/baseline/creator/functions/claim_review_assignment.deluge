@@ -1,0 +1,141 @@
+map claim_review_assignment(int assignmentId)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+	actorReviewerRole = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Reviewer" && Active == true];
+	if(actorReviewerRole.count() == 0)
+	{
+		result.put("message","Only an active editorial reviewer can claim a review.");
+		return result;
+	}
+
+	assignment = Review_Assignments[ID == assignmentId];
+	if(assignment.count() == 0)
+	{
+		result.put("message","Review assignment not found.");
+		return result;
+	}
+	article = Articles[ID == assignment.Article.ID];
+	revision = Article_Revisions[ID == assignment.Revision.ID];
+	if(article.count() == 0 || revision.count() == 0 || article.Workflow_State != "In Review" || revision.Revision_State != "Submitted")
+	{
+		result.put("message","This article revision is no longer available for review.");
+		return result;
+	}
+	if(actor.ID == article.Primary_Author.ID)
+	{
+		result.put("message","The primary author cannot review their own article.");
+		return result;
+	}
+	priorParticipation = Review_Assignments[Revision == revision.ID && Reviewer == actor.ID && ID != assignment.ID && Status != "Cancelled"];
+	if(priorParticipation.count() > 0)
+	{
+		result.put("message","You already have a review assignment for this revision.");
+		return result;
+	}
+
+	if(assignment.Status == "Claimed" && assignment.Reviewer != null && assignment.Reviewer.ID == actor.ID)
+	{
+		result.put("ok",true);
+		result.put("message","This review is already claimed by you.");
+		result.put("assignmentId",assignment.ID);
+		result.put("articleId",article.ID);
+		result.put("revisionId",revision.ID);
+		result.put("status","Claimed");
+		return result;
+	}
+	if(assignment.Status != "Queued" && assignment.Status != "Assigned")
+	{
+		result.put("message","Only a queued or assigned review can be claimed.");
+		return result;
+	}
+	if(assignment.Status == "Assigned" && (assignment.Reviewer == null || assignment.Reviewer.ID != actor.ID))
+	{
+		result.put("message","This review is assigned to another reviewer.");
+		return result;
+	}
+
+	// Re-read immediately before mutation to reduce the shared-queue race window.
+	claimable = Review_Assignments[ID == assignmentId && (Status == "Queued" || Status == "Assigned")];
+	if(claimable.count() == 0)
+	{
+		result.put("message","This review was already claimed or closed.");
+		return result;
+	}
+	if(claimable.Status == "Assigned" && (claimable.Reviewer == null || claimable.Reviewer.ID != actor.ID))
+	{
+		result.put("message","This review is assigned to another reviewer.");
+		return result;
+	}
+
+	previousStatus = claimable.Status;
+	claimable.Reviewer = actor.ID;
+	claimable.Status = "Claimed";
+	claimable.Claimed_At = zoho.currenttime;
+
+	metadata = Map();
+	metadata.put("assignmentId",claimable.ID);
+	metadata.put("revisionId",revision.ID);
+	metadata.put("assignmentSource",claimable.Assignment_Source);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-CLAIM-" + claimable.ID + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Review Assignment"
+		Entity_UUID = claimable.Assignment_UUID
+		Event_Type = "Review Claimed"
+		Actor_Employee = actor.ID
+		Previous_State = previousStatus
+		New_State = "Claimed"
+		Event_Summary = actor.Display_Name + " claimed review assignment " + claimable.Assignment_UUID + "."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	recipientIds = List();
+	if(article.Owner != null && !recipientIds.contains(article.Owner.ID))
+	{
+		recipientIds.add(article.Owner.ID);
+	}
+	if(article.Primary_Author != null && !recipientIds.contains(article.Primary_Author.ID))
+	{
+		recipientIds.add(article.Primary_Author.ID);
+	}
+	recipientIdsCsvText = "";
+	for each recipientId in recipientIds
+	{
+		if(recipientIdsCsvText != "")
+		{
+			recipientIdsCsvText = recipientIdsCsvText + ",";
+		}
+		recipientIdsCsvText = recipientIdsCsvText + recipientId;
+	}
+	if(recipientIdsCsvText != "")
+	{
+		try
+		{
+			thisapp.send_editorial_notification("Review claimed",article.ID,claimable.ID,recipientIdsCsvText,actor.Display_Name + " claimed revision " + revision.Revision_Number + ".");
+		}
+		catch (notificationError)
+		{
+		}
+	}
+
+	result.put("ok",true);
+	result.put("message","Review claimed.");
+	result.put("assignmentId",claimable.ID);
+	result.put("articleId",article.ID);
+	result.put("revisionId",revision.ID);
+	result.put("status","Claimed");
+	return result;
+}

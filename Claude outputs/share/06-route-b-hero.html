@@ -1,0 +1,312 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genedrift — Hero (Route B)</title>
+  <meta charset="utf-8">
+  
+</head>
+<body style="margin:0">
+
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #F5F5F2; color: #0E1210;
+      font-family: "Schibsted Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; font-weight: 500; letter-spacing: -0.028em; }
+    a { color: #173D30; text-decoration: none; }
+    a:hover { color: #0E1210; }
+    .lab { font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; }
+    .hair { height: 1px; background: #E3E3DE; }
+    @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-34px,28px) scale(1.07); } }
+    @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(38px,-26px) scale(0.94); } }
+    @keyframes drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(16px,34px) scale(1.05); } }
+    @keyframes drift4 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-24px,-18px) scale(1.03); } }
+    @keyframes flute { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-16px); } }
+    @keyframes sheen { 0%,100% { opacity: .12; } 50% { opacity: .26; } }
+    @keyframes slidecycle {
+      0%   { opacity: 0; transform: translateY(14px); }
+      3%   { opacity: 1; transform: translateY(0); }
+      30%  { opacity: 1; transform: translateY(0); }
+      34%  { opacity: 0; transform: translateY(-14px); }
+      100% { opacity: 0; transform: translateY(-14px); }
+    }
+    @keyframes dotcycle {
+      0%,1%    { width: 6px;  background: #CFD2CE; }
+      4%,30%   { width: 20px; background: #5B3FD2; }
+      34%,100% { width: 6px;  background: #CFD2CE; }
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+    .b1 { animation: drift1 19s ease-in-out infinite; transform-origin: center; }
+    .b2 { animation: drift2 23s ease-in-out infinite; transform-origin: center; }
+    .b3 { animation: drift3 17s ease-in-out infinite; transform-origin: center; }
+    .b4 { animation: drift4 26s ease-in-out infinite; transform-origin: center; }
+    .flute { animation: flute 21s ease-in-out infinite; }
+    .sheen { animation: sheen 9s ease-in-out infinite; }
+    .slide { opacity: 0; animation: slidecycle 12s ease-in-out infinite backwards; }
+    .dot   { width: 6px; background: #CFD2CE; animation: dotcycle 12s ease-in-out infinite backwards; }
+    .s2 { animation-delay: 4s; } .s3 { animation-delay: 8s; }
+    .rise { animation: rise 1s cubic-bezier(.2,.7,.25,1) both; }
+    .bob { animation: bob 7s ease-in-out infinite; }
+    .d1{animation-delay:.06s}.d2{animation-delay:.18s}.d3{animation-delay:.30s}
+    .d4{animation-delay:.42s}.d5{animation-delay:.54s}.d6{animation-delay:.66s}
+    @media (prefers-reduced-motion: reduce) {
+      .b1,.b2,.b3,.b4,.flute,.sheen,.bob,.rise { animation: none; }
+      .slide { animation: none; opacity: 0; }
+      .slide.s1 { opacity: 1; }
+      .dot { animation: none; }
+    }
+
+  </style>
+
+
+<div style="width: 1440px; background: #F5F5F2; padding-bottom: 16px">
+  <div style="padding: 16px 16px 0">
+    <div style="position: relative; background: #FFFFFF; border-radius: 22px; height: 872px; overflow: hidden">
+
+      <!-- ---------- nav ---------- -->
+      <div style="position: absolute; left: 0; right: 0; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 24px 26px; gap: 20px">
+        <div style="display: flex; align-items: center; gap: 9px; background: #FFFFFF; border: 1px solid #E3E3DE; border-radius: 100px; padding: 8px 18px 8px 10px">
+          <span style="width: 26px; height: 26px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EAF0EC" stroke-width="1.7" stroke-linecap="round"><path d="M6 3c0 5 12 5 12 9s-12 4-12 9"/><path d="M18 3c0 5-12 5-12 9s12 4 12 9"/></svg>
+          </span>
+          <span style="font-size: 16px; font-weight: 600; letter-spacing: -0.03em">genedrift</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 7px; margin-right: auto; margin-left: 40px">
+          <span style="display: flex; align-items: center; gap: 7px; background: #F1F1ED; border-radius: 100px; padding: 9px 17px; font-size: 14px; font-weight: 500"><span style="width: 5px; height: 5px; border-radius: 50%; background: #5B3FD2; display: block"></span>Home</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 17px; font-size: 14px; color: #4A504D">Expertise</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 17px; font-size: 14px; color: #4A504D">Markets</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 17px; font-size: 14px; color: #4A504D">Knowledge</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 17px; font-size: 14px; color: #4A504D">Company</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.86); border: 1px solid rgba(227,227,222,0.9); display: flex; align-items: center; justify-content: center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A504D" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+          </span>
+          <span style="background: #FFFFFF; border: 1px solid #E3E3DE; border-radius: 100px; padding: 11px 20px; font-size: 14px; font-weight: 500">Contact us</span>
+        </div>
+      </div>
+
+      <!-- ---------- art panel ---------- -->
+      <div style="position: absolute; right: 14px; top: 14px; bottom: 14px; width: 632px; border-radius: 18px; overflow: hidden; background: #DCE5DF">
+        <svg style="position: absolute; inset: 0; width: 100%; height: 100%" viewBox="0 0 632 844" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="36"/></filter>
+            <filter id="soft2" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="22"/></filter>
+            <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+            <pattern id="fluteP" width="8" height="844" patternUnits="userSpaceOnUse">
+              <rect x="0" y="0" width="4" height="844" fill="#FFFFFF" opacity="0.30"/>
+              <rect x="4" y="0" width="2.4" height="844" fill="#0E241C" opacity="0.09"/>
+            </pattern>
+            <clipPath id="fluteClip"><rect x="182" y="126" width="272" height="600" rx="10"/></clipPath>
+          </defs>
+
+          <rect width="632" height="844" fill="#E4EBE6"/>
+
+          <g filter="url(#soft)">
+            <ellipse class="b1" cx="150" cy="250" rx="150" ry="180" fill="#9B86EA"/>
+            <ellipse class="b2" cx="470" cy="196" rx="160" ry="150" fill="#CBBFF4"/>
+            <ellipse class="b3" cx="360" cy="640" rx="215" ry="185" fill="#5B3FD2"/>
+            <ellipse class="b4" cx="112" cy="620" rx="150" ry="150" fill="#43318F"/>
+            <ellipse class="b2" cx="540" cy="452" rx="120" ry="150" fill="#EFE7F5"/>
+            <ellipse class="b1" cx="316" cy="392" rx="130" ry="150" fill="#2C1F6B"/>
+          </g>
+          <g filter="url(#soft2)" opacity="0.8">
+            <ellipse class="b3" cx="250" cy="470" rx="86" ry="112" fill="#D6CDF6"/>
+            <ellipse class="b4" cx="430" cy="330" rx="72" ry="96" fill="#F2EFFB"/>
+          </g>
+
+          <g clip-path="url(#fluteClip)">
+            <g class="flute"><rect x="160" y="126" width="320" height="600" fill="url(#fluteP)"/></g>
+            <rect class="sheen" x="182" y="126" width="272" height="600" fill="#FFFFFF"/>
+          </g>
+          <rect x="182" y="126" width="272" height="600" rx="10" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.45"/>
+
+          <rect width="632" height="844" filter="url(#grain)" opacity="0.15"/>
+        </svg>
+
+        <!-- glass card, top right -->
+        <div class="rise d5" style="position: absolute; right: 22px; top: 84px; width: 268px; background: rgba(24,14,58,0.34); border: 1px solid rgba(255,255,255,0.34); border-radius: 16px; padding: 18px 20px 16px">
+          <div style="display: flex; gap: 6px">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.95); display: block"></span>
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.45); display: block"></span>
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.45); display: block"></span>
+          </div>
+          <div style="margin-top: 16px; font-size: 17px; line-height: 1.35; font-weight: 500; color: #FFFFFF">A local qualified person on record in every market that requires one.</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px">
+            <div style="display: flex; align-items: center; gap: 9px">
+              <span style="width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.4"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+              </span>
+              <span class="lab" style="color: rgba(255,255,255,0.92)">Regulatory lead</span>
+            </div>
+            <span style="width: 34px; height: 34px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </span>
+          </div>
+        </div>
+
+        <!-- overlay stats, bottom -->
+        <div style="position: absolute; left: 26px; right: 26px; bottom: 26px; text-align: right">
+          <div class="lab" style="color: rgba(255,255,255,0.78)">In-house · in-country</div>
+          <div style="display: flex; align-items: flex-end; justify-content: flex-end; gap: 40px; margin-top: 14px">
+            <div style="display: flex; align-items: baseline; gap: 10px">
+              <span style="font-size: 34px; font-weight: 500; letter-spacing: -0.035em; color: #FFFFFF">30+</span>
+              <span style="font-size: 14px; color: rgba(255,255,255,0.8)">Markets live</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 10px">
+              <span style="font-size: 34px; font-weight: 500; letter-spacing: -0.035em; color: #FFFFFF">20+</span>
+              <span style="font-size: 14px; color: rgba(255,255,255,0.8)">MAH markets</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- left column ---------- -->
+      <div style="position: absolute; left: 56px; top: 208px; width: 700px">
+        <div class="rise d1" style="display: flex; align-items: center; gap: 16px">
+          <span style="display: block; width: 74px; height: 2px; background: #0E1210"></span>
+          <span style="display: block; width: 74px; height: 1px; background: #CFD2CE"></span>
+          <span style="font-size: 14.5px; color: #4A504D">Global Regulatory Affairs &amp; Pharmacovigilance</span>
+        </div>
+
+        <h1 class="rise d2" style="margin-top: 26px; font-size: 56px; line-height: 1.02; letter-spacing: -0.04em; font-weight: 500">
+          Approval in the<br>markets others<br>call
+          <span style="white-space: nowrap">too difficult
+            <span style="display: inline-flex; align-items: center; margin-left: 10px; vertical-align: middle">
+              <span style="width: 44px; height: 44px; border-radius: 50%; background: #DCE5DF; display: flex; align-items: center; justify-content: center; border: 2px solid #FFFFFF">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.4"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+              </span>
+              <span style="width: 44px; height: 44px; border-radius: 50%; background: #F1F1ED; display: flex; align-items: center; justify-content: center; margin-left: -8px">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 9v8H9"/></svg>
+              </span>
+            </span>
+          </span>
+        </h1>
+
+        <div class="hair rise d3" style="margin-top: 34px; width: 570px"></div>
+
+        <div class="rise d3" style="display: flex; align-items: center; gap: 48px; margin-top: 26px">
+          <div>
+            <p style="font-size: 15.5px; line-height: 1.6; color: #6E7370; max-width: 400px">
+              Regulatory affairs, pharmacovigilance and MAH representation across 46 markets — delivered by our own people, on record with the authority.
+            </p>
+            <div style="display: flex; align-items: center; gap: 10px; background: #0E1210; color: #F5F5F2; font-size: 13.5px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 15px 28px; border-radius: 100px; margin-top: 26px; width: fit-content">
+              Speak to an expert
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F5F5F2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </div>
+          </div>
+          <div class="bob" style="width: 78px; height: 78px; border-radius: 50%; border: 1px solid #E3E3DE; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0">
+            <span class="lab" style="font-size: 10px; color: #6E7370">Scroll</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- bottom-left cluster ---------- -->
+      <div class="rise d4" style="position: absolute; left: 56px; bottom: 46px; width: 400px">
+        <div style="font-size: 23px; font-weight: 500; letter-spacing: -0.03em">Where we operate</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; align-items: center">
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 16px; font-size: 14px">Asia Pacific</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 16px; font-size: 14px">Africa</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 16px; font-size: 14px">Middle East</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 16px; font-size: 14px">CIS</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 16px; font-size: 14px">Eastern Europe</span>
+          <span style="border: 1px solid #E3E3DE; border-radius: 100px; padding: 9px 16px; font-size: 14px">Latin America</span>
+          <span style="width: 36px; height: 36px; border-radius: 50%; background: #F1F1ED; display: flex; align-items: center; justify-content: center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 9v8H9"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- ---------- straddling carousel card ---------- -->
+      <div class="rise d6" style="position: absolute; left: 500px; bottom: 46px; width: 430px; background: #FFFFFF; border-radius: 18px; padding: 22px 24px 20px; box-shadow: 0 24px 48px rgba(14,18,16,0.10), 0 2px 6px rgba(14,18,16,0.05)">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <span class="lab" style="color: #6E7370">Market status</span>
+          <div style="display: flex; align-items: center; gap: 6px">
+            <span style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #E3E3DE; display: flex; align-items: center; justify-content: center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8B908C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+            </span>
+            <span style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #0E1210; display: flex; align-items: center; justify-content: center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E1210" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </div>
+        </div>
+
+        <div style="position: relative; height: 168px; margin-top: 14px">
+
+          <div class="slide s1" style="position: absolute; inset: 0">
+            <div style="display: flex; align-items: baseline; justify-content: space-between">
+              <span style="font-size: 21px; font-weight: 600; letter-spacing: -0.03em">Saudi Arabia</span>
+              <span class="lab" style="color: #8B908C">Middle East</span>
+            </div>
+            <div class="hair" style="margin-top: 14px"></div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 11px 0; align-items: center; padding-top: 13px; font-size: 14.5px">
+              <span style="color: #4A504D">Regulatory Affairs</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #5B3FD2; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+              <span style="color: #4A504D">MAH / Local Representation</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #5B3FD2; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+              <span style="color: #4A504D">Pharmacovigilance</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #5B3FD2; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+            </div>
+          </div>
+
+          <div class="slide s2" style="position: absolute; inset: 0">
+            <div style="display: flex; align-items: baseline; justify-content: space-between">
+              <span style="font-size: 21px; font-weight: 600; letter-spacing: -0.03em">Nigeria</span>
+              <span class="lab" style="color: #8B908C">Africa — West</span>
+            </div>
+            <div class="hair" style="margin-top: 14px"></div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 11px 0; align-items: center; padding-top: 13px; font-size: 14.5px">
+              <span style="color: #4A504D">Regulatory Affairs</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #5B3FD2; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+              <span style="color: #4A504D">MAH / Local Representation</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #5B3FD2; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+              <span style="color: #4A504D">Pharmacovigilance</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #5B3FD2; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>Available</span>
+            </div>
+          </div>
+
+          <div class="slide s3" style="position: absolute; inset: 0">
+            <div style="display: flex; align-items: baseline; justify-content: space-between">
+              <span style="font-size: 21px; font-weight: 600; letter-spacing: -0.03em">Kazakhstan</span>
+              <span class="lab" style="color: #8B908C">CIS</span>
+            </div>
+            <div class="hair" style="margin-top: 14px"></div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 11px 0; align-items: center; padding-top: 13px; font-size: 14.5px">
+              <span style="color: #4A504D">Regulatory Affairs</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #6E7370"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#8B908C" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#8B908C"/></svg>Upcoming</span>
+              <span style="color: #4A504D">MAH / Local Representation</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #6E7370"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#8B908C" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#8B908C"/></svg>Upcoming</span>
+              <span style="color: #4A504D">Pharmacovigilance</span>
+              <span style="display: flex; align-items: center; gap: 7px; color: #6E7370"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#8B908C" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#8B908C"/></svg>Upcoming</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hair"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 14px">
+          <div style="display: flex; align-items: center; gap: 5px">
+            <span class="dot s1" style="height: 6px; border-radius: 100px; display: block"></span>
+            <span class="dot s2" style="height: 6px; border-radius: 100px; display: block"></span>
+            <span class="dot s3" style="height: 6px; border-radius: 100px; display: block"></span>
+            <span class="lab" style="margin-left: 10px; color: #8B908C">46 markets mapped</span>
+          </div>
+          <span style="font-size: 14px; font-weight: 500; color: #5B3FD2">Check yours →</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

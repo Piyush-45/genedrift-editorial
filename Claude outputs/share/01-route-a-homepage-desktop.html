@@ -1,0 +1,674 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genedrift — Homepage (Route A)</title>
+  <meta charset="utf-8">
+  
+</head>
+<body style="margin:0">
+
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #5B3FD2; text-decoration: none; }
+    a:hover { color: #241653; }
+    p { margin: 0; }
+    h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: -0.025em; }
+
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 72%, 100% { opacity: .55; r: 4.6; } 82% { opacity: 1; r: 6.4; } }
+    @keyframes halo1 { 0% { r: 66; opacity: .5; } 100% { r: 132; opacity: 0; } }
+    @keyframes halo2 { 0% { r: 66; opacity: .4; } 100% { r: 176; opacity: 0; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+    .ring0 { transform-origin: 700px 560px; animation: spin 120s linear infinite normal; }
+.ring1 { transform-origin: 700px 560px; animation: spin 150s linear infinite reverse; }
+.ring2 { transform-origin: 700px 560px; animation: spin 130s linear infinite normal; }
+.ring3 { transform-origin: 700px 560px; animation: spin 170s linear infinite reverse; }
+.ring4 { transform-origin: 700px 560px; animation: spin 145s linear infinite normal; }
+.ring5 { transform-origin: 700px 560px; animation: spin 190s linear infinite reverse; }
+    .pulse { animation: pulse 6s ease-in-out infinite; }
+    .rgn, .core { opacity: 1; }
+    .rlab { display: none; }
+    .halo1 { animation: halo1 5s ease-out infinite; }
+    .halo2 { animation: halo2 5s ease-out .9s infinite; }
+    .rise { animation: rise .9s cubic-bezier(.2,.7,.3,1) both; }
+    .d1 { animation-delay: .05s } .d2 { animation-delay: .18s } .d3 { animation-delay: .31s }
+    .d4 { animation-delay: .44s } .d5 { animation-delay: .57s } .d6 { animation-delay: .70s }
+    @media (prefers-reduced-motion: reduce) { .pulse, .halo1, .halo2, .rise { animation: none; } }
+  </style>
+
+
+<div style="width: 1440px; background: #FFFFFF; color: #222222">
+
+  <!-- ==================== HERO (Direction E — Orbit) ==================== -->
+  <div style="height: 940px; background: #241653; color: #FFFFFF; position: relative; overflow: hidden">
+
+    <div style="position: absolute; right: -340px; top: -20px; width: 1400px; height: 1120px; opacity: .95">
+      <svg viewBox="0 0 1400 1120" style="width:100%; height:100%; display:block; overflow:visible"><circle cx="700" cy="560" r="118" fill="none" stroke="rgba(150,122,255,0.16)" stroke-width="1.1"/><circle cx="700" cy="560" r="168" fill="none" stroke="rgba(150,122,255,0.20)" stroke-width="1.1"/><circle cx="700" cy="560" r="222" fill="none" stroke="rgba(150,122,255,0.23)" stroke-width="1.1"/><circle cx="700" cy="560" r="282" fill="none" stroke="rgba(150,122,255,0.27)" stroke-width="1.1"/><circle cx="700" cy="560" r="350" fill="none" stroke="rgba(150,122,255,0.30)" stroke-width="1.1"/><circle cx="700" cy="560" r="424" fill="none" stroke="rgba(150,122,255,0.34)" stroke-width="1.1"/><g class="ring0"><circle cx="818.0" cy="560.0" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.00s"/><circle cx="582.0" cy="560.0" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.37s"/></g><g class="ring1"><circle cx="863.7" cy="597.8" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.60s"/><circle cx="536.3" cy="522.2" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:0.97s"/></g><g class="ring2"><circle cx="899.5" cy="657.3" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.20s"/><circle cx="602.7" cy="759.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.57s"/><circle cx="500.5" cy="462.7" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.94s"/><circle cx="797.3" cy="360.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.31s"/></g><g class="ring3"><circle cx="919.2" cy="737.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:1.80s"/><circle cx="655.9" cy="838.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.17s"/><circle cx="436.7" cy="661.1" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.54s"/><circle cx="480.8" cy="382.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:2.91s"/><circle cx="744.1" cy="281.5" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:3.28s"/><circle cx="963.3" cy="458.9" r="5.2" fill="#7C63E8" class="pulse" style="animation-delay:3.65s"/></g><g class="ring4"><circle cx="915.5" cy="835.8" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.40s"/><circle cx="784.7" cy="899.6" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.77s"/><circle cx="639.2" cy="904.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.14s"/><circle cx="504.3" cy="850.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.51s"/><circle cx="403.2" cy="745.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.88s"/><circle cx="353.4" cy="608.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.25s"/><circle cx="363.6" cy="463.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.62s"/><circle cx="431.9" cy="335.0" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.99s"/><circle cx="546.6" cy="245.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.36s"/><circle cx="687.8" cy="210.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.73s"/><circle cx="831.1" cy="235.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.10s"/><circle cx="951.8" cy="316.9" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.47s"/><circle cx="1028.9" cy="440.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.84s"/><circle cx="1049.1" cy="584.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.21s"/><circle cx="1009.0" cy="724.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.58s"/></g><g class="ring5"><circle cx="879.2" cy="944.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.00s"/><circle cx="728.3" cy="983.1" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.37s"/><circle cx="573.5" cy="964.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:3.74s"/><circle cx="435.9" cy="891.7" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.11s"/><circle cx="333.9" cy="773.9" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.48s"/><circle cx="281.4" cy="627.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:4.85s"/><circle cx="285.4" cy="471.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.22s"/><circle cx="345.4" cy="327.6" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.59s"/><circle cx="453.3" cy="215.2" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:5.96s"/><circle cx="594.5" cy="149.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.33s"/><circle cx="749.9" cy="139.0" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:0.70s"/><circle cx="898.7" cy="185.4" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.07s"/><circle cx="1020.6" cy="282.5" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.44s"/><circle cx="1099.2" cy="417.0" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:1.81s"/><circle cx="1123.9" cy="570.9" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.18s"/><circle cx="1091.3" cy="723.3" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.55s"/><circle cx="1005.9" cy="853.6" r="4.6" fill="#7C63E8" class="pulse" style="animation-delay:2.92s"/></g><circle cx="700" cy="560" r="66" fill="#5B3FD2"/><circle cx="700" cy="560" r="66" fill="none" stroke="rgba(150,122,255,0.45)" stroke-width="1.1" class="halo1"/><circle cx="700" cy="560" r="66" fill="none" stroke="rgba(150,122,255,0.30)" stroke-width="1.1" class="halo2"/><g transform="translate(681,541)" stroke="#FFFFFF" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M8 3c0 8 22 8 22 15s-22 6-22 15"/><path d="M30 3c0 8-22 8-22 15s22 6 22 15"/><path d="M11.5 11.5h15M11.5 26.5h15"/></g></svg>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 26px 96px">
+      <span style="font-size: 22px; font-weight: 700; letter-spacing: -0.03em">genedrift</span>
+      <div style="display: flex; align-items: center; gap: 32px; font-size: 15px; font-weight: 500; color: #DCD6F5">
+        <span>Explore</span><span>Expertise</span><span>Markets</span><span>Knowledge Hub</span><span>Client Success</span><span>Company</span><span>Careers</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 20px">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#DCD6F5" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+        <div style="background: #5B3FD2; color: #FFFFFF; font-size: 14.5px; font-weight: 600; padding: 11px 20px; border-radius: 8px">Speak to an Expert</div>
+      </div>
+    </div>
+
+    <div style="position: relative; padding: 96px 96px 0; max-width: 800px">
+      <div class="rise d1" style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A794FF">Global Regulatory Affairs &amp; Pharmacovigilance</div>
+      <h1 class="rise d2" style="margin-top: 24px; font-size: 76px; line-height: 1.0; letter-spacing: -0.03em">One partner.<br>Forty-six<br>regulatory<br>systems.</h1>
+      <div class="rise d3" style="width: 88px; height: 2px; background: #7C63E8; margin-top: 36px"></div>
+      <p class="rise d4" style="margin-top: 30px; font-size: 19px; line-height: 1.6; color: #CFC8EC; max-width: 560px">
+        Every ring is a region we operate in. Every point on it is a market Genedrift has mapped — where we file, hold the licence, run pharmacovigilance, or are opening up next.
+      </p>
+      <div class="rise d5" style="display: flex; align-items: center; gap: 30px; margin-top: 40px">
+        <div style="background: #5B3FD2; color: #FFFFFF; font-size: 16px; font-weight: 600; padding: 16px 30px; border-radius: 9px">Speak to an Expert</div>
+        <div style="display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 600; color: #FFFFFF">
+          Explore the coverage map
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="rise d6" style="position: absolute; left: 96px; bottom: 44px">
+      <div style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #9C92C9">Regions, inner to outer</div>
+      <div style="display: flex; gap: 26px; margin-top: 16px">
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">02</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Middle East</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">02</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">E. Europe</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">04</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">CIS</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">06</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Latin America</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">15</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Asia Pacific</div></div>
+        <div><div style="font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: #FFFFFF">17</div><div style="margin-top: 3px; font-size: 13px; color: #9C92C9">Africa</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EXPLORE / BUSINESS NEEDS ==================== -->
+  <div style="padding: 76px 96px 0">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 60px">
+      <div>
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Explore</div>
+        <h2 style="margin-top: 14px; font-size: 38px; line-height: 1.16">Start with the problem, not our service names.</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; background: #F4F5F7; border-radius: 10px; padding: 7px 7px 7px 20px; width: 560px; flex-shrink: 0">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+        <span style="flex-grow: 1; font-size: 16px; color: #8A8A94">Search a market, capability or regulatory update</span>
+        <div style="background: #5B3FD2; color: #FFFFFF; font-size: 15px; font-weight: 600; padding: 12px 22px; border-radius: 7px">Search</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 36px">
+      <div style="background: #F4F5F7; border-radius: 16px; padding: 28px 26px; display: flex; flex-direction: column; min-height: 200px">
+        <div style="width: 50px; height: 50px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg>
+        </div>
+        <div style="margin-top: auto; padding-top: 28px; font-size: 18px; font-weight: 600; line-height: 1.35; color: #222222">Enter a new market</div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 12px; font-size: 14.5px; font-weight: 600; color: #5B3FD2">Explore <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+      <div style="background: #F4F5F7; border-radius: 16px; padding: 28px 26px; display: flex; flex-direction: column; min-height: 200px">
+        <div style="width: 50px; height: 50px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a7 7 0 0 1 14 0c0 5.6-7 10-7 10z"/><path d="M8.5 11h2l1.2-2.4L13.5 13l1-2h1.5"/></svg>
+        </div>
+        <div style="margin-top: auto; padding-top: 28px; font-size: 18px; font-weight: 600; line-height: 1.35; color: #222222">Build or maintain PV compliance</div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 12px; font-size: 14.5px; font-weight: 600; color: #5B3FD2">Explore <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+      <div style="background: #F4F5F7; border-radius: 16px; padding: 28px 26px; display: flex; flex-direction: column; min-height: 200px">
+        <div style="width: 50px; height: 50px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V8.5L11 5l7 3.5V20"/><path d="M3 20h18M9 20v-4h4v4M8.5 11h1M13 11h1M8.5 14h1M13 14h1"/></svg>
+        </div>
+        <div style="margin-top: auto; padding-top: 28px; font-size: 18px; font-weight: 600; line-height: 1.35; color: #222222">Establish local representation or MAH</div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 12px; font-size: 14.5px; font-weight: 600; color: #5B3FD2">Explore <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+      <div style="background: #5B3FD2; border-radius: 16px; padding: 28px 26px; display: flex; flex-direction: column; min-height: 200px">
+        <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.20); display: flex; align-items: center; justify-content: center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9a2.9 2.9 0 1 1 3.8 2.8c-.7.3-1 .9-1 1.6v.6"/><path d="M12 17.6h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        </div>
+        <div style="margin-top: auto; padding-top: 28px; font-size: 18px; font-weight: 600; line-height: 1.35; color: #FFFFFF">Not sure where to start?</div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 12px; font-size: 14.5px; font-weight: 600; color: #FFFFFF">Guided questionnaire <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 54px; margin-top: 44px; padding: 22px 28px; background: #F0EEFB; border-radius: 14px">
+      <span style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Certified &amp; compliant</span>
+      <div style="display: flex; gap: 40px; align-items: center; font-size: 14.5px; font-weight: 600; color: #4A4A55">
+        <span>ISO 9001:2000</span><span>ISO 27001:2022</span><span>GDPR</span><span>21 CFR Part 11</span><span>SOC 2 Type II</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FEATURED EXPERTISE ==================== -->
+  <div style="padding: 96px 96px 0">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Expertise</div>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 60px; margin-top: 14px">
+      <h2 style="font-size: 42px; line-height: 1.14; max-width: 640px">Six core capabilities. One accountable team.</h2>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #5B3FD2; padding-bottom: 6px">
+        All expertise <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 44px">
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+        </div>
+        <h3 style="margin-top: 24px; font-size: 23px">Regulatory Affairs</h3>
+        <p style="margin-top: 12px; font-size: 16px; line-height: 1.6; color: #6B6B6B">Strategy and intelligence, dossier preparation, eCTD publishing, submission management, approvals and lifecycle change.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Dossier Preparation</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">eCTD Publishing</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Variations</span>
+        </div>
+      </div>
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a7 7 0 0 1 14 0c0 5.6-7 10-7 10z"/><path d="M8.5 11h2l1.2-2.4L13.5 13l1-2h1.5"/></svg>
+        </div>
+        <h3 style="margin-top: 24px; font-size: 23px">Pharmacovigilance</h3>
+        <p style="margin-top: 12px; font-size: 16px; line-height: 1.6; color: #6B6B6B">Local QPPV and deputy cover, ICSR intake, literature monitoring, aggregate reporting and inspection readiness.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Local QPPV</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">PSUR / PBRER</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">PSMF</span>
+        </div>
+      </div>
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V8.5L11 5l7 3.5V20"/><path d="M3 20h18M9 20v-4h4v4M8.5 11h1M13 11h1M8.5 14h1M13 14h1"/></svg>
+        </div>
+        <h3 style="margin-top: 24px; font-size: 23px">MAH &amp; Local Representation</h3>
+        <p style="margin-top: 12px; font-size: 16px; line-height: 1.6; color: #6B6B6B">Licence holding and local representation where you have no legal entity, with obligations managed on your behalf.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Licence Holding</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Authority Communication</span>
+        </div>
+      </div>
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/><path d="M8.5 11.5h5M11 9v5"/></svg>
+        </div>
+        <h3 style="margin-top: 24px; font-size: 23px">Regulatory Intelligence</h3>
+        <p style="margin-top: 12px; font-size: 16px; line-height: 1.6; color: #6B6B6B">Classification and pathway assessment, country requirement mapping, roadmaps, gap analysis and M&amp;A due diligence.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Roadmaps</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Gap Analysis</span>
+        </div>
+      </div>
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 4v5M8 13h4M8 16h7"/></svg>
+        </div>
+        <h3 style="margin-top: 24px; font-size: 23px">Managed Regulatory Services</h3>
+        <p style="margin-top: 12px; font-size: 16px; line-height: 1.6; color: #6B6B6B">Your regulatory function run end-to-end under regional project governance, with defined scope and reporting.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Project Governance</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Managed Services</span>
+        </div>
+      </div>
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: #F0EEFB; display: flex; align-items: center; justify-content: center">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15 19a4.6 4.6 0 0 1 5.5-4.3"/></svg>
+        </div>
+        <h3 style="margin-top: 24px; font-size: 23px">Dedicated Regulatory Teams</h3>
+        <p style="margin-top: 12px; font-size: 16px; line-height: 1.6; color: #6B6B6B">Dedicated FTE and embedded teams, including hybrid onsite deployment, scaled to your portfolio.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Dedicated FTE</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Hybrid Onsite</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== INDUSTRIES ==================== -->
+  <div style="padding: 76px 96px 96px">
+    <div style="display: flex; align-items: center; gap: 20px">
+      <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Industries &amp; product categories</span>
+      <div style="flex-grow: 1; height: 1px; background: #ECEDF1"></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin-top: 26px">
+      <div style="background: #F0EEFB; border-radius: 16px; padding: 26px 22px">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M9 9l6 6"/></svg>
+        </div>
+        <div style="margin-top: 20px; font-size: 17px; font-weight: 600">Pharmaceuticals</div>
+        <div style="margin-top: 6px; font-size: 14px; color: #6B6B6B">Generics, NCEs/NDAs, biologics, biosimilars, vaccines</div>
+      </div>
+      <div style="background: #F0EEFB; border-radius: 16px; padding: 26px 22px">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5a3.5 3.5 0 0 1 4.6 4.6L9.6 19.6a2.6 2.6 0 0 1-3.7-3.7z"/><path d="m5 5 3 3"/></svg>
+        </div>
+        <div style="margin-top: 20px; font-size: 17px; font-weight: 600">Medical Devices &amp; IVDs</div>
+        <div style="margin-top: 6px; font-size: 14px; color: #6B6B6B">Classification, registration and lifecycle support</div>
+      </div>
+      <div style="background: #F0EEFB; border-radius: 16px; padding: 26px 22px">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c0 8-5 12-11 12-2 0-3-1-3-1s4-11 14-11z"/><path d="M5 19c2-4 5-6 9-7.5"/></svg>
+        </div>
+        <div style="margin-top: 20px; font-size: 17px; font-weight: 600">Food Supplements</div>
+        <div style="margin-top: 6px; font-size: 14px; color: #6B6B6B">Nutraceuticals and supplement notifications</div>
+      </div>
+      <div style="background: #F0EEFB; border-radius: 16px; padding: 26px 22px">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4 1.7 4.3L18 10l-4.3 1.7L12 16l-1.7-4.3L6 10l4.3-1.7z"/><path d="M17.5 15.5 18 17l1.5.5L18 18l-.5 1.5L17 18l-1.5-.5L17 17z"/></svg>
+        </div>
+        <div style="margin-top: 20px; font-size: 17px; font-weight: 600">Cosmetics</div>
+        <div style="margin-top: 6px; font-size: 14px; color: #6B6B6B">Product notification and compliance dossiers</div>
+      </div>
+      <div style="background: #F0EEFB; border-radius: 16px; padding: 26px 22px">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="15.5" rx="4" ry="3.2"/><ellipse cx="6.6" cy="10.5" rx="2" ry="2.4"/><ellipse cx="17.4" cy="10.5" rx="2" ry="2.4"/><ellipse cx="9.8" cy="6.6" rx="1.9" ry="2.3"/><ellipse cx="14.2" cy="6.6" rx="1.9" ry="2.3"/></svg>
+        </div>
+        <div style="margin-top: 20px; font-size: 17px; font-weight: 600">Veterinary Products</div>
+        <div style="margin-top: 6px; font-size: 14px; color: #6B6B6B">Registration and maintenance across markets</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== GLOBAL PRESENCE ==================== -->
+  <div style="background: #F4F5F7; padding: 96px 96px">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Global Presence</div>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 60px; margin-top: 14px">
+      <h2 style="font-size: 42px; line-height: 1.14; max-width: 620px">Local execution across emerging markets.</h2>
+      <p style="font-size: 16.5px; line-height: 1.65; color: #6B6B6B; max-width: 420px">
+        A country is not an office location. Each market is a regulatory destination with its own pathway, representation rules and capability status.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: stretch; margin-top: 44px">
+      <div style="flex-grow: 1; background: #FFFFFF; border-radius: 20px; padding: 32px 34px 24px">
+        <svg id="land" viewBox="0 0 1160 491" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="World map showing the markets Genedrift operates in. No international boundaries are drawn."><path class="landmass" fill="#E8E6F2" d="M326.0,257.2L325.2,256.9L324.6,255.7L323.1,254.7L321.6,254.9L320.9,256.2L318.8,257.2L318.5,258.0L319.9,260.0L318.5,261.0L317.0,261.2L316.6,259.0L316.1,259.6L315.0,259.4L314.5,257.9L310.9,257.3L310.8,258.1L308.7,256.7L308.1,255.9L308.4,254.5L305.3,252.4L305.1,251.3L304.3,250.6L304.4,251.7L303.7,252.6L303.1,251.6L302.0,251.2L301.6,250.5L302.2,248.2L301.4,247.7L302.2,246.9L296.3,240.2L296.8,239.6L297.2,240.2L297.5,239.9L297.1,238.8L296.1,238.5L295.7,239.3L293.8,239.3L291.4,238.2L289.6,238.0L287.2,236.5L285.2,236.5L282.2,234.2L279.0,230.2L277.5,229.0L274.9,228.1L268.7,230.1L255.7,224.5L252.5,221.7L247.7,220.4L246.6,218.7L243.5,216.6L242.2,214.3L241.7,212.5L242.9,212.1L242.7,211.0L243.6,210.1L243.8,208.8L243.0,207.2L242.9,205.7L240.0,200.2L237.4,197.3L236.3,195.0L233.9,193.5L233.5,192.6L234.5,190.3L233.1,189.4L231.7,187.6L231.6,185.1L229.9,184.8L227.7,181.0L227.9,179.9L227.0,177.1L226.8,174.2L227.3,172.8L225.5,171.4L224.4,171.5L223.0,170.5L222.0,172.0L221.3,176.6L224.2,181.7L224.2,183.0L224.8,183.0L224.8,185.3L225.9,187.6L227.4,189.5L227.6,192.9L228.7,196.2L228.5,198.2L230.0,198.3L231.8,201.6L230.0,203.7L229.5,203.6L229.0,201.4L227.4,199.3L224.0,196.6L224.6,191.9L221.6,189.1L221.1,189.6L220.5,188.6L218.8,187.7L217.5,185.6L219.1,185.5L220.6,184.1L221.2,182.4L219.5,179.8L218.0,178.8L216.7,171.1L216.8,165.9L215.6,163.8L214.3,163.3L214.4,162.3L212.7,162.1L212.0,161.1L209.3,160.7L208.7,160.1L209.2,158.1L207.8,154.4L207.5,149.3L208.0,148.5L206.4,144.2L207.4,141.2L206.9,139.2L210.8,133.0L211.4,130.2L214.6,126.8L219.2,120.2L221.6,115.3L222.9,110.6L223.7,109.9L227.0,111.1L226.4,114.5L227.7,113.5L230.1,107.6L226.6,104.1L225.6,102.6L221.6,101.1L222.4,98.0L224.5,95.8L222.1,94.3L223.9,91.5L222.7,88.9L224.1,87.1L223.7,85.8L222.3,84.7L224.2,81.7L223.3,78.9L224.8,75.6L218.4,75.3L216.2,74.3L214.3,70.8L209.1,69.0L205.2,69.2L201.8,67.7L200.3,66.3L196.6,67.0L194.6,69.3L181.9,72.1L183.7,70.1L188.6,66.8L192.5,65.8L192.7,64.9L176.6,71.4L176.7,73.1L171.5,75.5L163.4,78.0L161.1,79.6L155.0,81.3L152.4,83.0L147.6,84.4L146.1,84.2L135.0,87.5L129.3,88.5L129.4,87.9L142.9,83.3L146.7,82.9L160.1,77.5L163.5,74.9L167.0,72.9L162.8,73.9L162.7,73.4L159.8,74.6L160.1,72.9L158.0,74.1L158.9,72.4L154.7,73.8L153.1,73.8L157.1,70.5L156.9,69.3L152.7,69.9L152.4,68.3L151.6,67.5L154.0,65.6L153.7,64.2L157.1,62.3L164.6,58.7L167.0,58.5L168.0,59.0L172.1,57.4L173.5,57.7L176.7,56.7L178.2,55.2L177.5,54.6L181.0,53.4L175.8,54.1L174.2,54.8L173.1,54.1L169.1,54.5L166.5,53.7L167.2,52.4L166.6,50.5L179.5,47.6L181.5,47.6L179.0,49.2L184.3,49.1L185.0,47.1L183.7,45.9L184.1,44.3L183.7,42.9L181.9,41.9L185.6,40.3L189.9,40.2L195.0,38.8L197.7,37.3L202.2,35.8L211.4,34.1L213.3,34.3L219.2,32.7L221.8,33.3L221.5,34.7L223.3,34.1L227.0,34.3L225.9,35.0L228.7,35.5L231.5,35.2L240.5,36.9L244.3,36.4L252.1,38.5L254.0,40.0L256.1,40.3L263.8,38.0L266.8,38.4L276.7,36.2L276.8,37.5L279.4,36.8L281.6,35.4L282.8,35.7L283.6,38.4L289.1,36.4L286.8,38.7L290.3,38.2L292.1,37.3L294.8,37.5L297.0,38.8L301.3,39.9L304.0,40.4L306.6,40.2L308.2,41.8L303.3,43.4L307.0,44.1L316.4,43.1L317.2,45.0L321.3,43.4L320.1,42.1L322.6,41.0L327.8,40.6L329.1,41.3L329.9,43.0L332.8,42.8L335.8,44.2L343.4,43.8L344.8,41.8L347.4,41.3L350.2,42.3L347.8,45.3L351.3,42.8L353.2,42.9L356.8,39.7L355.9,37.8L354.3,36.6L357.4,33.2L362.2,31.0L364.7,31.5L365.9,32.8L366.1,36.3L362.8,37.8L366.6,38.4L364.1,41.6L369.2,39.1L370.5,41.1L368.0,43.5L368.7,45.6L376.7,40.6L379.4,37.2L385.7,37.9L387.7,39.4L386.8,41.0L383.8,42.7L384.3,44.3L383.0,45.9L376.7,48.1L372.9,48.6L371.1,47.6L363.2,53.4L358.8,55.6L355.1,55.8L352.1,57.2L350.4,59.4L347.2,59.8L342.2,62.5L336.8,66.2L333.9,68.9L331.1,72.8L334.6,73.4L333.2,79.2L337.4,78.5L341.5,80.0L343.4,81.3L344.3,82.9L347.2,83.9L349.2,85.4L356.3,85.9L354.3,88.9L353.3,92.5L353.3,96.4L355.9,99.8L358.6,98.6L361.8,95.0L363.1,89.4L362.1,87.6L367.3,85.9L371.6,83.5L374.4,81.1L375.4,78.8L375.1,75.9L373.3,73.3L378.4,69.7L379.0,66.7L381.2,61.5L383.4,60.7L389.7,61.9L392.3,61.1L396.1,64.1L396.2,65.4L400.7,65.7L399.1,68.5L397.9,72.8L400.0,73.3L401.0,75.3L405.7,73.4L412.4,68.1L415.7,79.6L413.7,81.8L416.5,83.7L418.1,85.7L422.1,86.6L423.5,87.7L423.5,90.7L425.4,91.1L426.1,92.5L424.9,96.4L420.0,99.0L415.0,100.3L410.4,103.2L405.5,103.8L399.7,103.0L392.5,103.2L389.1,105.8L384.9,107.4L374.6,115.5L377.2,114.9L383.5,110.2L390.6,107.2L395.0,106.8L396.9,108.6L393.4,111.0L393.1,117.6L396.3,119.4L401.2,118.9L405.4,114.8L404.8,117.4L406.3,118.7L402.0,121.1L391.5,124.7L387.4,127.4L385.2,127.1L386.1,124.0L392.1,121.0L384.0,121.6L384.1,122.8L373.6,126.9L370.5,129.8L369.9,131.8L370.2,133.7L371.4,133.8L371.5,132.5L372.2,133.3L371.6,134.3L362.5,135.8L359.6,136.9L364.2,136.2L364.9,136.9L360.4,138.0L358.5,138.0L358.7,137.6L357.5,138.6L358.3,138.7L356.8,141.4L353.8,144.2L353.8,143.3L352.5,142.2L352.6,144.1L353.1,144.8L352.8,146.2L348.8,150.5L350.2,147.9L349.1,146.5L349.7,143.4L348.6,145.0L348.6,147.3L346.7,146.8L348.5,148.0L347.6,151.5L348.4,151.7L347.8,156.7L345.2,159.4L341.7,160.5L339.1,162.7L337.5,162.9L335.6,164.3L334.9,165.5L330.9,167.9L326.7,171.8L325.6,174.5L325.6,177.0L326.8,182.8L326.5,184.4L327.2,188.7L326.3,192.6L325.2,194.8L324.2,195.3L322.7,194.9L322.4,193.2L321.4,192.4L319.1,185.0L320.2,182.5L319.8,180.5L318.0,177.4L316.9,176.8L313.4,178.5L311.7,176.6L310.0,175.7L306.3,176.1L303.7,175.7L301.2,176.0L299.8,176.6L300.1,177.5L299.7,179.0L300.2,179.8L299.5,180.3L298.4,179.7L297.1,180.4L294.9,180.3L293.0,178.3L290.1,178.8L288.1,178.0L286.1,178.2L283.2,179.1L279.7,181.8L276.2,183.4L274.1,185.2L273.0,186.8L272.4,189.4L272.5,192.4L271.3,192.5L272.5,192.4L269.6,198.3L268.0,205.0L269.2,211.7L270.9,214.5L272.3,218.4L275.6,219.4L276.7,220.9L286.8,218.2L289.0,216.7L291.4,210.4L297.2,208.5L302.0,208.4L302.7,209.1L302.3,210.9L300.3,213.1L299.3,215.4L299.8,216.0L297.9,220.5L297.3,219.5L296.6,219.6L296.5,220.1L297.1,220.1L295.5,226.9L293.4,229.2L294.3,229.9L294.7,229.3L295.9,230.0L296.7,229.3L299.9,229.7L301.4,229.6L302.9,228.8L304.6,229.2L306.1,228.8L308.1,229.4L310.9,231.5L311.7,232.5L311.1,233.7L311.3,235.0L310.0,237.8L309.8,242.0L309.2,242.4L308.3,246.9L309.5,249.5L313.2,253.9L313.0,254.7L314.7,254.5L315.5,255.4L317.1,255.2L320.6,253.5L321.7,252.4L325.2,253.1L326.6,253.7L328.7,255.9L330.4,256.0L333.0,253.4L334.3,253.0L335.2,248.7L337.2,247.0L339.2,246.9L339.5,246.1L342.0,246.4L346.0,243.7L347.7,242.0L348.8,242.2L349.6,243.2L348.8,245.3L346.8,245.7L347.8,247.4L347.7,249.3L346.1,251.5L347.2,254.4L348.6,254.1L349.5,251.5L348.5,250.2L348.5,247.4L352.6,245.9L352.3,244.1L353.5,243.0L354.5,245.6L356.8,245.6L358.8,247.7L358.8,248.9L365.2,248.6L367.0,250.2L369.5,250.7L371.3,249.5L371.4,248.6L379.3,248.3L376.5,249.4L377.6,251.1L380.1,251.4L382.5,253.2L382.9,256.2L384.6,256.1L387.9,258.3L389.9,260.7L389.9,262.6L391.1,262.7L394.1,265.8L397.9,266.6L398.3,265.9L401.0,265.6L404.4,266.6L407.9,267.9L411.3,271.0L411.8,272.5L412.9,272.3L415.4,280.8L417.1,281.5L417.2,284.0L414.7,287.0L415.7,288.1L421.5,288.7L421.6,292.4L424.1,290.0L433.6,293.6L435.3,295.7L434.7,297.8L438.5,296.7L444.9,298.6L449.7,298.5L454.6,301.5L458.8,305.6L461.3,306.7L464.1,306.9L465.3,308.0L467.1,315.0L465.9,321.1L459.9,328.6L458.0,332.8L455.7,336.0L454.9,336.0L454.1,338.8L454.6,345.7L453.8,353.8L452.9,355.2L452.6,360.2L449.7,365.0L449.3,368.8L446.9,370.4L446.3,372.6L442.8,372.6L437.9,374.0L435.8,375.7L432.3,376.8L428.8,379.7L426.5,383.3L426.3,386.1L427.1,388.1L426.4,393.7L424.5,395.7L421.9,402.2L417.7,406.9L416.9,410.4L415.2,412.5L414.3,414.8L411.2,416.8L408.7,416.1L407.2,416.5L404.0,414.9L401.9,415.0L399.7,413.0L399.8,414.9L404.4,418.1L404.4,420.6L406.7,422.2L406.9,424.0L405.0,428.7L400.9,430.7L395.1,431.5L391.6,431.1L392.8,433.3L392.9,436.0L394.0,437.9L392.5,439.2L389.6,439.7L386.3,438.3L385.5,439.3L386.9,442.9L389.2,444.0L390.5,442.9L392.0,444.8L389.6,445.9L387.9,448.2L388.5,453.8L385.7,453.8L384.1,455.6L384.1,458.4L387.9,461.0L390.9,461.7L391.0,465.0L388.3,467.0L388.0,471.2L385.9,472.6L385.4,474.3L387.8,478.0L390.5,480.0L386.8,479.8L383.9,481.9L384.9,485.2L383.7,485.3L380.1,484.2L371.5,479.7L369.6,477.4L369.5,475.4L367.0,473.0L364.1,466.9L364.0,463.5L366.0,460.7L361.2,459.6L362.8,456.4L361.6,450.4L365.3,451.7L364.3,444.1L362.0,443.2L362.6,447.7L360.6,447.2L358.6,435.2L359.2,432.7L357.3,429.1L355.9,425.0L357.2,424.8L358.3,407.5L356.4,402.0L356.7,398.9L355.5,394.4L356.6,389.9L356.0,382.7L356.1,366.8L354.1,355.6L350.6,353.4L350.2,351.9L343.4,348.2L334.6,341.9L333.0,338.9L333.4,337.8L330.3,333.0L320.7,314.4L315.7,310.5L316.7,308.9L315.0,305.3L315.9,302.8L318.4,300.4L320.1,297.7L319.3,296.1L318.1,297.8L316.2,296.2L316.8,295.1L316.2,291.8L317.3,291.2L319.2,286.5L318.9,285.0L323.0,282.8L322.6,281.6L323.8,281.3L323.7,279.5L324.5,278.2L326.1,277.9L328.8,273.7L327.6,272.8L328.3,270.6L327.7,267.3L328.4,266.3L328.0,263.2L325.8,260.1L325.1,258.1L326.0,257.2ZM79.9,217.5L80.0,215.2L81.4,213.1L83.0,214.1L83.9,215.9L80.6,218.1L79.9,217.5ZM335.5,209.6L338.4,210.3L338.0,211.3L340.4,211.5L342.6,213.0L342.1,213.9L337.8,214.5L335.6,214.2L331.0,214.6L333.4,212.5L332.2,211.6L330.1,211.3L329.2,210.3L328.7,208.2L326.8,208.3L324.0,207.3L323.1,206.5L319.0,206.0L318.0,205.2L319.3,204.3L316.2,204.1L313.7,206.1L312.4,206.1L311.8,207.0L310.1,207.4L308.8,207.1L310.7,205.9L311.5,204.6L314.8,203.0L318.1,202.3L323.3,202.6L326.1,203.9L327.2,205.2L330.3,204.8L335.5,209.6ZM330.6,190.4L330.6,189.0L334.2,188.8L334.1,189.8L330.6,190.4ZM218.9,101.3L225.0,103.0L225.3,105.9L227.1,107.4L227.0,109.4L225.3,109.9L221.6,108.3L221.6,107.0L220.0,105.7L220.2,104.7L217.7,104.1L218.0,102.1L218.9,101.3ZM213.1,92.0L215.0,89.3L215.9,89.8L218.8,89.5L214.6,93.5L214.8,96.3L213.7,96.3L213.3,94.7L213.6,93.1L213.1,92.0ZM173.6,76.2L175.1,76.4L175.1,77.5L167.0,80.4L166.6,79.5L167.9,77.9L173.6,76.2ZM148.6,69.6L146.4,70.1L145.0,68.5L148.2,68.0L149.9,68.3L148.6,69.6ZM376.7,61.3L377.7,61.3L377.9,62.0L375.9,63.8L374.9,63.5L374.8,62.5L376.7,61.3ZM372.8,59.5L372.4,60.2L368.2,62.0L366.5,61.9L366.5,61.0L369.4,59.5L372.8,59.5ZM150.2,58.0L147.5,57.9L149.3,56.6L150.0,57.3L152.0,56.9L152.9,57.8L154.8,58.2L151.3,59.3L150.2,58.0ZM372.3,55.6L363.9,59.0L364.3,57.1L360.7,57.4L364.0,55.8L369.0,50.3L370.6,50.5L370.0,52.0L371.7,51.5L376.7,54.4L375.9,56.0L377.9,55.7L379.0,56.8L376.1,57.9L372.7,57.1L372.3,55.6ZM148.3,55.1L146.1,55.0L145.8,53.9L143.8,52.9L145.3,51.5L143.5,51.0L140.1,51.4L140.4,50.3L142.7,49.1L138.6,49.8L137.5,51.4L134.1,52.7L153.2,40.0L155.4,42.4L157.0,45.6L153.9,47.6L154.4,48.4L157.2,46.0L163.0,46.5L163.6,49.5L159.2,50.9L154.7,51.3L150.3,54.4L148.3,55.1ZM350.3,36.4L353.0,37.8L353.6,39.6L351.2,40.7L348.8,39.7L346.6,40.1L344.6,38.7L350.3,36.4ZM338.4,39.6L336.6,40.7L329.4,39.4L321.0,40.6L310.0,41.4L310.2,39.9L307.8,39.1L305.4,39.4L305.0,37.0L317.8,35.7L314.1,35.0L305.6,35.2L305.6,34.1L312.3,32.8L308.7,32.9L305.6,32.1L313.0,28.7L321.2,26.8L322.8,27.4L320.1,28.8L326.1,27.9L327.6,29.4L331.9,27.9L332.9,28.9L331.6,31.8L334.1,30.6L335.7,27.5L338.2,27.1L339.9,27.6L341.1,28.7L338.2,33.8L343.5,36.8L342.0,38.1L337.9,38.4L338.4,39.6ZM166.0,32.2L168.5,32.1L170.4,33.0L165.9,34.1L162.5,34.3L166.0,32.2ZM358.0,31.8L353.1,33.0L351.1,32.7L350.6,31.5L347.2,29.2L348.2,28.3L352.5,28.7L352.0,26.7L356.1,25.3L358.1,25.9L362.5,25.5L362.2,26.4L358.7,27.8L360.9,29.1L358.0,31.8ZM294.8,34.1L295.1,32.7L291.7,31.2L302.9,25.8L303.1,24.0L311.2,23.5L313.5,24.1L319.0,24.3L321.0,26.4L309.3,29.2L304.0,31.3L302.5,32.6L294.8,34.1ZM367.0,25.2L370.0,24.4L374.6,24.5L378.1,25.3L372.3,27.9L369.1,28.5L364.6,30.7L362.1,30.6L363.1,28.0L364.6,26.5L367.0,25.2ZM341.5,28.5L340.2,26.4L344.5,25.9L345.5,26.5L341.5,28.5ZM407.6,28.3L400.0,28.5L398.3,26.8L399.3,25.7L400.5,25.5L405.4,25.9L408.0,27.5L407.6,28.3ZM372.2,23.1L369.2,22.9L367.3,22.1L369.9,20.8L373.9,20.1L374.7,21.1L374.5,22.0L372.2,23.1ZM329.1,22.7L335.3,21.5L324.9,21.8L322.5,21.3L329.3,18.5L332.4,17.7L337.1,18.7L338.8,20.4L342.3,20.6L342.7,17.8L346.0,16.8L347.8,17.2L346.4,19.5L351.0,19.2L349.7,20.5L346.7,21.9L338.7,22.4L331.7,23.6L328.2,23.7L329.1,22.7ZM374.7,15.8L378.8,16.0L380.2,16.9L384.4,16.9L385.2,17.8L383.6,18.9L386.1,20.2L391.8,20.5L400.5,19.7L403.9,19.9L405.2,21.0L404.6,22.2L398.7,23.5L396.2,23.2L384.9,23.7L381.6,23.3L376.7,22.4L378.8,19.4L378.0,18.2L374.0,17.8L372.5,16.9L374.7,15.8ZM359.4,18.1L361.6,18.2L369.5,17.0L369.6,18.3L364.6,21.9L360.6,22.2L358.8,21.8L360.8,20.1L356.9,20.3L359.4,18.1ZM328.9,17.6L316.9,19.3L314.9,18.7L328.6,14.8L335.3,14.5L331.9,16.6L328.9,17.6ZM377.2,14.7L377.5,14.0L381.7,14.0L382.6,14.5L380.9,14.9L377.2,14.7ZM348.1,14.3L343.1,15.1L341.2,14.2L344.2,13.4L347.6,13.1L350.0,13.5L348.1,14.3ZM380.0,11.5L381.3,12.4L379.5,13.4L375.7,13.9L374.8,13.3L375.2,12.3L376.4,11.2L380.0,11.5ZM364.2,11.7L362.6,11.1L363.8,10.1L371.7,11.4L371.0,13.8L368.0,13.5L365.7,12.6L361.2,12.5L364.2,11.7ZM352.7,11.9L345.9,12.4L349.8,11.2L352.7,11.9ZM402.8,9.2L404.3,10.0L394.5,12.7L390.5,12.9L386.6,12.6L385.7,11.5L386.9,10.6L389.4,9.9L385.6,9.9L384.5,9.0L384.7,7.9L389.9,6.1L392.1,5.9L392.0,5.4L396.7,5.2L397.7,6.5L403.1,7.5L402.8,9.2ZM386.8,489.5L378.8,485.7L373.2,481.7L385.0,486.1L385.7,484.5L385.5,482.0L387.4,480.6L389.6,481.0L393.8,485.3L398.3,487.4L402.5,488.3L402.0,490.0L399.5,490.2L397.6,488.9L397.3,490.3L395.5,491.4L386.8,489.5ZM409.2,478.2L411.8,476.1L414.5,477.0L415.7,475.6L418.4,477.2L418.0,478.4L414.6,479.5L412.9,478.2L411.2,479.8L409.2,478.2ZM542.8,262.8L539.6,261.1L537.9,259.1L537.0,255.0L534.3,251.4L532.7,250.2L531.9,247.7L529.2,245.6L527.9,245.3L527.2,243.7L526.2,242.9L525.5,239.3L526.0,237.7L524.7,234.8L523.1,233.5L524.5,232.8L527.0,228.3L526.7,226.3L527.7,224.5L528.1,221.0L527.5,215.6L527.9,213.7L527.1,212.0L525.5,210.4L525.8,207.1L527.1,206.1L528.2,204.2L528.0,202.9L529.2,200.3L531.0,198.0L532.1,197.4L533.0,195.2L533.1,193.3L534.3,191.0L536.5,189.6L538.6,185.9L540.3,184.4L543.2,184.0L547.4,180.5L550.1,177.4L549.4,172.8L551.1,167.7L553.2,165.2L558.7,162.0L561.8,155.9L564.1,155.9L565.9,157.5L568.8,157.2L573.3,158.1L576.3,156.1L579.6,155.4L581.5,153.9L584.5,152.8L594.7,151.8L596.2,152.4L599.1,150.9L602.3,150.9L603.6,151.8L605.7,151.5L608.9,150.0L611.1,150.5L611.1,152.4L613.6,151.0L613.8,151.7L612.4,153.5L612.4,155.2L613.5,156.1L613.2,159.3L611.3,161.2L611.9,163.2L613.5,163.2L614.4,165.0L615.6,165.6L619.2,166.8L620.5,166.5L623.2,167.1L627.3,168.8L629.0,172.1L636.3,174.3L639.7,176.2L642.6,173.5L641.7,170.7L642.5,168.9L644.7,167.2L646.8,166.7L651.0,167.4L652.2,169.1L657.5,170.1L658.3,171.4L662.5,171.3L670.2,173.9L673.7,171.7L676.4,171.4L678.7,171.9L679.7,173.7L680.3,172.5L682.9,173.4L685.4,173.6L686.8,172.7L687.6,171.4L688.3,166.7L690.8,160.0L690.1,157.2L690.7,155.7L689.4,154.0L690.4,152.6L688.5,152.9L685.9,152.1L684.0,154.2L679.4,154.6L676.7,152.6L673.4,152.5L672.9,154.0L670.8,154.5L667.7,152.5L664.4,152.6L662.2,148.9L659.8,146.9L660.9,144.0L658.8,142.3L661.8,138.8L666.4,138.6L667.3,135.8L673.0,136.3L676.3,134.0L679.6,132.9L684.5,132.8L690.1,135.4L694.6,136.8L698.0,136.3L700.7,136.6L703.8,134.7L704.0,133.1L702.8,130.6L700.8,129.3L699.1,128.9L693.5,124.7L689.9,123.3L687.0,121.2L689.0,120.6L690.9,117.6L689.0,116.1L692.9,114.7L692.7,113.9L688.0,114.8L686.3,115.9L683.6,116.1L681.4,117.5L681.9,119.7L683.5,120.6L686.4,120.4L686.1,121.7L683.0,122.3L679.4,124.4L677.6,123.6L678.0,121.9L674.6,120.9L675.0,120.2L677.6,119.0L676.6,118.2L672.0,117.2L671.6,115.9L669.0,116.3L666.3,121.0L666.5,121.9L665.2,122.7L664.3,122.4L664.1,126.8L662.7,128.3L662.0,130.9L663.7,134.4L666.5,135.6L666.1,136.4L662.5,136.6L659.1,139.8L657.9,137.3L654.5,136.8L651.0,137.8L653.3,139.9L651.8,140.5L650.1,140.5L648.4,138.6L647.9,139.4L648.8,141.6L650.4,143.3L649.4,144.1L652.8,146.8L653.0,148.9L650.1,147.9L651.2,149.8L649.3,150.2L650.7,153.5L648.7,153.5L646.1,151.9L644.0,146.5L640.9,142.7L640.0,140.6L638.2,139.4L637.8,137.6L638.2,134.0L636.0,132.0L627.2,127.5L624.5,124.8L625.1,124.5L623.7,123.0L623.5,121.8L621.6,121.2L620.8,122.8L619.9,121.6L619.8,120.3L620.6,119.9L618.2,119.4L615.9,120.7L615.9,123.5L617.0,125.4L619.8,127.2L621.5,130.2L625.0,133.2L627.3,133.1L628.1,133.9L627.3,134.7L632.4,137.1L635.5,139.7L635.0,141.0L633.2,139.3L630.6,138.7L629.5,141.1L631.7,142.4L631.5,144.3L630.3,144.6L628.8,147.7L627.6,148.0L628.0,144.9L628.6,144.1L626.3,140.1L625.0,139.7L624.0,138.1L622.1,137.4L620.7,136.0L618.5,135.7L616.0,134.1L611.1,129.6L610.0,126.0L606.1,124.4L604.7,124.9L603.1,126.5L601.9,126.8L599.3,128.9L593.4,127.9L589.2,129.1L589.0,133.4L586.2,135.8L582.4,136.6L582.2,137.8L580.3,139.9L579.2,142.8L580.3,144.9L578.6,146.6L577.9,149.0L575.6,149.7L573.5,152.5L566.7,152.5L563.5,155.2L562.0,154.9L560.9,153.7L560.1,151.5L557.3,151.0L556.0,151.9L554.5,151.4L552.9,151.8L553.4,148.9L553.2,146.7L551.9,146.3L551.2,144.9L551.5,142.5L552.8,141.2L553.8,137.5L553.1,133.4L553.4,130.8L552.2,129.2L556.5,126.6L567.2,127.9L574.4,127.8L575.9,125.6L576.5,118.4L573.6,114.6L571.5,112.8L567.1,111.4L566.9,108.8L570.6,108.0L575.4,108.9L574.5,104.9L577.2,106.4L583.8,103.6L584.6,100.7L589.3,99.3L590.7,98.3L593.0,93.1L596.7,91.6L599.0,91.7L599.5,91.0L601.8,90.8L602.4,91.6L604.1,89.8L603.4,88.5L603.2,86.5L602.0,84.6L601.7,81.1L602.8,79.1L605.2,78.9L606.1,77.9L608.1,77.0L608.2,78.7L607.5,79.9L607.8,80.8L609.3,81.4L608.8,82.7L607.9,82.3L606.2,84.8L607.1,87.8L610.0,88.6L610.0,89.9L612.8,89.2L614.2,88.3L617.4,89.6L618.8,90.8L628.0,86.9L630.8,87.5L631.1,88.4L633.8,88.4L634.2,86.9L637.8,85.8L636.5,80.2L637.5,78.1L639.9,76.9L642.4,79.5L644.5,79.4L644.6,74.7L643.7,75.2L641.8,74.0L641.2,72.0L647.6,70.6L650.5,71.1L653.2,71.0L655.8,69.2L652.7,67.5L648.1,67.8L639.6,69.8L637.8,67.9L635.1,66.8L635.2,63.5L633.4,60.5L634.3,58.6L636.3,56.5L642.8,52.3L642.3,50.9L638.6,49.4L634.5,50.3L632.5,52.6L633.2,54.6L625.2,60.0L624.0,64.7L626.1,67.1L628.9,69.0L627.0,72.8L624.3,73.6L624.0,79.3L622.8,82.6L619.5,82.2L618.2,85.0L615.1,85.2L614.0,81.9L609.0,73.1L607.1,71.0L602.2,75.0L598.7,75.8L594.9,74.0L593.9,70.4L592.8,62.6L595.0,60.5L601.5,57.7L606.2,54.3L615.5,43.7L625.0,37.4L629.9,36.1L633.8,36.2L636.8,33.7L641.0,33.8L645.0,33.2L652.9,35.4L650.1,36.3L653.2,38.2L655.4,37.1L659.8,39.0L666.5,39.7L676.7,43.3L679.0,44.8L679.9,46.9L677.8,48.6L674.0,49.4L662.4,47.0L660.8,47.4L665.4,49.8L667.1,54.6L672.8,56.4L672.6,54.8L670.7,53.4L671.9,52.2L678.5,54.2L680.4,53.4L678.0,51.1L682.6,47.9L684.9,48.1L687.6,49.2L688.2,47.0L685.5,45.1L686.0,43.2L683.5,41.3L690.6,42.3L692.6,44.0L689.7,44.4L690.4,46.2L692.8,47.3L696.2,46.6L696.0,44.6L707.5,40.4L709.4,40.5L707.9,42.4L711.0,42.8L712.2,41.7L716.7,41.6L719.6,40.3L723.2,42.2L724.9,40.1L721.4,38.3L722.1,37.3L729.5,38.2L744.1,42.8L744.7,41.1L741.3,39.5L740.8,38.8L737.8,38.5L737.7,37.1L734.3,33.7L736.8,31.0L736.5,28.2L737.7,27.7L744.3,28.4L745.9,30.1L745.5,32.5L747.5,33.5L749.7,35.6L751.9,39.9L755.8,41.8L756.1,43.9L754.1,48.4L757.1,48.9L757.4,47.7L759.6,46.9L759.3,45.3L760.4,43.8L757.8,42.0L757.6,40.0L754.9,39.7L753.2,38.0L753.0,34.9L748.3,32.4L750.9,30.4L748.8,28.3L749.9,28.2L752.3,29.9L753.5,32.8L756.4,33.3L753.8,31.1L756.7,30.0L761.3,29.8L766.9,31.5L762.9,29.0L760.1,25.9L763.5,25.3L773.4,25.0L770.2,23.5L771.0,21.6L773.4,21.5L776.2,20.1L781.5,19.7L781.4,18.9L786.8,18.7L789.3,19.3L792.4,17.8L796.4,17.8L795.5,16.6L796.0,15.5L799.6,14.3L804.4,15.2L802.4,15.9L807.7,16.3L810.1,17.7L811.2,17.0L817.5,17.1L824.2,18.4L827.3,19.5L828.7,21.0L823.6,23.4L822.9,24.3L830.3,25.5L831.7,24.9L835.0,26.8L835.1,26.0L838.1,25.6L845.9,26.0L848.1,27.4L858.1,27.9L855.4,25.6L864.3,26.1L870.0,27.7L873.5,29.6L873.7,30.8L879.5,33.2L884.6,34.4L882.9,31.3L888.3,32.6L891.2,31.8L896.9,32.7L897.5,31.9L901.8,32.3L896.4,29.5L897.6,28.2L920.9,30.2L925.4,31.9L934.7,34.3L943.2,33.7L948.6,34.2L952.4,35.4L955.3,37.7L959.5,38.6L961.7,37.9L971.1,38.5L975.1,38.1L983.3,40.9L984.8,39.9L979.9,37.9L978.8,36.5L987.6,37.4L992.2,37.2L1001.3,38.7L1006.8,40.0L1025.9,52.8L1024.7,54.2L1021.2,53.9L1033.5,59.3L1035.7,60.6L1036.3,61.5L1030.5,60.8L1026.8,63.3L1025.0,63.7L1023.0,68.1L1023.9,69.6L1017.3,67.3L1013.8,70.0L1011.1,68.7L1010.3,70.2L1006.3,69.7L1008.0,71.9L1008.7,75.2L1010.4,76.6L1014.3,77.4L1019.5,82.4L1017.1,82.5L1019.1,85.4L1021.8,86.9L1018.9,88.7L1022.0,92.7L1018.7,93.6L1021.3,97.2L1020.4,100.5L1001.7,85.1L998.0,80.3L998.1,78.2L996.5,76.6L999.7,75.9L1000.0,68.1L1001.4,65.4L997.7,60.7L994.9,61.0L996.8,63.7L994.7,67.4L987.7,63.3L982.4,64.4L982.4,70.1L986.9,72.1L978.3,73.4L975.8,70.9L971.2,70.4L969.7,72.1L961.1,71.5L953.5,72.5L948.6,87.4L953.3,87.8L956.6,90.0L959.9,90.8L960.1,89.0L963.4,89.2L970.8,93.1L973.4,96.1L974.2,99.7L977.4,103.9L980.5,109.6L979.8,114.8L980.6,117.3L977.7,127.9L975.1,130.0L973.3,130.1L970.3,128.3L968.0,131.0L968.3,132.2L967.0,132.0L966.4,133.2L966.3,134.4L967.9,137.1L966.8,137.9L966.1,139.6L964.4,140.2L963.6,141.2L964.2,143.2L968.2,145.4L973.0,149.7L974.8,152.1L976.8,156.4L976.6,158.4L974.1,159.1L972.3,160.6L969.6,161.0L968.4,158.9L967.8,156.2L964.8,152.3L966.7,151.7L963.2,148.6L961.4,147.9L961.3,148.6L960.6,148.9L960.1,148.2L958.1,147.3L958.2,145.6L958.7,145.2L957.3,142.0L953.5,140.6L949.8,141.6L948.4,143.4L945.7,144.4L946.4,142.7L945.1,141.2L946.2,138.8L943.6,136.8L941.7,138.1L939.6,140.7L938.9,143.1L936.0,143.2L935.3,144.9L938.0,147.4L940.8,148.0L941.6,149.7L944.5,150.8L946.7,148.1L950.1,149.6L952.1,149.7L953.4,151.6L949.6,152.6L949.0,154.6L946.8,156.5L946.3,159.0L950.4,161.1L953.0,164.7L959.3,170.9L960.3,173.6L958.6,174.7L960.1,176.6L962.3,177.8L962.8,183.7L961.2,184.0L958.7,192.9L956.7,197.3L949.2,203.8L945.7,204.2L944.1,205.8L942.7,204.7L941.3,206.5L937.1,208.3L933.8,208.9L933.4,212.8L931.7,213.0L930.4,210.3L930.9,208.9L926.4,207.7L925.0,208.3L921.3,211.5L919.1,215.0L918.8,217.5L925.6,226.2L928.9,228.5L931.2,231.5L933.5,238.3L933.8,244.8L931.3,247.2L927.8,249.6L925.4,252.7L921.6,256.1L920.2,253.8L921.0,251.3L918.4,249.2L915.6,248.6L912.2,242.9L909.1,241.2L906.3,241.3L906.5,238.4L903.7,238.4L903.8,242.4L901.7,251.1L902.1,253.8L904.3,253.9L905.8,257.2L906.6,260.4L908.5,262.6L910.5,263.0L915.1,267.5L916.5,269.9L916.6,274.1L917.2,277.6L918.4,278.6L919.8,281.8L919.7,283.1L917.4,283.3L910.3,277.7L909.9,275.8L907.9,273.3L907.4,270.3L906.1,268.3L906.3,265.6L905.5,264.0L904.2,262.6L903.5,260.8L900.0,256.9L899.6,259.1L898.9,257.0L899.8,251.2L899.3,248.5L900.0,245.6L898.8,243.5L898.7,239.4L897.1,237.5L894.5,228.4L892.7,225.4L887.5,229.9L883.5,228.7L884.0,224.1L882.9,220.6L879.8,216.4L880.0,215.1L878.1,214.6L875.4,211.6L872.9,206.0L871.3,203.9L868.3,203.7L868.8,205.2L868.1,207.3L866.6,206.5L866.3,207.2L864.0,206.5L863.8,207.8L857.8,208.5L858.3,211.3L856.9,213.5L852.6,216.0L849.5,220.3L844.5,225.1L844.6,226.8L840.4,229.0L838.9,229.2L838.2,232.0L839.7,239.9L838.6,243.4L839.0,249.6L837.4,249.8L836.1,252.6L837.1,253.8L834.2,254.9L833.2,257.4L832.0,258.5L828.7,255.0L825.5,246.1L822.3,240.8L820.4,233.9L817.0,228.9L813.5,217.0L813.0,212.5L812.0,209.1L807.6,211.3L805.3,210.8L800.6,206.3L802.0,205.0L800.9,203.6L796.8,200.4L794.4,199.5L793.1,196.8L790.3,194.0L775.0,195.3L761.7,192.9L759.8,188.3L758.3,187.7L755.9,188.4L752.9,190.1L748.9,188.9L745.4,186.1L742.3,185.0L736.8,176.6L735.2,177.2L733.0,176.0L732.0,177.4L730.1,177.2L732.2,182.5L733.8,185.7L735.4,186.5L736.1,187.8L738.4,189.4L738.6,192.1L741.2,196.5L740.8,193.8L741.4,191.9L742.2,191.5L743.3,192.6L743.6,194.8L743.1,197.0L743.9,198.4L744.4,198.2L744.6,199.2L747.1,198.6L751.6,198.8L758.2,190.5L758.6,190.8L758.2,193.0L758.9,195.9L760.6,198.4L762.5,199.7L766.8,200.9L769.5,204.2L770.6,204.7L770.7,205.5L767.1,212.5L765.7,212.3L765.1,213.2L764.7,215.0L765.3,217.5L765.1,217.9L763.6,217.9L761.7,219.3L761.5,221.1L760.8,221.9L758.8,221.9L757.7,222.8L757.8,224.3L756.3,225.3L754.5,225.0L752.4,226.2L748.7,227.4L748.2,230.3L740.0,233.6L737.3,236.2L734.9,236.2L733.1,237.7L727.6,238.8L725.6,241.0L720.7,241.2L719.8,239.1L719.8,237.1L717.5,231.7L718.1,231.5L717.7,229.9L718.0,229.1L717.3,226.0L716.2,224.8L715.9,223.4L714.2,222.1L712.3,219.0L711.2,216.0L708.8,213.4L707.4,212.8L705.0,209.3L704.5,204.5L702.4,200.4L700.8,199.0L699.1,198.2L697.0,193.4L696.0,192.6L690.6,184.3L689.0,184.3L689.6,179.5L689.5,179.0L689.1,178.0L689.5,179.0L688.7,180.5L688.3,183.3L686.9,185.8L684.2,183.0L681.5,177.7L681.2,178.0L682.8,181.9L687.9,191.4L693.5,199.6L692.9,200.2L693.1,202.6L697.6,206.7L698.9,210.3L698.2,211.0L698.9,214.8L700.3,219.2L703.4,221.4L706.6,229.1L713.0,234.4L717.8,239.9L719.4,241.0L720.2,242.1L720.2,243.7L718.4,244.6L720.9,246.2L721.6,247.8L723.1,249.3L724.7,249.3L731.2,247.9L736.8,245.9L739.7,245.7L742.8,244.8L744.3,243.5L745.5,243.5L745.5,248.6L744.1,253.9L740.8,262.7L738.2,268.2L735.5,272.3L731.7,277.3L720.6,286.8L717.0,291.3L715.5,294.1L713.2,295.5L712.4,297.1L711.2,297.4L710.7,300.0L709.6,301.4L709.0,303.9L707.6,305.1L706.0,309.7L706.2,311.8L708.3,313.1L708.3,314.1L707.4,316.3L707.3,319.2L709.6,325.1L710.8,325.9L711.3,327.6L711.2,340.3L711.6,342.1L710.6,344.7L709.2,347.3L707.0,349.6L700.3,352.8L696.4,356.7L691.4,360.9L691.0,363.5L692.4,366.3L692.9,369.6L693.4,369.4L693.1,373.0L692.5,374.7L693.2,375.3L692.7,376.9L691.3,378.2L684.6,381.4L683.1,382.8L683.3,384.4L684.1,384.6L682.1,392.3L681.2,394.0L678.2,396.4L673.7,402.8L667.5,408.8L665.0,410.5L661.6,411.9L660.0,412.1L659.6,413.1L657.7,412.6L656.1,413.3L652.9,412.6L649.7,412.8L646.4,414.3L643.7,414.9L641.7,416.3L640.3,416.3L639.1,415.0L638.1,415.0L636.8,413.3L636.7,413.8L636.5,410.7L635.6,408.2L636.6,407.5L636.7,404.7L631.4,393.3L629.1,390.5L628.0,387.8L625.8,375.9L625.5,369.5L622.7,364.9L620.4,358.1L617.9,354.5L617.5,349.4L618.0,346.1L620.4,337.9L624.2,332.3L624.4,327.5L623.4,326.1L621.8,321.7L623.0,319.5L621.4,313.4L619.8,311.1L620.1,310.4L618.8,306.4L610.6,295.8L608.7,292.0L610.9,284.1L610.3,283.6L611.9,276.5L610.6,274.1L609.1,273.5L608.5,271.8L607.6,271.3L607.7,270.2L604.3,271.6L603.1,271.4L601.8,272.2L599.2,272.1L597.5,269.8L596.4,267.2L594.1,264.7L588.8,264.8L583.4,266.0L573.6,270.5L570.7,269.4L564.9,268.8L561.0,269.4L555.5,271.8L554.0,271.8L550.7,270.0L542.8,262.8ZM382.6,247.8L382.3,250.6L379.6,251.0L379.0,250.6L380.0,249.6L380.0,248.2L382.6,247.8ZM328.9,219.8L330.3,219.5L333.1,220.0L334.7,220.8L335.2,221.9L332.9,221.9L331.9,222.5L330.1,221.9L328.4,220.6L328.9,219.8ZM364.6,219.5L368.9,219.9L369.4,220.6L368.5,221.5L364.2,221.6L364.1,220.1L364.6,219.5ZM357.9,217.7L359.3,217.8L360.8,219.2L359.4,220.7L358.0,219.9L355.4,219.9L354.8,220.5L353.5,220.8L353.1,219.9L352.0,220.4L350.5,222.9L349.7,222.3L349.7,221.3L347.6,220.6L344.1,220.6L342.5,221.3L340.9,220.2L341.4,219.0L346.6,219.8L347.9,219.0L346.6,217.4L346.8,216.0L344.8,215.4L345.6,214.4L350.3,215.1L350.8,214.5L353.3,214.5L355.0,215.4L355.9,215.4L356.4,216.7L358.1,216.6L357.9,217.7ZM333.0,195.0L333.7,198.0L333.4,200.2L332.6,200.4L332.1,198.2L331.1,197.2L332.1,194.8L333.0,195.0ZM335.7,192.4L335.2,191.9L335.6,190.0L334.5,188.1L336.7,189.7L335.7,192.4ZM395.3,114.7L395.8,116.5L397.7,116.9L400.4,116.8L398.5,118.3L397.4,118.6L394.2,117.0L393.9,115.8L395.3,114.7ZM426.3,109.4L428.5,108.8L428.6,112.9L426.5,116.1L425.2,116.2L423.5,115.5L424.9,112.6L424.2,112.1L420.0,115.2L418.3,115.1L420.8,113.4L418.3,112.6L409.6,112.7L409.5,111.6L411.7,110.3L410.7,109.4L413.8,107.2L418.6,101.5L421.0,99.5L423.8,98.3L425.0,98.4L419.1,104.7L421.3,103.5L423.0,104.3L421.6,105.5L423.8,106.5L425.4,105.6L427.9,106.7L426.3,109.4ZM401.8,105.1L404.2,106.6L404.1,107.3L402.7,107.3L399.3,106.2L397.3,104.5L398.4,104.2L401.8,105.1ZM559.4,86.0L561.7,85.8L564.5,88.0L563.0,90.4L563.3,92.9L561.1,96.0L556.1,98.1L552.1,97.6L554.6,93.9L553.4,90.3L559.4,86.0ZM566.4,83.7L564.8,85.3L564.8,82.0L563.5,80.2L564.6,76.7L566.8,73.9L572.1,73.9L569.2,77.6L574.8,77.1L574.1,79.9L571.6,83.0L574.4,83.3L577.0,87.7L578.8,88.3L581.3,93.7L584.7,94.3L584.3,96.6L582.9,97.6L584.1,99.5L581.5,101.3L577.8,101.3L573.0,102.3L571.7,101.6L569.8,103.3L567.2,102.8L565.2,104.2L563.7,103.5L567.9,99.8L570.4,99.0L566.1,98.4L565.3,97.0L568.3,95.9L566.8,94.0L567.4,91.7L571.5,92.0L571.9,90.0L570.1,87.8L566.8,87.1L566.2,86.2L567.2,84.6L566.4,83.7ZM525.7,54.6L520.6,53.0L525.1,52.4L525.2,51.4L520.1,50.7L522.2,48.6L526.0,48.1L529.4,50.3L533.4,48.5L536.4,49.5L540.6,47.7L544.6,48.0L543.8,50.1L546.3,52.3L542.8,54.7L533.1,57.6L523.0,56.1L525.7,54.6ZM398.6,44.8L396.4,45.8L393.6,45.9L394.0,44.4L396.2,42.6L398.7,42.2L400.0,43.0L398.6,44.8ZM421.1,36.5L421.6,39.4L416.4,40.8L420.8,42.9L424.3,43.5L426.1,46.5L429.9,46.7L427.9,48.9L421.7,52.7L419.4,51.3L417.2,48.2L413.8,48.6L412.5,50.4L414.0,52.3L416.6,53.8L417.2,54.7L417.2,57.9L415.1,60.3L412.4,59.4L407.4,56.8L411.1,61.6L410.9,62.8L404.7,61.4L400.3,59.5L398.1,57.9L399.5,57.0L394.1,53.7L393.5,54.7L386.0,55.2L384.6,54.1L387.7,51.7L397.7,51.2L397.6,50.0L399.4,48.4L404.5,45.3L404.4,42.9L401.7,41.3L397.6,40.3L399.6,39.5L398.5,37.5L396.5,37.4L395.4,36.3L393.5,37.2L389.0,37.6L380.9,36.9L373.3,35.6L372.2,34.5L375.8,33.1L372.5,33.1L374.4,30.1L378.5,27.4L382.0,26.2L388.4,25.4L385.1,27.3L385.3,29.2L389.4,26.8L396.1,25.6L397.5,28.6L395.6,30.6L400.8,29.7L403.8,28.5L407.7,30.0L409.8,31.5L409.2,32.8L413.9,32.1L415.1,34.0L419.9,35.2L421.1,36.5ZM535.8,2.8L517.7,3.1L518.5,3.5L525.6,3.2L531.2,4.0L535.2,3.3L536.6,4.1L534.0,5.5L549.1,3.7L554.9,4.2L555.8,5.2L546.1,7.4L539.5,7.9L544.2,8.0L539.2,11.5L538.6,14.5L540.7,16.3L537.3,16.4L533.6,17.3L537.2,18.8L537.1,21.2L534.7,21.5L537.1,24.0L532.1,24.2L534.4,25.4L533.4,26.4L527.0,26.9L529.4,28.9L529.1,30.2L524.9,29.0L523.6,29.8L526.5,30.5L529.1,32.4L529.4,34.8L525.2,35.4L521.2,32.5L521.5,34.5L518.4,36.1L527.7,36.4L513.8,41.6L503.9,42.7L501.1,43.9L496.8,47.3L490.9,49.5L481.9,51.2L479.1,53.2L478.3,55.5L476.4,57.6L471.4,60.3L471.6,62.9L467.2,68.9L463.4,69.1L460.5,66.4L455.4,66.4L453.6,64.5L453.1,61.3L450.3,57.2L449.9,55.0L450.8,52.1L448.7,49.1L450.6,46.8L449.5,45.6L453.5,41.9L457.6,40.8L459.1,39.5L460.7,37.1L453.7,39.1L451.3,38.0L452.2,35.9L453.9,34.3L460.4,35.1L455.9,32.1L453.3,32.5L451.8,31.8L455.9,29.0L455.1,27.9L453.7,22.8L451.6,21.6L452.4,20.4L447.8,18.8L432.1,18.9L428.1,16.2L438.8,15.2L430.4,14.5L426.6,13.4L427.9,12.4L445.6,9.8L447.2,8.9L442.5,8.0L445.2,7.0L456.7,5.1L456.8,4.1L462.0,3.5L474.3,3.1L475.9,3.8L482.0,2.6L492.3,4.3L488.4,3.1L489.4,2.1L496.7,0.9L503.4,1.0L506.3,0.2L513.1,0.0L528.2,0.3L539.7,1.9L535.8,2.8ZM420.8,1.6L440.2,0.8L453.2,1.3L460.1,2.1L459.5,2.7L446.4,4.7L450.7,4.7L440.8,6.8L435.4,8.8L428.9,9.7L422.5,10.0L425.0,10.3L423.1,10.8L423.5,12.1L416.6,13.8L414.6,14.9L410.8,15.7L410.5,16.3L414.3,16.2L413.7,16.9L406.3,18.6L401.5,17.8L394.7,18.2L388.0,17.7L389.1,16.4L393.8,15.8L394.9,13.8L396.4,13.6L400.7,14.8L399.8,13.0L396.9,12.5L399.8,11.5L404.2,10.9L405.8,10.0L404.0,9.0L404.7,7.7L411.4,8.0L415.5,7.1L404.1,7.0L401.6,6.2L401.1,5.2L399.7,4.6L400.3,3.8L410.4,2.9L414.3,2.1L416.6,2.2L417.9,2.8L420.8,1.6ZM618.1,147.2L621.7,147.5L627.0,146.8L626.1,149.7L626.6,150.8L626.1,152.7L617.8,149.1L618.1,147.2ZM604.4,136.8L606.0,137.0L607.5,135.9L609.4,138.5L609.2,143.3L607.8,143.1L606.6,144.3L605.4,143.4L605.2,138.9L604.4,136.8ZM608.4,132.4L607.5,135.3L606.1,134.5L605.4,132.1L605.9,130.7L607.8,129.3L608.4,132.4ZM610.0,85.1L609.5,83.7L613.4,82.6L614.4,84.3L613.0,87.1L610.0,85.1ZM616.5,16.8L614.0,16.9L609.1,15.2L610.8,14.2L607.6,13.4L603.2,11.2L601.3,9.2L606.7,8.3L607.9,9.2L610.8,9.1L611.4,8.3L614.4,8.2L624.4,11.0L619.5,12.0L618.8,14.0L617.1,14.5L616.5,16.8ZM680.7,158.2L681.1,157.3L683.3,157.3L686.0,156.2L684.1,157.8L684.5,158.8L681.5,160.3L680.0,159.8L679.1,158.3L680.7,158.2ZM659.1,157.4L659.1,158.0L660.7,157.6L660.4,158.7L656.0,159.0L656.0,158.4L652.2,157.7L652.6,156.1L654.4,157.3L659.1,157.4ZM627.5,15.0L623.6,14.4L624.9,13.7L623.4,12.8L627.6,12.3L628.7,13.3L631.9,13.9L627.5,15.0ZM624.1,7.4L625.9,6.7L635.5,8.2L632.9,9.5L627.1,9.8L621.0,9.4L620.4,8.7L617.5,8.7L615.0,7.5L621.0,6.8L624.1,7.4ZM740.6,348.6L740.2,350.1L739.2,351.0L738.8,354.1L729.4,379.9L723.8,382.3L719.7,380.1L719.0,378.1L719.0,374.9L718.1,371.9L718.0,369.3L718.7,366.6L720.3,366.0L720.3,364.7L722.1,361.9L722.5,359.6L721.4,355.5L721.4,352.1L722.6,350.0L723.2,347.7L724.8,347.6L727.9,346.1L729.3,346.1L734.0,341.7L735.1,339.9L734.7,338.3L736.1,338.7L738.0,336.2L738.2,333.9L739.3,332.3L741.2,335.4L741.8,337.9L742.1,342.3L742.8,344.0L741.8,346.9L740.8,344.7L740.1,345.8L740.6,348.6ZM969.2,322.4L971.9,324.6L971.6,325.6L970.2,325.7L966.2,323.1L969.2,322.4ZM963.1,317.7L964.2,318.7L966.2,318.4L966.9,320.0L959.1,321.2L960.4,319.1L962.1,319.0L963.1,317.7ZM952.1,320.2L948.6,318.7L942.3,318.5L933.3,316.1L931.9,316.5L926.1,315.0L925.6,313.4L922.6,313.1L925.1,309.6L929.0,309.8L932.9,311.6L933.3,312.9L939.5,313.2L940.3,311.7L946.2,313.5L947.2,315.9L952.1,316.6L955.9,318.7L952.1,320.2ZM918.1,306.4L914.0,303.4L910.4,298.2L906.4,290.3L903.6,287.2L901.3,281.1L898.4,278.8L896.6,275.6L894.0,273.6L890.5,269.5L890.1,267.6L897.3,268.5L900.3,272.1L904.8,276.1L908.0,280.1L911.3,280.2L914.1,282.7L916.0,285.8L918.5,287.5L917.2,290.5L919.0,291.8L920.2,291.9L920.7,294.4L921.8,296.5L924.2,296.8L925.7,299.2L924.7,303.7L924.3,309.5L920.7,309.5L918.1,306.4ZM959.9,293.3L959.7,297.0L958.3,302.7L957.8,301.4L954.1,303.0L952.9,300.8L950.5,300.5L949.0,299.4L945.0,300.7L943.9,298.9L939.1,298.7L938.7,293.7L937.1,292.7L935.6,289.6L935.2,286.3L935.5,282.9L937.4,280.5L939.8,281.7L942.3,281.0L942.9,277.9L948.1,276.4L953.1,269.8L958.1,265.2L959.6,262.3L960.9,262.3L962.7,264.2L962.9,265.8L967.9,267.9L967.7,269.3L965.5,269.5L966.2,271.3L963.9,272.6L962.2,275.9L964.7,279.4L964.2,281.1L967.9,284.5L964.0,285.0L962.9,287.5L963.1,290.8L959.9,293.3ZM845.9,260.1L845.5,263.9L844.2,265.0L841.4,265.8L839.8,262.9L838.9,257.6L840.1,251.6L842.5,253.7L845.9,260.1ZM964.7,253.5L960.7,257.0L962.1,254.4L966.0,249.6L967.3,245.9L968.2,248.9L966.2,250.9L964.7,253.5ZM973.1,239.6L972.6,242.8L969.1,238.2L971.8,238.3L973.1,239.6ZM934.1,218.9L931.6,220.7L928.8,219.6L928.2,216.4L929.5,214.7L932.8,213.7L934.7,213.8L935.6,215.2L934.5,216.8L934.1,218.9ZM966.8,195.6L966.1,203.8L965.3,206.8L963.0,203.7L962.1,200.9L963.2,197.3L965.1,194.5L966.8,195.6ZM726.9,18.4L714.6,21.2L709.6,23.9L706.1,29.6L707.9,32.1L713.6,34.6L704.6,34.5L703.3,33.2L698.7,32.3L697.6,30.7L699.6,30.1L698.7,28.4L701.8,25.9L699.5,25.6L703.3,23.0L701.9,21.7L711.7,18.4L718.5,17.8L721.3,16.8L725.2,16.4L727.6,17.5L726.9,18.4ZM787.7,10.2L790.8,10.1L798.0,11.6L798.9,12.7L788.5,13.7L787.7,10.2ZM766.7,5.8L770.3,5.3L775.8,6.5L783.7,8.9L786.2,11.2L782.1,11.5L775.4,10.7L770.8,9.8L767.0,7.9L763.6,7.5L766.7,5.8ZM678.5,7.5L678.5,7.9L676.4,8.3L673.8,7.7L674.4,6.9L669.9,6.8L676.6,6.4L677.4,7.0L679.8,6.0L683.1,6.6L678.5,7.5ZM1096.8,440.3L1100.1,438.8L1099.8,440.3L1098.6,441.9L1089.4,447.7L1089.1,449.5L1086.8,449.5L1083.1,450.9L1075.7,456.9L1069.8,459.6L1067.2,459.5L1066.3,458.3L1063.3,458.1L1063.9,456.7L1067.7,454.1L1074.2,450.5L1083.9,446.5L1092.5,441.0L1094.4,438.9L1097.8,437.2L1096.8,440.3ZM1010.3,448.4L1010.6,445.3L1011.8,442.8L1012.1,439.7L1013.3,438.0L1015.0,438.3L1017.1,439.6L1021.8,438.4L1023.5,438.6L1020.8,443.0L1019.0,444.2L1016.7,447.1L1016.3,446.1L1012.5,448.7L1010.3,448.4ZM1103.5,433.6L1104.5,432.3L1107.6,431.0L1111.4,425.8L1112.2,422.7L1111.3,417.9L1111.5,415.3L1112.8,415.0L1113.3,417.0L1115.1,418.0L1114.0,421.3L1113.8,425.2L1115.4,422.6L1116.2,423.6L1114.8,426.4L1116.5,427.6L1118.3,427.9L1121.0,426.5L1122.3,426.9L1116.9,432.3L1114.6,432.3L1113.0,433.4L1112.2,435.0L1105.2,440.1L1101.8,441.6L1102.0,440.6L1101.2,440.1L1105.2,437.1L1105.7,435.1L1103.5,433.6ZM954.5,412.7L949.9,413.2L947.3,415.2L946.5,415.0L942.6,417.3L938.3,417.1L936.0,414.8L934.6,414.1L935.5,411.9L937.2,411.4L938.0,410.6L939.7,406.7L940.1,404.5L939.8,398.7L940.6,396.6L940.1,394.2L940.3,393.1L939.3,391.6L939.7,388.7L938.6,385.8L938.6,384.2L939.6,385.8L939.3,382.4L940.6,383.5L941.2,384.9L941.6,383.0L940.1,377.8L942.5,373.0L942.6,370.8L944.4,368.1L944.1,371.0L945.9,368.4L948.7,367.2L950.5,365.6L953.2,364.3L954.7,364.0L955.5,364.4L958.3,363.0L960.3,362.6L961.8,361.5L963.6,361.6L967.2,360.5L972.6,355.0L973.4,351.5L976.2,348.4L977.0,351.6L978.5,350.8L977.6,349.1L978.9,347.3L980.2,348.1L981.1,345.3L984.1,342.0L985.8,341.4L986.0,340.4L987.4,340.8L987.6,339.9L990.7,338.8L992.8,340.5L994.3,342.7L998.3,343.1L997.9,341.1L999.9,338.1L1001.5,337.1L1001.1,336.2L1002.8,334.1L1004.9,332.8L1006.5,333.3L1009.3,332.6L1009.5,330.7L1007.2,329.5L1009.0,328.9L1011.1,329.8L1012.6,331.4L1015.2,332.3L1016.2,331.9L1018.1,333.1L1020.1,332.0L1021.3,332.3L1022.1,331.6L1023.4,333.4L1020.8,336.9L1019.7,337.0L1019.9,338.5L1017.2,342.2L1017.3,343.2L1019.5,345.2L1021.8,346.4L1025.1,349.9L1026.1,349.9L1027.6,350.8L1027.8,352.0L1030.6,353.2L1033.0,352.0L1037.3,343.4L1037.5,338.4L1038.3,335.6L1039.0,334.9L1038.7,333.6L1040.8,328.6L1042.2,327.2L1042.9,329.0L1042.8,331.3L1043.6,331.8L1043.5,333.3L1044.4,335.2L1044.0,338.6L1044.7,341.5L1047.0,340.2L1049.2,343.2L1048.5,344.8L1048.8,349.8L1049.5,350.2L1049.7,353.4L1049.0,355.3L1049.5,357.8L1052.6,359.7L1056.3,363.1L1055.6,364.0L1056.9,366.3L1057.3,370.3L1058.7,369.5L1059.6,371.1L1060.6,370.5L1060.1,374.4L1064.5,381.1L1064.5,384.1L1062.9,388.5L1063.3,391.6L1061.9,394.9L1055.8,404.6L1052.9,408.0L1049.8,409.8L1040.7,419.5L1036.2,425.9L1033.7,427.2L1030.3,427.4L1026.6,428.9L1021.7,431.9L1020.1,430.2L1018.6,429.6L1020.1,427.7L1018.1,428.4L1014.0,431.0L1006.6,428.1L1005.8,425.9L1006.9,421.2L1006.1,419.7L1003.4,419.3L1005.2,417.5L1005.8,414.7L1003.1,417.3L1000.0,418.0L1002.6,415.9L1004.0,413.8L1006.0,412.0L1007.0,409.3L1003.1,412.4L1000.6,413.7L998.1,416.6L996.4,415.1L997.3,413.1L996.6,410.5L995.5,409.1L996.4,408.2L993.4,406.0L991.2,405.9L988.9,404.1L983.2,404.4L974.7,407.0L971.8,406.7L964.8,409.5L961.7,412.9L957.0,413.3L954.5,412.7ZM1105.1,362.1L1106.4,362.1L1107.9,363.4L1113.1,369.6L1111.6,370.5L1108.3,367.9L1105.2,363.3L1105.1,362.1ZM1152.7,352.5L1153.6,351.8L1154.5,352.9L1153.5,354.8L1151.3,355.3L1149.7,354.9L1149.8,353.3L1151.3,352.0L1152.7,352.5ZM1159.6,349.0L1155.1,350.6L1155.0,349.3L1160.0,347.1L1159.6,349.0ZM1118.0,341.8L1119.3,343.0L1119.2,345.9L1118.5,345.5L1117.8,345.7L1117.5,344.7L1118.0,341.8ZM1103.4,325.5L1105.8,326.5L1106.6,327.8L1104.3,327.8L1103.4,325.5ZM985.8,320.7L986.3,319.8L989.2,319.0L992.5,318.4L993.7,318.8L992.4,319.8L986.1,322.5L983.7,325.3L980.9,326.1L980.5,325.6L980.9,324.4L982.5,322.1L985.8,320.7ZM1102.0,324.3L1098.8,324.0L1098.1,323.4L1098.5,322.0L1100.6,322.5L1101.6,323.3L1102.0,324.3ZM1102.2,320.8L1101.7,318.6L1102.8,318.6L1103.7,321.5L1104.8,323.3L1104.2,324.0L1102.2,320.8ZM974.2,319.4L976.4,319.1L979.4,317.7L978.7,319.8L973.8,320.8L969.5,320.4L969.6,319.0L972.2,318.3L974.2,319.4ZM1098.8,317.5L1099.5,319.4L1094.3,315.2L1094.8,314.9L1098.8,317.5ZM1058.0,312.7L1058.5,315.1L1061.2,317.5L1062.9,321.5L1064.8,321.3L1064.5,323.0L1067.0,323.6L1065.9,324.3L1069.2,325.8L1068.7,326.9L1066.5,327.2L1065.8,326.2L1059.9,325.2L1056.0,320.9L1054.6,317.6L1050.5,316.0L1045.5,318.3L1045.7,321.0L1043.0,322.3L1041.3,321.7L1037.9,321.5L1035.3,318.5L1032.1,317.7L1031.2,318.8L1027.1,318.9L1028.7,315.9L1030.8,314.9L1030.3,310.9L1028.9,307.8L1022.8,304.6L1020.1,304.3L1015.4,300.9L1014.3,302.7L1013.1,303.0L1012.4,301.7L1012.5,300.1L1010.0,298.3L1013.6,296.9L1015.9,297.0L1015.7,296.0L1010.9,296.0L1009.7,293.8L1006.8,293.1L1005.4,291.3L1009.8,290.4L1011.5,289.2L1016.7,290.7L1018.0,298.1L1021.3,300.3L1024.1,296.4L1027.9,294.1L1030.8,294.1L1036.0,296.7L1039.4,297.5L1050.9,302.1L1054.7,305.9L1055.1,308.0L1060.4,310.3L1061.0,312.3L1058.0,312.7ZM1016.3,310.5L1017.7,308.0L1018.4,309.0L1018.3,310.8L1016.4,313.3L1016.3,310.5ZM1082.9,306.8L1083.4,306.5L1083.7,307.6L1087.5,312.0L1086.9,313.0L1086.0,313.4L1084.7,312.0L1083.4,309.6L1082.9,306.8ZM1067.7,308.2L1068.3,306.4L1068.7,306.3L1068.9,308.3L1070.8,308.0L1073.7,305.4L1073.5,303.2L1075.4,303.2L1076.0,303.8L1075.9,305.8L1074.6,308.1L1072.9,308.4L1072.3,309.4L1068.7,311.2L1067.0,311.2L1062.6,309.1L1063.0,307.9L1065.9,308.5L1067.7,308.2ZM1070.9,298.0L1071.8,297.1L1075.9,299.8L1078.3,302.5L1078.6,304.5L1077.5,305.4L1076.4,301.8L1073.2,299.1L1070.9,298.0ZM994.5,300.6L993.2,301.8L991.0,301.2L990.4,299.6L993.7,299.4L994.5,300.6ZM1005.0,299.3L1006.1,302.1L1003.4,300.6L996.6,300.4L997.5,298.4L1001.5,298.2L1005.0,299.3ZM971.8,287.0L971.3,289.8L974.2,293.1L976.0,291.4L982.0,290.1L981.8,291.8L980.3,291.3L978.9,293.5L976.0,294.9L978.9,299.6L978.3,300.9L981.0,305.1L980.8,307.6L979.1,308.7L977.8,307.4L979.6,304.3L976.3,305.8L975.5,304.7L976.0,303.3L973.8,301.2L974.2,297.6L972.0,298.7L971.9,308.3L969.8,308.8L968.5,307.7L969.6,304.3L969.2,300.8L967.9,300.7L967.0,298.2L968.4,295.8L970.6,287.3L971.3,285.8L974.0,283.0L976.6,284.1L980.7,284.6L984.4,284.5L987.6,281.8L988.2,282.6L985.6,286.3L983.2,287.0L980.0,286.3L971.8,287.0ZM997.5,291.2L996.3,288.8L995.3,284.1L995.9,281.2L996.9,279.8L997.2,281.8L999.1,282.2L999.5,283.7L999.3,286.9L997.6,286.5L997.1,288.8L998.5,290.7L997.5,291.2ZM984.1,265.1L983.0,262.5L983.9,260.7L981.7,259.0L980.8,260.5L979.3,260.3L977.0,262.4L976.4,261.3L977.5,258.2L981.1,255.8L982.4,257.5L984.8,256.4L985.2,254.8L987.4,254.7L987.0,251.8L989.8,253.6L991.4,261.3L990.5,264.7L989.1,260.9L987.7,262.8L988.9,265.5L988.1,267.3L984.1,265.1ZM980.3,253.5L979.4,254.6L977.2,252.0L978.5,250.0L978.6,247.7L980.4,247.5L980.1,250.0L982.2,246.4L982.2,249.9L981.1,251.1L980.3,253.5ZM975.5,245.7L974.8,244.0L976.9,245.1L978.9,245.1L979.0,246.7L977.7,248.2L975.7,249.3L975.5,245.7ZM982.8,245.4L984.7,245.7L984.5,244.3L982.2,241.5L985.3,241.6L986.4,243.0L987.8,247.1L985.2,246.1L986.4,249.6L984.9,250.5L984.5,247.9L983.5,247.7L982.8,245.4ZM976.3,235.0L980.6,237.0L980.6,239.0L981.8,239.9L981.6,241.6L978.9,239.8L977.4,237.8L976.8,239.2L974.4,237.0L971.6,237.5L969.9,236.7L969.8,235.2L970.7,234.3L969.6,233.4L969.4,234.7L967.5,232.6L966.1,227.5L967.6,228.7L967.0,222.9L967.5,219.6L969.4,219.6L971.6,220.6L972.4,219.7L972.9,220.6L972.6,222.1L974.2,224.8L973.8,227.8L972.1,229.1L972.0,232.0L973.2,235.0L975.0,235.4L976.3,235.0ZM992.4,167.2L989.9,166.1L989.2,164.4L990.0,162.2L991.9,162.6L992.5,161.0L995.1,161.8L996.1,163.1L995.3,165.3L993.5,164.2L992.3,165.0L992.4,167.2ZM997.1,162.9L995.8,160.2L990.8,161.0L987.9,162.7L984.3,162.8L988.6,165.5L989.0,171.8L987.6,173.4L985.5,171.9L985.0,168.6L982.6,167.5L980.3,165.0L982.8,163.9L983.4,161.5L985.7,159.6L986.8,157.1L992.4,156.0L996.0,156.8L996.0,150.2L999.0,152.0L1002.5,146.9L1001.9,142.4L999.0,138.2L998.9,135.9L1001.6,135.3L1006.4,140.3L1008.0,143.3L1007.2,147.0L1009.3,150.8L1009.6,153.8L1011.1,155.6L1010.7,158.2L1007.6,159.9L1002.3,160.2L999.8,164.4L997.1,162.9ZM994.3,130.9L993.9,128.1L997.0,127.9L993.4,120.1L999.4,123.8L1002.5,125.1L1005.1,125.8L1006.1,124.3L1009.5,128.4L1005.8,129.4L1005.6,133.0L999.3,130.5L1000.3,134.5L997.0,134.6L994.3,130.9ZM992.6,115.8L992.7,118.6L990.0,115.5L979.5,100.7L975.0,97.2L971.0,92.4L972.1,90.7L969.6,89.1L970.3,88.6L973.2,90.9L977.1,94.3L980.1,97.8L992.1,107.7L987.0,106.5L989.2,111.7L994.6,115.4L996.4,117.9L992.6,115.8ZM994.0,32.2L997.5,34.3L995.2,34.4L993.1,33.5L994.0,32.2ZM896.9,25.3L901.7,26.4L903.1,27.1L894.0,26.7L894.5,25.5L896.9,25.3ZM899.8,21.4L898.8,20.5L910.4,21.7L909.7,22.8L899.8,21.4ZM895.7,20.3L897.5,22.4L889.3,22.4L886.7,23.1L879.4,21.2L877.5,19.2L879.5,18.7L885.4,18.8L895.7,20.3Z"/><g class="mkts"><g class="mk r-apac full" data-m="india"><circle class="halo" cx="832.7" cy="207.1" r="9"/><circle class="dot" cx="832.7" cy="207.1" r="3.4" fill="#5B3FD2"/><title>India</title></g><g class="mk r-apac full" data-m="sri-lanka"><circle class="halo" cx="842.2" cy="258.8" r="9"/><circle class="dot" cx="842.2" cy="258.8" r="3.4" fill="#5B3FD2"/><title>Sri Lanka</title></g><g class="mk r-apac full" data-m="philippines"><circle class="halo" cx="987.0" cy="259.8" r="9"/><circle class="dot" cx="987.0" cy="259.8" r="3.4" fill="#5B3FD2"/><title>Philippines</title></g><g class="mk r-apac full" data-m="myanmar"><circle class="halo" cx="887.5" cy="217.8" r="9"/><circle class="dot" cx="887.5" cy="217.8" r="3.4" fill="#5B3FD2"/><title>Myanmar</title></g><g class="mk r-apac full" data-m="vietnam"><circle class="halo" cx="927.3" cy="228.8" r="9"/><circle class="dot" cx="927.3" cy="228.8" r="3.4" fill="#5B3FD2"/><title>Vietnam</title></g><g class="mk r-apac full" data-m="thailand"><circle class="halo" cx="908.9" cy="239.7" r="9"/><circle class="dot" cx="908.9" cy="239.7" r="3.4" fill="#5B3FD2"/><title>Thailand</title></g><g class="mk r-apac" data-m="indonesia"><circle class="halo" cx="949.2" cy="288.5" r="9"/><circle class="dot" cx="949.2" cy="288.5" r="2.6" fill="#B7ABE8"/><title>Indonesia</title></g><g class="mk r-apac full" data-m="malaysia"><circle class="halo" cx="912.4" cy="273.7" r="9"/><circle class="dot" cx="912.4" cy="273.7" r="3.4" fill="#5B3FD2"/><title>Malaysia</title></g><g class="mk r-apac full" data-m="singapore"><circle class="halo" cx="918.4" cy="282.9" r="9"/><circle class="dot" cx="918.4" cy="282.9" r="3.4" fill="#5B3FD2"/><title>Singapore</title></g><g class="mk r-apac full" data-m="hong-kong"><circle class="halo" cx="944.1" cy="205.5" r="9"/><circle class="dot" cx="944.1" cy="205.5" r="3.4" fill="#5B3FD2"/><title>Hong Kong</title></g><g class="mk r-apac full" data-m="taiwan"><circle class="halo" cx="964.6" cy="199.4" r="9"/><circle class="dot" cx="964.6" cy="199.4" r="3.4" fill="#5B3FD2"/><title>Taiwan</title></g><g class="mk r-apac" data-m="cambodia"><circle class="halo" cx="919.7" cy="240.4" r="9"/><circle class="dot" cx="919.7" cy="240.4" r="2.6" fill="#B7ABE8"/><title>Cambodia</title></g><g class="mk r-apac" data-m="brunei"><circle class="halo" cx="954.0" cy="270.5" r="9"/><circle class="dot" cx="954.0" cy="270.5" r="2.6" fill="#B7ABE8"/><title>Brunei</title></g><g class="mk r-apac" data-m="laos"><circle class="halo" cx="907.8" cy="220.8" r="9"/><circle class="dot" cx="907.8" cy="220.8" r="2.6" fill="#B7ABE8"/><title>Laos</title></g><g class="mk r-apac" data-m="pakistan"><circle class="halo" cx="799.1" cy="175.8" r="9"/><circle class="dot" cx="799.1" cy="175.8" r="2.6" fill="#B7ABE8"/><title>Pakistan</title></g><g class="mk r-me full" data-m="saudi-arabia"><circle class="halo" cx="721.5" cy="198.3" r="9"/><circle class="dot" cx="721.5" cy="198.3" r="3.4" fill="#5B3FD2"/><title>Saudi Arabia</title></g><g class="mk r-me" data-m="united-arab-emirates"><circle class="halo" cx="754.7" cy="198.3" r="9"/><circle class="dot" cx="754.7" cy="198.3" r="2.6" fill="#B7ABE8"/><title>UAE</title></g><g class="mk r-cis" data-m="kyrgyzstan"><circle class="halo" cx="804.4" cy="135.6" r="9"/><circle class="dot" cx="804.4" cy="135.6" r="2.6" fill="#B7ABE8"/><title>Kyrgyzstan</title></g><g class="mk r-cis full" data-m="uzbekistan"><circle class="halo" cx="769.2" cy="135.4" r="9"/><circle class="dot" cx="769.2" cy="135.4" r="3.4" fill="#5B3FD2"/><title>Uzbekistan</title></g><g class="mk r-cis" data-m="kazakhstan"><circle class="halo" cx="770.1" cy="111.0" r="9"/><circle class="dot" cx="770.1" cy="111.0" r="2.6" fill="#B7ABE8"/><title>Kazakhstan</title></g><g class="mk r-cis" data-m="azerbaijan"><circle class="halo" cx="723.1" cy="140.2" r="9"/><circle class="dot" cx="723.1" cy="140.2" r="2.6" fill="#B7ABE8"/><title>Azerbaijan</title></g><g class="mk r-ee" data-m="russia"><circle class="halo" cx="811.9" cy="71.3" r="9"/><circle class="dot" cx="811.9" cy="71.3" r="2.6" fill="#B7ABE8"/><title>Russia</title></g><g class="mk r-ee" data-m="ukraine"><circle class="halo" cx="677.0" cy="110.2" r="9"/><circle class="dot" cx="677.0" cy="110.2" r="2.6" fill="#B7ABE8"/><title>Ukraine</title></g><g class="mk r-latam" data-m="guatemala"><circle class="halo" cx="288.8" cy="229.6" r="9"/><circle class="dot" cx="288.8" cy="229.6" r="2.6" fill="#B7ABE8"/><title>Guatemala</title></g><g class="mk r-latam" data-m="honduras"><circle class="halo" cx="298.3" cy="234.4" r="9"/><circle class="dot" cx="298.3" cy="234.4" r="2.6" fill="#B7ABE8"/><title>Honduras</title></g><g class="mk r-latam" data-m="el-salvador"><circle class="halo" cx="292.6" cy="236.9" r="9"/><circle class="dot" cx="292.6" cy="236.9" r="2.6" fill="#B7ABE8"/><title>El Salvador</title></g><g class="mk r-latam" data-m="nicaragua"><circle class="halo" cx="303.1" cy="240.3" r="9"/><circle class="dot" cx="303.1" cy="240.3" r="2.6" fill="#B7ABE8"/><title>Nicaragua</title></g><g class="mk r-latam" data-m="chile"><circle class="halo" cx="388.4" cy="485.9" r="9"/><circle class="dot" cx="388.4" cy="485.9" r="2.6" fill="#B7ABE8"/><title>Chile</title></g><g class="mk r-latam" data-m="peru"><circle class="halo" cx="333.7" cy="322.0" r="9"/><circle class="dot" cx="333.7" cy="322.0" r="2.6" fill="#B7ABE8"/><title>Peru</title></g><g class="mk r-afr full" data-m="nigeria"><circle class="halo" cx="605.4" cy="254.9" r="9"/><circle class="dot" cx="605.4" cy="254.9" r="3.4" fill="#5B3FD2"/><title>Nigeria</title></g><g class="mk r-afr" data-m="ghana"><circle class="halo" cx="576.5" cy="259.0" r="9"/><circle class="dot" cx="576.5" cy="259.0" r="2.6" fill="#B7ABE8"/><title>Ghana</title></g><g class="mk r-afr" data-m="c-te-d-ivoire"><circle class="halo" cx="561.5" cy="260.0" r="9"/><circle class="dot" cx="561.5" cy="260.0" r="2.6" fill="#B7ABE8"/><title>Côte d’Ivoire</title></g><g class="mk r-afr" data-m="burkina-faso"><circle class="halo" cx="575.9" cy="242.7" r="9"/><circle class="dot" cx="575.9" cy="242.7" r="2.6" fill="#B7ABE8"/><title>Burkina Faso</title></g><g class="mk r-afr" data-m="senegal"><circle class="halo" cx="532.4" cy="234.4" r="9"/><circle class="dot" cx="532.4" cy="234.4" r="2.6" fill="#B7ABE8"/><title>Senegal</title></g><g class="mk r-afr" data-m="togo"><circle class="halo" cx="583.6" cy="256.5" r="9"/><circle class="dot" cx="583.6" cy="256.5" r="2.6" fill="#B7ABE8"/><title>Togo</title></g><g class="mk r-afr" data-m="benin"><circle class="halo" cx="587.4" cy="253.8" r="9"/><circle class="dot" cx="587.4" cy="253.8" r="2.6" fill="#B7ABE8"/><title>Benin</title></g><g class="mk r-afr" data-m="cameroon"><circle class="halo" cx="623.9" cy="261.2" r="9"/><circle class="dot" cx="623.9" cy="261.2" r="2.6" fill="#B7ABE8"/><title>Cameroon</title></g><g class="mk r-afr" data-m="dem-rep-congo"><circle class="halo" cx="652.9" cy="303.0" r="9"/><circle class="dot" cx="652.9" cy="303.0" r="2.6" fill="#B7ABE8"/><title>DR Congo</title></g><g class="mk r-afr" data-m="chad"><circle class="halo" cx="639.1" cy="231.5" r="9"/><circle class="dot" cx="639.1" cy="231.5" r="2.6" fill="#B7ABE8"/><title>Chad</title></g><g class="mk r-afr" data-m="tanzania"><circle class="halo" cx="691.1" cy="310.8" r="9"/><circle class="dot" cx="691.1" cy="310.8" r="2.6" fill="#B7ABE8"/><title>Tanzania</title></g><g class="mk r-afr full" data-m="kenya"><circle class="halo" cx="702.3" cy="286.7" r="9"/><circle class="dot" cx="702.3" cy="286.7" r="3.4" fill="#5B3FD2"/><title>Kenya</title></g><g class="mk r-afr" data-m="ethiopia"><circle class="halo" cx="705.7" cy="253.3" r="9"/><circle class="dot" cx="705.7" cy="253.3" r="2.6" fill="#B7ABE8"/><title>Ethiopia</title></g><g class="mk r-afr" data-m="uganda"><circle class="halo" cx="686.1" cy="282.8" r="9"/><circle class="dot" cx="686.1" cy="282.8" r="2.6" fill="#B7ABE8"/><title>Uganda</title></g><g class="mk r-afr" data-m="zimbabwe"><circle class="halo" cx="674.0" cy="358.0" r="9"/><circle class="dot" cx="674.0" cy="358.0" r="2.6" fill="#B7ABE8"/><title>Zimbabwe</title></g><g class="mk r-afr" data-m="madagascar"><circle class="halo" cx="729.8" cy="356.7" r="9"/><circle class="dot" cx="729.8" cy="356.7" r="2.6" fill="#B7ABE8"/><title>Madagascar</title></g><g class="mk r-afr full" data-m="south-africa"><circle class="halo" cx="662.2" cy="392.7" r="9"/><circle class="dot" cx="662.2" cy="392.7" r="3.4" fill="#5B3FD2"/><title>South Africa</title></g></g></svg>
+        <div style="display: flex; gap: 28px; margin-top: 12px; padding-top: 18px; border-top: 1px solid #ECEDF1">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #6B6B6B">
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: #5B3FD2; display: block"></span> All three capabilities live
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #6B6B6B">
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: #B7ABE8; display: block"></span> One or two live today
+          </div>
+          <div style="margin-left: auto; font-size: 13px; color: #9A94AC">Markets shown as points. No international boundaries are drawn.</div>
+        </div>
+      </div>
+
+      <div style="width: 396px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px">
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 16px; font-weight: 600">Asia Pacific</span><span style="font-size: 14px; color: #6B6B6B">India · Vietnam · Thailand · +12</span>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 16px; font-weight: 600">Africa</span><span style="font-size: 14px; color: #6B6B6B">Nigeria · Kenya · South Africa · +13</span>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 16px; font-weight: 600">Middle East</span><span style="font-size: 14px; color: #6B6B6B">Saudi Arabia · UAE</span>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 16px; font-weight: 600">CIS</span><span style="font-size: 14px; color: #6B6B6B">Uzbekistan · Kazakhstan · +2</span>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 16px; font-weight: 600">Eastern Europe</span><span style="font-size: 14px; color: #6B6B6B">Russia · Ukraine</span>
+        </div>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 16px; font-weight: 600">Latin America</span><span style="font-size: 14px; color: #6B6B6B">Peru · Chile · Guatemala · +3</span>
+        </div>
+        <div style="background: #241653; color: #FFFFFF; border-radius: 14px; padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center">
+          <div style="font-size: 15.5px; font-weight: 600; line-height: 1.4">Forty-six markets, one accountable team</div>
+          <div style="margin-top: 8px; font-size: 14px; color: #B8AFDF; line-height: 1.5">Regulatory Affairs, MAH representation and Pharmacovigilance, delivered by in-country specialists on record with the authority.</div>
+          <div style="margin-top: 14px; font-size: 14.5px; font-weight: 600; color: #FFFFFF">Speak to an expert &rarr;</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 28px">
+      <div style="background: #F0EEFB; border-radius: 18px; padding: 30px 32px">
+        <div style="font-size: 62px; font-weight: 700; letter-spacing: -0.04em; color: #5B3FD2; line-height: 1">1000+</div>
+        <div style="margin-top: 12px; font-size: 16px; color: #4A4A55">Regulatory submissions</div>
+      </div>
+      <div style="background: #F0EEFB; border-radius: 18px; padding: 30px 32px">
+        <div style="font-size: 62px; font-weight: 700; letter-spacing: -0.04em; color: #5B3FD2; line-height: 1">500+</div>
+        <div style="margin-top: 12px; font-size: 16px; color: #4A4A55">PV deliverables</div>
+      </div>
+      <div style="background: #F0EEFB; border-radius: 18px; padding: 30px 32px">
+        <div style="font-size: 62px; font-weight: 700; letter-spacing: -0.04em; color: #5B3FD2; line-height: 1">30+</div>
+        <div style="margin-top: 12px; font-size: 16px; color: #4A4A55">Markets supported</div>
+      </div>
+      <div style="background: #F0EEFB; border-radius: 18px; padding: 30px 32px">
+        <div style="font-size: 62px; font-weight: 700; letter-spacing: -0.04em; color: #5B3FD2; line-height: 1">20+</div>
+        <div style="margin-top: 12px; font-size: 16px; color: #4A4A55">MAH markets</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== OPERATING MODEL ==================== -->
+  <div style="padding: 96px 96px">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Operating Model</div>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 60px; margin-top: 14px">
+      <h2 style="font-size: 42px; line-height: 1.14; max-width: 640px">One integrated service architecture, filing to post-approval.</h2>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #5B3FD2; padding-bottom: 6px">
+        How we work <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-top: 40px">
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">01</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Regulatory Strategy</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">02</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Regulatory Intelligence</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">03</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Classification &amp; Gap Analysis</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">04</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Dossier Preparation</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">05</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Publishing</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">06</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Submission Management</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">07</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Authority Interaction</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">08</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Approval</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">09</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Lifecycle Management</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">10</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">MAH / Local Representation</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">11</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Pharmacovigilance</div></div>
+      <div style="background: #F4F5F7; border-radius: 14px; padding: 22px 20px 24px"><div style="font-size: 13px; font-weight: 700; color: #9A9AA5">12</div><div style="margin-top: 26px; font-size: 15.5px; font-weight: 600; line-height: 1.35">Dedicated Resource Augmentation</div></div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 20px; margin-top: 40px">
+      <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Engagement models</span>
+      <div style="flex-grow: 1; height: 1px; background: #ECEDF1"></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px">
+      <span style="background: #F4F5F7; border-radius: 999px; padding: 11px 20px; font-size: 15px; color: #222222">Project-Based Support</span>
+      <span style="background: #F4F5F7; border-radius: 999px; padding: 11px 20px; font-size: 15px; color: #222222">Managed Services</span>
+      <span style="background: #F4F5F7; border-radius: 999px; padding: 11px 20px; font-size: 15px; color: #222222">QPPV / Dedicated FTE</span>
+      <span style="background: #F4F5F7; border-radius: 999px; padding: 11px 20px; font-size: 15px; color: #222222">Hybrid Onsite Deployment</span>
+      <span style="background: #F4F5F7; border-radius: 999px; padding: 11px 20px; font-size: 15px; color: #222222">Embedded Regulatory Teams</span>
+      <span style="background: #F4F5F7; border-radius: 999px; padding: 11px 20px; font-size: 15px; color: #222222">Strategic Partnership</span>
+    </div>
+  </div>
+
+  <!-- ==================== WHY GENEDRIFT ==================== -->
+  <div style="background: #241653; color: #FFFFFF; padding: 96px 96px; position: relative; overflow: hidden">
+    <svg style="position:absolute; left:-420px; bottom:-520px; width:900px; height:900px; pointer-events:none" viewBox="0 0 900 900" fill="none">
+  <circle cx="380" cy="520" r="440" stroke="rgba(150,122,255,0.16)" stroke-width="1.2"/>
+  <circle cx="380" cy="520" r="300" stroke="rgba(150,122,255,0.10)" stroke-width="1.2"/>
+</svg>
+    <div style="position: relative">
+      <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A794FF">Why Genedrift</div>
+      <h2 style="margin-top: 14px; font-size: 42px; line-height: 1.14; max-width: 720px">More than a service provider. A long-term regulatory partner.</h2>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 44px">
+        <div style="background: rgba(240,238,251,0.08); border: 1px solid rgba(240,238,251,0.16); border-radius: 16px; padding: 28px 24px">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 4 8 4-8 4-8-4z"/><path d="m4 12 8 4 8-4"/><path d="m4 16 8 4 8-4"/></svg>
+          </div>
+          <h3 style="margin-top: 22px; font-size: 19px">Fully in-house delivery</h3>
+          <p style="margin-top: 10px; font-size: 15px; line-height: 1.6; color: #B8AFDF">No subcontractors. The team that files your dossier maintains it.</p>
+        </div>
+        <div style="background: rgba(240,238,251,0.08); border: 1px solid rgba(240,238,251,0.16); border-radius: 16px; padding: 28px 24px">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-2 4.6-4.6 2 2-4.6z"/></svg>
+          </div>
+          <h3 style="margin-top: 22px; font-size: 19px">Genuine local expertise</h3>
+          <p style="margin-top: 10px; font-size: 15px; line-height: 1.6; color: #B8AFDF">In-country specialists who know the authority, not a remote desk.</p>
+        </div>
+        <div style="background: rgba(240,238,251,0.08); border: 1px solid rgba(240,238,251,0.16); border-radius: 16px; padding: 28px 24px">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1.4"/><rect x="3" y="16" width="6" height="5" rx="1.4"/><rect x="15" y="16" width="6" height="5" rx="1.4"/><path d="M12 8v4M6 16v-2h12v2"/></svg>
+          </div>
+          <h3 style="margin-top: 22px; font-size: 19px">Regional project management</h3>
+          <p style="margin-top: 10px; font-size: 15px; line-height: 1.6; color: #B8AFDF">One commercial partner and one dedicated project manager across markets.</p>
+        </div>
+        <div style="background: rgba(240,238,251,0.08); border: 1px solid rgba(240,238,251,0.16); border-radius: 16px; padding: 28px 24px">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 7.5 3v6c0 4.4-3 7.6-7.5 9-4.5-1.4-7.5-4.6-7.5-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h3 style="margin-top: 22px; font-size: 19px">Quality-driven execution</h3>
+          <p style="margin-top: 10px; font-size: 15px; line-height: 1.6; color: #B8AFDF">ISO-certified management systems and inspection-ready documentation.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px">
+        <span style="border: 1px solid rgba(240,238,251,0.22); border-radius: 999px; padding: 10px 18px; font-size: 14.5px; color: #CFC8EC">Flexible engagement models</span>
+        <span style="border: 1px solid rgba(240,238,251,0.22); border-radius: 999px; padding: 10px 18px; font-size: 14.5px; color: #CFC8EC">Integrated Regulatory &amp; PV</span>
+        <span style="border: 1px solid rgba(240,238,251,0.22); border-radius: 999px; padding: 10px 18px; font-size: 14.5px; color: #CFC8EC">Scalable delivery</span>
+        <span style="border: 1px solid rgba(240,238,251,0.22); border-radius: 999px; padding: 10px 18px; font-size: 14.5px; color: #CFC8EC">Transparent communication</span>
+        <span style="border: 1px solid rgba(240,238,251,0.22); border-radius: 999px; padding: 10px 18px; font-size: 14.5px; color: #CFC8EC">Long-term partnership approach</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CLIENT SUCCESS ==================== -->
+  <div style="padding: 96px 96px">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Client Impact</div>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 60px; margin-top: 14px">
+      <h2 style="font-size: 42px; line-height: 1.14; max-width: 620px">Selected client success</h2>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #5B3FD2; padding-bottom: 6px">
+        All case studies <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 44px">
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 7.5 3v6c0 4.4-3 7.6-7.5 9-4.5-1.4-7.5-4.6-7.5-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <span style="font-size: 34px; font-weight: 700; color: #E3E4E8; letter-spacing: -0.03em">01</span>
+        </div>
+        <h3 style="margin-top: 28px; font-size: 20px; line-height: 1.3">Leading consumer healthcare company</h3>
+        <p style="margin-top: 14px; font-size: 15.5px; line-height: 1.65; color: #6B6B6B">Local QPPV, Deputy QPPV and end-to-end pharmacovigilance support across the local market.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Pharmacovigilance</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">QPPV</span>
+        </div>
+      </div>
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15 19a4.6 4.6 0 0 1 5.5-4.3"/></svg>
+          </div>
+          <span style="font-size: 34px; font-weight: 700; color: #E3E4E8; letter-spacing: -0.03em">02</span>
+        </div>
+        <h3 style="margin-top: 28px; font-size: 20px; line-height: 1.3">Leading US regulatory consulting organization</h3>
+        <p style="margin-top: 14px; font-size: 15.5px; line-height: 1.65; color: #6B6B6B">Dedicated FTE supporting lifecycle management for 170+ products with hybrid onsite deployment.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Dedicated FTE</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Lifecycle Management</span>
+        </div>
+      </div>
+
+      <div style="background: #F4F5F7; border-radius: 18px; padding: 32px 30px">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: #5B3FD2; display: flex; align-items: center; justify-content: center">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>
+          </div>
+          <span style="font-size: 34px; font-weight: 700; color: #E3E4E8; letter-spacing: -0.03em">03</span>
+        </div>
+        <h3 style="margin-top: 28px; font-size: 20px; line-height: 1.3">Multinational regulatory intelligence program</h3>
+        <p style="margin-top: 14px; font-size: 15.5px; line-height: 1.65; color: #6B6B6B">50+ regulatory intelligence reports and 10+ Saudi regulatory roadmaps delivered for multinational organizations.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px">
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Regulatory Intelligence</span>
+          <span style="background: #FFFFFF; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; color: #4A4A55">Saudi Arabia</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== KNOWLEDGE HUB ==================== -->
+  <div style="background: #F4F5F7; padding: 96px 96px">
+    <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Knowledge Hub</div>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 60px; margin-top: 14px">
+      <h2 style="font-size: 42px; line-height: 1.14; max-width: 620px">Regulatory intelligence, structured.</h2>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #5B3FD2; padding-bottom: 6px">
+        All insights <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B3FD2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 20px; margin-top: 44px; align-items: stretch">
+      <div style="width: 620px; flex-shrink: 0; background: #FFFFFF; border-radius: 18px; overflow: hidden">
+        <div style="height: 240px; background: #F0EEFB"></div>
+        <div style="padding: 30px 32px">
+          <div style="display: flex; gap: 12px; align-items: center; font-size: 13px; color: #6B6B6B">
+            <span style="background: #F0EEFB; color: #5B3FD2; font-weight: 700; padding: 5px 12px; border-radius: 999px; letter-spacing: 0.04em">Featured Insight</span>
+            <span>[DATE]</span><span>·</span><span>[READ TIME]</span>
+          </div>
+          <h3 style="margin-top: 18px; font-size: 26px; line-height: 1.25">[FEATURED ARTICLE HEADLINE — editor-curated from the Knowledge Hub]</h3>
+          <p style="margin-top: 12px; font-size: 16px; line-height: 1.65; color: #6B6B6B">[Two-to-three line standfirst. Content records carry content type, market, capability and industry tags so this module can be curated without changing the source record.]</p>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; background: #FFFFFF; border-radius: 18px; padding: 30px 32px">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #5B3FD2">Latest regulatory updates</span>
+          <span style="font-size: 14px; font-weight: 600; color: #5B3FD2">View all</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0; margin-top: 8px">
+          <div style="padding: 20px 0; border-bottom: 1px solid #ECEDF1">
+            <div style="display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: #6B6B6B">
+              <span style="color: #5B3FD2; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase">Regulatory Update</span><span>·</span><span>[MARKET]</span><span>·</span><span>[DATE]</span>
+            </div>
+            <div style="margin-top: 8px; font-size: 17px; font-weight: 600; line-height: 1.4">[AUTHORITY UPDATE HEADLINE]</div>
+          </div>
+          <div style="padding: 20px 0; border-bottom: 1px solid #ECEDF1">
+            <div style="display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: #6B6B6B">
+              <span style="color: #5B3FD2; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase">Country Intelligence</span><span>·</span><span>[MARKET]</span><span>·</span><span>[DATE]</span>
+            </div>
+            <div style="margin-top: 8px; font-size: 17px; font-weight: 600; line-height: 1.4">[COUNTRY INTELLIGENCE HEADLINE]</div>
+          </div>
+          <div style="padding: 20px 0; border-bottom: 1px solid #ECEDF1">
+            <div style="display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: #6B6B6B">
+              <span style="color: #5B3FD2; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase">Whitepaper</span><span>·</span><span>[CAPABILITY]</span><span>·</span><span>[DATE]</span>
+            </div>
+            <div style="margin-top: 8px; font-size: 17px; font-weight: 600; line-height: 1.4">[WHITEPAPER TITLE]</div>
+          </div>
+          <div style="padding: 20px 0">
+            <div style="display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: #6B6B6B">
+              <span style="color: #5B3FD2; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase">Market Entry Guide</span><span>·</span><span>[REGION]</span><span>·</span><span>[DATE]</span>
+            </div>
+            <div style="margin-top: 8px; font-size: 17px; font-weight: 600; line-height: 1.4">[MARKET ENTRY GUIDE TITLE]</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; background: #F4F5F7; border-radius: 10px; padding: 14px 18px; margin-top: 12px">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6 8.5-6"/></svg>
+          <span style="flex-grow: 1; font-size: 15px; color: #6B6B6B">Regulatory intelligence, monthly</span>
+          <span style="font-size: 14.5px; font-weight: 600; color: #5B3FD2">Subscribe</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SPEAK TO AN EXPERT ==================== -->
+  <div style="padding: 96px 96px">
+    <div style="display: flex; gap: 20px; align-items: stretch">
+      <div style="flex-grow: 1; background: #5B3FD2; border-radius: 22px; padding: 52px 48px; color: #FFFFFF">
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #DCD6F5">Speak to an Expert</div>
+        <h2 style="margin-top: 16px; font-size: 36px; line-height: 1.16; max-width: 520px">Tell us the product and the market. We'll map the pathway.</h2>
+        <p style="margin-top: 16px; font-size: 16.5px; line-height: 1.65; color: #E3DEFA; max-width: 520px">
+          Share your target countries and product category — a regional regulatory lead will come back with an initial assessment and the applicable pathway.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 30px; max-width: 560px">
+          <div style="background: #FFFFFF; border-radius: 10px; padding: 15px 16px; font-size: 15px; color: #8A8A94">Work email</div>
+          <div style="background: #FFFFFF; border-radius: 10px; padding: 15px 16px; font-size: 15px; color: #8A8A94">Target market</div>
+        </div>
+        <div style="display: inline-block; background: #241653; color: #FFFFFF; font-size: 16px; font-weight: 600; padding: 15px 30px; border-radius: 10px; margin-top: 12px">Request an assessment</div>
+      </div>
+
+      <div style="width: 420px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px">
+        <div style="background: #F4F5F7; border-radius: 18px; padding: 26px 28px">
+          <div style="font-size: 17px; font-weight: 600">Request a proposal</div>
+          <div style="margin-top: 8px; font-size: 15px; line-height: 1.55; color: #6B6B6B">Defined scope, timeline and commercial terms.</div>
+        </div>
+        <div style="background: #F4F5F7; border-radius: 18px; padding: 26px 28px">
+          <div style="font-size: 17px; font-weight: 600">Schedule a consultation</div>
+          <div style="margin-top: 8px; font-size: 15px; line-height: 1.55; color: #6B6B6B">30 minutes with a regional regulatory lead.</div>
+        </div>
+        <div style="background: #F4F5F7; border-radius: 18px; padding: 26px 28px">
+          <div style="font-size: 17px; font-weight: 600">Partnership enquiry</div>
+          <div style="margin-top: 8px; font-size: 15px; line-height: 1.55; color: #6B6B6B">For CROs, consultancies and local agents.</div>
+        </div>
+        <div style="background: #F0EEFB; border-radius: 18px; padding: 26px 28px; flex-grow: 1">
+          <div style="font-size: 15px; color: #4A4A55; line-height: 1.6">General enquiries</div>
+          <div style="margin-top: 6px; font-size: 17px; font-weight: 600; color: #5B3FD2">cs@genedrift.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <div style="background: #241653; color: #FFFFFF; padding: 72px 96px 36px; position: relative; overflow: hidden">
+    <svg style="position:absolute; left:-420px; bottom:-520px; width:900px; height:900px; pointer-events:none" viewBox="0 0 900 900" fill="none">
+  <circle cx="380" cy="520" r="440" stroke="rgba(150,122,255,0.16)" stroke-width="1.2"/>
+  <circle cx="380" cy="520" r="300" stroke="rgba(150,122,255,0.10)" stroke-width="1.2"/>
+</svg>
+    <div style="position: relative; display: flex; gap: 80px; align-items: flex-start">
+      <div style="width: 320px">
+        <span style="font-size: 22px; font-weight: 700; letter-spacing: -0.03em">genedrift</span>
+        <p style="margin-top: 14px; font-size: 15px; line-height: 1.6; color: #B8AFDF; max-width: 280px">Invent. Reinvent.<br>Global Regulatory Affairs &amp; Pharmacovigilance solutions.</p>
+        <div style="margin-top: 22px; font-size: 15px; line-height: 1.8; color: #B8AFDF">
+          genedrift.com<br>cs@genedrift.com<br>[REGISTERED ADDRESS]
+        </div>
+      </div>
+      <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FFFFFF">Explore</div>
+          <span style="font-size: 14.5px; color: #B8AFDF">Business Needs</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Guided Journeys</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Questionnaire</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FFFFFF">Expertise</div>
+          <span style="font-size: 14.5px; color: #B8AFDF">Regulatory Affairs</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Pharmacovigilance</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">MAH &amp; Local Representation</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Regulatory Intelligence</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Managed Regulatory Services</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Dedicated Regulatory Teams</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Industries</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FFFFFF">Markets</div>
+          <span style="font-size: 14.5px; color: #B8AFDF">Asia Pacific</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Middle East</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Africa</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">CIS</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Compare Markets</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Coverage Map</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FFFFFF">Knowledge Hub</div>
+          <span style="font-size: 14.5px; color: #B8AFDF">Insights &amp; Analysis</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Regulatory Updates</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Country Intelligence</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Whitepapers</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Webinars &amp; Videos</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Regulatory Calendar</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FFFFFF">Company</div>
+          <span style="font-size: 14.5px; color: #B8AFDF">About Genedrift</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Leadership</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Operating Model</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Quality &amp; Compliance</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Client Success</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Careers</span>
+          <span style="font-size: 14.5px; color: #B8AFDF">Contact</span>
+        </div>
+      </div>
+    </div>
+    <div style="position: relative; display: flex; align-items: center; justify-content: space-between; margin-top: 52px; padding-top: 22px; border-top: 1px solid rgba(240,238,251,0.14); font-size: 13.5px; color: #9C92C9">
+      <span>© 2026 Genedrift. All rights reserved.</span>
+      <div style="display: flex; gap: 26px">
+        <span>ISO 9001:2000</span><span>ISO 27001:2022</span><span>GDPR</span><span>21 CFR Part 11</span><span>SOC 2 Type II</span>
+      </div>
+      <div style="display: flex; gap: 26px">
+        <span>Privacy Policy</span><span>Terms of Use</span><span>Cookie Settings</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

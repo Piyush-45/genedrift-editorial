@@ -2,6 +2,7 @@ import type {
   Article,
   ArticleDraftInput,
   ArticleDraftResult,
+  ArticleLifecycleResult,
   AuditEvent,
   DashboardData,
   EditorialRepository,
@@ -17,13 +18,17 @@ import type {
   RetractArticleResult,
   SaveRevisionInput,
   SubmitForReviewResult,
+  TaxonomyKind,
+  TaxonomyTermResult,
   WorkspaceData,
+  WorkspaceResetResult,
 } from '../domain'
 import { EMPTY_DOCUMENT, makeOpaqueId, sha256, sha256Blob, slugify } from '../utils'
 import { collectMediaIds, canonicalizeMedia, hydrateMedia, mediaDimensions } from '../media'
 
 const TEST_ARTICLE_ID = '471741000000032002'
 const STORAGE_KEY = `genedrift:revision:${TEST_ARTICLE_ID}`
+const ARTICLE_STORAGE_KEY = `genedrift:article:${TEST_ARTICLE_ID}`
 const MEDIA_DATABASE = 'genedrift-editorial-preview'
 const MEDIA_STORE = 'media-assets'
 
@@ -52,8 +57,8 @@ async function putMedia(asset: StoredMediaAsset): Promise<void> {
 async function getMedia(id: string): Promise<MediaAsset> {
   const database = await openMediaDatabase()
   const stored = await new Promise<StoredMediaAsset | undefined>((resolve, reject) => {
-    const request = database.transaction(MEDIA_STORE).objectStore(MEDIA_STORE).get(id)
-    request.onsuccess = () => resolve(request.result as StoredMediaAsset | undefined)
+    const request = database.transaction(MEDIA_STORE).objectStore(MEDIA_STORE).getAll()
+    request.onsuccess = () => resolve((request.result as StoredMediaAsset[]).find((asset) => asset.id === id || asset.uuid === id))
     request.onerror = () => reject(request.error)
   })
   database.close()
@@ -92,6 +97,17 @@ const eligibleReviewers: ReviewerOption[] = [
     jobTitle: 'Medical Reviewer',
     expertise: ['Drug Safety'],
   },
+]
+
+const mockCategories = [
+  { ID: '471741000000031001', zc_display_value: 'Regulatory Affairs' },
+  { ID: '471741000000031002', zc_display_value: 'Pharmacovigilance' },
+]
+
+const mockTags = [
+  { ID: '471741000000031101', zc_display_value: 'Drugs' },
+  { ID: '471741000000031102', zc_display_value: 'Dossiers' },
+  { ID: '471741000000031103', zc_display_value: 'Policy' },
 ]
 
 let mockAssignment: ReviewAssignment | undefined
@@ -181,7 +197,12 @@ async function loadRevision(): Promise<Revision> {
 async function hydrateMockDocument(document: Revision['document']) {
   const results = await Promise.allSettled(collectMediaIds(document).map((id) => getMedia(id)))
   const assets = results.flatMap((result) => result.status === 'fulfilled' ? [result.value] : [])
-  return hydrateMedia(document, new Map(assets.map((asset) => [asset.id, asset])))
+  const assetsByReference = new Map<string, MediaAsset>()
+  for (const asset of assets) {
+    assetsByReference.set(asset.id, asset)
+    assetsByReference.set(asset.uuid, asset)
+  }
+  return hydrateMedia(document, assetsByReference)
 }
 
 export class MockEditorialRepository implements EditorialRepository {
@@ -222,13 +243,22 @@ export class MockEditorialRepository implements EditorialRepository {
         decidedAt: new Date().toISOString(),
       }],
       auditEvents: mockAuditEvents,
-      categories: [
-        { ID: '471741000000031001', zc_display_value: 'Regulatory Affairs' },
-        { ID: '471741000000031002', zc_display_value: 'Pharmacovigilance' },
-      ],
+      categories: [...mockCategories],
       approvalPolicies: [
-        { ID: '471741000000031201', zc_display_value: 'Standard Review' },
-        { ID: '471741000000031202', zc_display_value: 'Regulated Review' },
+        {
+          ID: '471741000000031201',
+          zc_display_value: 'Standard Review',
+          description: 'One eligible reviewer approval is required.',
+          requiredApprovals: 1,
+          isDefault: true,
+        },
+        {
+          ID: '471741000000031202',
+          zc_display_value: 'Regulated Review',
+          description: 'Two distinct eligible reviewer approvals are required.',
+          requiredApprovals: 2,
+          isDefault: false,
+        },
       ],
       source: this.source,
     }
@@ -248,9 +278,27 @@ export class MockEditorialRepository implements EditorialRepository {
     article.workflowState = 'Draft'
     article.activeDraftRevisionId = undefined
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(ARTICLE_STORAGE_KEY)
     mockAssignment = undefined
     mockComments = []
     return { articleId: article.id }
+  }
+
+  async createTaxonomyTerm(kind: TaxonomyKind, name: string): Promise<TaxonomyTermResult> {
+    await new Promise((resolve) => window.setTimeout(resolve, 250))
+    const normalizedName = name.trim()
+    if (normalizedName.length < 2) throw new Error('Enter at least two characters.')
+    const collection = kind === 'category' ? mockCategories : mockTags
+    const existing = collection.find((term) => term.zc_display_value.toLowerCase() === normalizedName.toLowerCase())
+    const term = existing || { ID: makeOpaqueId(kind === 'category' ? 'category' : 'tag'), zc_display_value: normalizedName }
+    if (!existing) collection.push(term)
+    return {
+      ok: true,
+      message: existing ? `${normalizedName} already exists.` : `${normalizedName} was created.`,
+      kind,
+      term,
+      created: !existing,
+    }
   }
 
   async loadWorkspace(articleId: string, revisionId?: string): Promise<WorkspaceData> {
@@ -258,24 +306,47 @@ export class MockEditorialRepository implements EditorialRepository {
     if (articleId !== article.id) {
       throw new Error(`Mock article ${articleId} was not found.`)
     }
+    const storedArticle = localStorage.getItem(ARTICLE_STORAGE_KEY)
+    if (storedArticle) {
+      try {
+        const taxonomy = JSON.parse(storedArticle) as Pick<Article, 'primaryCategory' | 'tags'>
+        article.primaryCategory = taxonomy.primaryCategory
+        article.tags = taxonomy.tags || []
+      } catch {
+        localStorage.removeItem(ARTICLE_STORAGE_KEY)
+      }
+    }
     const revision = await loadRevision()
     if (revisionId && revision.id !== revisionId) throw new Error(`Mock revision ${revisionId} was not found.`)
     article.activeDraftRevisionId = revision.id
     return {
       article,
       revision,
+      previousRevision: undefined,
       eligibleReviewers,
+      categories: [...mockCategories],
+      tags: [...mockTags],
       review: {
         currentEmployee: {
-          id: eligibleReviewers[0].id,
-          displayName: eligibleReviewers[0].displayName,
-          workEmail: eligibleReviewers[0].workEmail,
-          roles: ['Reviewer'],
+          id: article.primaryAuthor.ID,
+          displayName: article.primaryAuthor.zc_display_value || 'Piyush Tyagi',
+          workEmail: 'author@example.com',
+          roles: ['Author'],
         },
         assignment: mockAssignment,
         comments: mockComments,
-        canReview: article.workflowState === 'In Review',
+        canReview: false,
       },
+      feedback: mockAssignment && (mockAssignment.decisionSummary || mockComments.length > 0) ? [{
+        id: mockAssignment.id,
+        revisionId: mockAssignment.revisionId,
+        reviewerName: mockAssignment.reviewerName || 'Shared review queue',
+        status: mockAssignment.status,
+        decisionSummary: mockAssignment.decisionSummary,
+        decidedAt: mockAssignment.decidedAt,
+        comments: mockComments,
+      }] : [],
+      auditEvents: mockAuditEvents,
       source: this.source,
     }
   }
@@ -291,6 +362,15 @@ export class MockEditorialRepository implements EditorialRepository {
       throw new Error('This draft metadata changed in another tab or session. Reload before continuing.')
     }
     const { expectedChecksum: _expectedChecksum, expectedVersionToken: _expectedVersionToken, ...savedInput } = input
+    article.primaryCategory = input.primaryCategoryId
+      ? ({ ID: input.primaryCategoryId, zc_display_value: input.primaryCategoryId.includes('31002') ? 'Pharmacovigilance' : 'Regulatory Affairs' })
+      : undefined
+    const tagNames = new Map(mockTags.map((tag) => [tag.ID, tag.zc_display_value]))
+    article.tags = input.tagIds.map((id) => ({ ID: id, zc_display_value: tagNames.get(id) || id }))
+    localStorage.setItem(ARTICLE_STORAGE_KEY, JSON.stringify({
+      primaryCategory: article.primaryCategory,
+      tags: article.tags,
+    }))
     const revision: Revision = {
       ...current,
       ...savedInput,
@@ -423,6 +503,74 @@ export class MockEditorialRepository implements EditorialRepository {
     }
   }
 
+  async archiveDraftArticle(articleId: string): Promise<ArticleLifecycleResult> {
+    await new Promise((resolve) => window.setTimeout(resolve, 300))
+    if (article.id !== articleId) throw new Error('Mock article was not found.')
+    if (article.workflowState !== 'Draft' && article.workflowState !== 'Changes Requested') {
+      throw new Error('Only draft or changes-requested articles can be moved to Trash.')
+    }
+    article.workflowState = 'Archived'
+    article.archivedAt = new Date().toISOString()
+    return {
+      ok: true,
+      message: 'Draft moved to Trash.',
+      articleId,
+      articleState: 'Archived',
+      archivedAt: article.archivedAt,
+    }
+  }
+
+  async restoreArchivedArticle(articleId: string): Promise<ArticleLifecycleResult> {
+    await new Promise((resolve) => window.setTimeout(resolve, 300))
+    if (article.id !== articleId) throw new Error('Mock article was not found.')
+    if (article.workflowState !== 'Archived') throw new Error('Only archived articles can be restored.')
+    article.workflowState = 'Draft'
+    article.archivedAt = undefined
+    return {
+      ok: true,
+      message: 'Draft restored from Trash.',
+      articleId,
+      articleState: 'Draft',
+    }
+  }
+
+  async resetTestContent(confirmation: string): Promise<WorkspaceResetResult> {
+    await new Promise((resolve) => window.setTimeout(resolve, 350))
+    if (confirmation !== 'RESET TEST CONTENT') throw new Error('Type RESET TEST CONTENT to confirm.')
+    const deletedArticles = article.workflowState ? 1 : 0
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(ARTICLE_STORAGE_KEY)
+    mockAssignment = undefined
+    mockComments = []
+    article.id = TEST_ARTICLE_ID
+    article.uuid = 'ART-519d5491e1a2c8b0b086087cce578647'
+    article.workingTitle = 'GeneDrift Editorial Workflow Test'
+    article.workflowState = 'Draft'
+    article.primaryCategory = { ID: '471741000000031001', zc_display_value: 'Regulatory Affairs' }
+    article.tags = [
+      { ID: '471741000000031101', zc_display_value: 'Drugs' },
+      { ID: '471741000000031102', zc_display_value: 'Dossiers' },
+    ]
+    article.activeDraftRevisionId = undefined
+    article.approvedRevisionId = undefined
+    article.publishedRevisionId = undefined
+    article.scheduledAt = undefined
+    article.firstPublishedAt = undefined
+    article.lastPublishedAt = undefined
+    article.archivedAt = undefined
+    return {
+      ok: true,
+      message: 'Local preview test content was reset.',
+      deletedArticles,
+      deletedRevisions: 1,
+      deletedReviewAssignments: 1,
+      deletedReviewComments: 0,
+      deletedPublicationJobs: 0,
+      deletedMediaAssets: 0,
+      deletedAuditEvents: mockAuditEvents.length,
+    }
+  }
+
   hydrateDocument(document: Revision['document']) {
     return hydrateMockDocument(document)
   }
@@ -438,6 +586,7 @@ export class MockEditorialRepository implements EditorialRepository {
       widthPixels: dimensions.width,
       heightPixels: dimensions.height,
       status: 'Draft',
+      credit: '',
       ...metadata,
       file,
     }

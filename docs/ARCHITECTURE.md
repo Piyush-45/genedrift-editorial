@@ -65,11 +65,14 @@ from listings and return HTTP 410 or a configured redirect. Next.js calls this
 boundary server-side and uses tagged cache revalidation after publish, retract,
 or republish events.
 
-The current Development service does not yet implement this public read layer.
-Knowing a public Stratus object key is sufficient to retrieve one document, but
-not to build listing, search, taxonomy, or stable slug routes.
+The current Development service implements this public read layer through the
+Catalyst public content API and maintained `GD_Public_Index`. It supports public
+listing, search/filter/pagination, slug detail, taxonomy/facet data, sitemap/RSS
+inputs, missing 404 responses, and retracted GET 410 responses. The remaining
+known gap is strict frontend page-level 410 handling for retracted Next.js
+routes on Vercel.
 
-## Retraction Sequence (implemented locally; live verification pending)
+## Retraction Sequence
 
 1. A Publisher or Editorial Admin submits a signed, idempotent retract request
    with a required reason and optional replacement route.
@@ -82,10 +85,10 @@ not to build listing, search, taxonomy, or stable slug routes.
    Unpublished/Retracted state and records the audit event.
 5. Republish creates a new immutable publication and audited pointer transition.
 
-AppSail `0.2.0`, the Creator callback path, and the dashboard implement steps
-1, 2, 4, and the immutable-history portion of 5. Step 3 becomes enforceable when
-the public read API/frontend is built; direct immutable Stratus objects remain
-preserved by design.
+Current AppSail packages, the Creator callback path, and the dashboard implement
+the retraction path. Catalyst public article GET returns 410 for retracted
+slugs, while the public frontend still needs strict page-level 410 enforcement
+instead of rendering the retraction notice with HTTP 200.
 
 ## Scheduling Sequence
 

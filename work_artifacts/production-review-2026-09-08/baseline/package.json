@@ -1,0 +1,36 @@
+{
+  "name": "genedrift-editor-widget",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.30.2",
+    "@tiptap/extension-highlight": "latest",
+    "@tiptap/extension-link": "latest",
+    "@tiptap/extension-subscript": "latest",
+    "@tiptap/extension-superscript": "latest",
+    "@tiptap/extension-table": "latest",
+    "@tiptap/extension-text-align": "latest",
+    "@tiptap/extension-underline": "latest",
+    "@tiptap/pm": "latest",
+    "@tiptap/react": "latest",
+    "@tiptap/starter-kit": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "zoho-extension-toolkit": "^1.0.28"
+  }
+}

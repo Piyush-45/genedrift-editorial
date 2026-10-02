@@ -1,0 +1,66 @@
+void seed_workflow_test_users()
+{
+	editorialTeam = Demo_Teams[Team_Key == "EDITORIAL"];
+	if(editorialTeam.count() == 0)
+	{
+		info "Run seed_editorial_configuration before this function.";
+		return;
+	}
+
+	testUsers = {
+		"DEMO-AUTHOR-001|Ananya Author|ananya.author@example.com|Content Specialist|Author",
+		"DEMO-REVIEWER-001|Ravi Reviewer|ravi.reviewer@example.com|Regulatory Reviewer|Reviewer",
+		"DEMO-REVIEWER-002|Meera Reviewer|meera.reviewer@example.com|Medical Reviewer|Reviewer",
+		"DEMO-PUBLISHER-001|Priya Publisher|priya.publisher@example.com|Editorial Publisher|Publisher"
+	};
+
+	for each testUser in testUsers
+	{
+		parts = testUser.toList("|");
+		employeeKey = parts.get(0);
+		employee = Demo_Employees[Employee_Key == employeeKey];
+		if(employee.count() == 0)
+		{
+			employeeId = insert into Demo_Employees
+			[
+				Employee_Key = employeeKey
+				Display_Name = parts.get(1)
+				Work_Email = parts.get(2)
+				Job_Title = parts.get(3)
+				Status = "Active"
+			];
+		}
+		else
+		{
+			employeeId = employee.ID;
+		}
+
+		membership = Demo_Team_Memberships[Employee == employeeId && Team == editorialTeam.ID && Active == true];
+		if(membership.count() == 0)
+		{
+			insert into Demo_Team_Memberships
+			[
+				Employee = employeeId
+				Team = editorialTeam.ID
+				Membership_Role = "Member"
+				Active_From = zoho.currenttime
+				Active = true
+			];
+		}
+
+		roleName = parts.get(4);
+		roleAssignment = Editorial_Role_Assignments[Employee == employeeId && Editorial_Role == roleName && Active == true];
+		if(roleAssignment.count() == 0)
+		{
+			insert into Editorial_Role_Assignments
+			[
+				Employee = employeeId
+				Editorial_Role = roleName
+				Effective_From = zoho.currenttime
+				Active = true
+			];
+		}
+	}
+
+	info "GeneDrift workflow test users seed completed.";
+}

@@ -1,6 +1,20 @@
 # Catalyst Development Live Checkpoint — 2026-08-28
 
-Status: **partially live; end-to-end publication is not yet verified**.
+Status: **historical checkpoint; partially superseded by 2026-09-01 evidence**.
+
+2026-09-01 amendment: read `docs/CURRENT_CHECKPOINT_2026-09-01.md` first for the
+latest resume state. Since this historical Catalyst checkpoint, live testing has
+passed immediate publication, scheduled publication, too-soon schedule
+rejection, public listing/filter visibility, public retraction behavior, and
+dashboard role/polish checks. The latest AppSail artifact present is
+`genedrift-catalyst-appsail-dev-v0.4.2.zip`
+(`1834f1924a953c21919d242e79f1d0bdaf847bd3abe35415697dd829afc9c3ff`), and the
+latest Creator widget artifact is
+`genedrift-editor-widget-final-polish-v0.4.5.zip`
+(`1210fe55854a2aba1ebffa403c8c87e8a5097ea641e2d17ecbacb0bff0fae8ab`).
+Remaining release gates are fresh Creator DS export audit, duplicate/
+idempotency stress evidence, media-format validation, accessibility/public-site
+QA, and measured 1,800-post scale evidence.
 
 This checkpoint contains no credential values. OAuth credentials, refresh
 tokens, HMAC secrets, and internal job secrets exposed during interactive setup
@@ -35,8 +49,10 @@ must be rotated before production promotion.
   `record_catalyst_publication_result` were created and enabled.
 - Legacy Creator-local publishing schedules were disabled while the Catalyst
   path is tested.
-- Installation does not count as verification. The fresh Creator DS export and
-  required negative role tests remain outstanding.
+- Installation does not count as verification. The fresh Creator DS export
+  remains outstanding. Separate-role visual UI checks later passed on
+  2026-09-01, while direct API denial evidence remains part of the security
+  audit.
 
 ## First Immediate-Publish Test
 
@@ -502,17 +518,19 @@ immediate-publish case above; do not mutate this old request.
 
 ## Still Required Before Verification
 
-- Complete scheduled publish, duplicate/idempotency, revoked-approval,
-  stale-revision, transient worker failure, callback outage, callback replay,
-  and media tests in Development.
+- Complete duplicate/idempotency, revoked-approval/stale-revision stress,
+  transient worker failure, callback outage, callback replay, and media-format
+  tests in Development. Normal scheduled publish has since passed live; forced
+  scheduled-reconcile/idempotency remains a separate stress check.
 - For every remaining successful case, verify immutable objects, pointer
   advancement, Creator callback state, and audit events.
-- Export the freshly cleaned Creator DS and run separate negative role tests.
+- Export the freshly cleaned Creator DS. Separate-role visual UI behavior has
+  since passed; direct API denial evidence remains part of the security audit.
 - Rotate exposed credentials/secrets before production.
 - Promote and configure production only after Development evidence passes.
-- Deploy and live-test the locally implemented retract/unpublish boundary, then
-  build the public read/index layer before the Next.js frontend. See
-  `docs/PRODUCT_CHECKPOINT_2026-08-29.md` for the current product map and order.
+- Public read/index and retract/unpublish behavior have since been implemented
+  and live-checked visually. See `docs/CURRENT_CHECKPOINT_2026-09-01.md` and
+  `docs/PHASE_1_RELEASE_CLOSURE.md` for the current product map and order.
 
 ## 2026-08-29 Retraction Build Addendum
 
@@ -571,9 +589,10 @@ version 2 with `Serving_Status = Retracted`, `Retracted_At =
 2026-08-29T12:40:08.460Z`, `Retraction_Reason = sdsdsds`, and
 `Retraction_Event_ID = retract_35b5c56abc79199413aac01211dc4be54d52ce65`.
 This verifies the positive Catalyst retraction mutation and Creator terminal
-state. Still capture the matching Creator `Catalyst Article Retracted` audit
-event. Do not mark the integration verified until the full Development matrix,
-fresh Creator DS export, and negative role tests pass.
+state. Later 2026-09-01 public retraction behavior also passed visually. Do not
+mark the integration release-ready until the remaining Development evidence,
+fresh Creator DS export audit, media-format validation, accessibility checks,
+and measured scale evidence pass.
 
 ## 2026-08-29 Adaptive Dashboard Refresh Addendum
 
@@ -584,13 +603,13 @@ pauses while the tab is hidden, refreshes immediately on return, and deduplicate
 manual/action/automatic reloads. The command bar reports Updating, last
 successful update time, or a non-destructive retrying error state.
 
-Typecheck, production build, ZET validation/pack, and ZIP integrity pass. Upload
-`editor-widget/zet/dist/zet.zip`; SHA-256
-`ca2dad31734250c40a2b540d3f78b72b4b8a19f86175e7f61833516fff4dbf1b`.
-The package was uploaded and a complete live Creator workflow was tested. Job
-and article state changes appeared automatically without pressing Refresh, so
-the adaptive dashboard behavior is live verified. This does not change the
-overall integration verification gate.
+This addendum was superseded by the 2026-09-01 final-polish widget package:
+`genedrift-editor-widget-final-polish-v0.4.5.zip`, SHA-256
+`1210fe55854a2aba1ebffa403c8c87e8a5097ea641e2d17ecbacb0bff0fae8ab`. The
+adaptive dashboard behavior remained live verified, and the later package adds
+palette polish, workflow ownership traces, scheduled-time visibility, and
+clearer handoff/status copy. This does not change the remaining release evidence
+gate.
 
 ## 2026-08-29 Public Read API Build Addendum
 

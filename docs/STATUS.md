@@ -1,30 +1,185 @@
 # Current Status
 
-Last updated: 2026-08-30
+Last updated: 2026-09-07
 
 ## Active Milestone
 
+Milestone 6: Phase 2 website design confirmation and frontend rebuild planning
+
+Phase 1 Article Workflow Platform is completed and shared with the client for
+testing. A 2026-09-04 Creator-account migration dry run to `piyugene02` now has
+one successful end-to-end publish after fixing widget/account/OAuth setup, and
+the 2026-09-05 v0.5.5 smoke test confirmed input preservation, media caption
+readback, save/reload, and submit-for-review retention. The client-facing
+tracker now positions the project as:
+
+- Phase 1 Article Workflow Platform: completed/shared for testing.
+- Phase 2 Website Design Confirmation: pending client confirmation.
+- Phase 3 Final Website Frontend Build: estimated 3-5 days after design and
+  blog workflow approval.
+- Phase 4 Client System Migration and Deployment: estimated around 2 days after
+  frontend/workflow approval.
+
+The default forward focus is now Phase 2. Treat Article Workspace work as
+support/testing unless the user explicitly asks for more Creator changes.
+
+Current shared staging links:
+
+- Blog / Insights: `https://genedrift.site/insights`
+- Design references: `https://genedrift.site/designs`
+
+Latest resume snapshot is `docs/CURRENT_CHECKPOINT_2026-09-07.md`.
+
+The three Phase 2 hero concepts are implemented and awaiting application of the
+client's review. The full homepage remains intentionally unbuilt until a
+direction is selected. Website information/editing planning now defines nine IA
+areas, about 14 reusable page families, a provisional 37–46 curated launch-page
+range, and a structured Creator → Catalyst → Next.js content flow. See
+`docs/PHASE_2_WEBSITE_INFORMATION_AND_EDITING_ARCHITECTURE_2026-09-05.md` and
+`docs/PHASE_2_CMS_FORM_AND_COMPONENT_BLUEPRINT_V1.md`.
+
+The 2026-09-06 cross-account test proved that a separate Creator user with base
+`Editorial Author` / `Write` access could perform internally assigned Author and
+Reviewer responsibilities, claim an assigned review and approve it; adding the
+internal Publisher responsibility exposed Publish/Schedule controls. This is
+functional evidence, not final least-privilege evidence, because the broad
+Creator Write profile exposes native application areas.
+
+One subsequent Publish request stalled because Catalyst could not refresh its
+Creator OAuth token. The Catalyst row reached RetryScheduled/attempt 3 with
+`CREATOR_OAUTH_REFRESH_FAILED` and HTTP 200. The operator reports regenerating
+and exchanging the India Self Client code, updating the real refresh token and
+redeploying AppSail v0.4.3. The affected request's final Succeeded/public state
+was not captured and remains a support verification item.
+
+Current live-smoke verified Creator widget package for the migrated
+`piyugene02` app:
+
+- `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.5-input-preserve.zip`
+- SHA-256:
+  `c30186d81ff2d14558df67afb0de0864e9a5ce424aa784670305c03811ee77fe`
+
+Prepared local notification-polish package for upload:
+
+- `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.6-floating-publishing-notice.zip`
+- SHA-256:
+  `2ed7f79bcfd2670266501b695fef13f6d9c43de69e4d787739184c1eaafd1561`
+- Changes publishing/schedule/retry/retraction outcomes to floating notices
+  with a Publishing dashboard action. Ordinary editor notices stay inline.
+
+Previous rollback reference:
+
+- `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.1-taxonomy-fix.zip`
+- SHA-256:
+  `1068232c6d529c4df7a0c573d9b58e699321ccc83149f0837e684362bb4634bd`
+
+The v0.5.4 install and admin reset are live verified from the user's
+2026-09-05 screenshot: the Editorial Command Center loads, Reset test content
+returns the dashboard to zero articles/review items, and the live refresh copy
+shows the idle one-minute check interval cleanly. Manual post-reset testing then
+exposed a v0.5.4 server-side input-preservation defect: category/tag names and
+image alt text were rewritten by an invalid whitespace regex. v0.5.5 removed
+the rewriting and verifies saved image metadata. The user's v0.5.5 screenshots
+confirm clean category/tag preservation, cover alt text and edited Caption
+readback, inline Caption readback, save/reload, and submit-for-review retention.
+Cross-account reviewer claim/approval and Publisher-control visibility have now
+passed. The OAuth-remediated publication's final Succeeded/public state and
+v0.5.6 floating publishing notices still lack captured verification.
+Setup and smoke matrix:
+`creator/WORKFLOW_POLISH_SETUP.md`.
+
+Post-reset public cleanup is also complete for the three development posts that
+remained visible from Catalyst after Creator was emptied:
+`editable-tags-checking`, `smoke-test-1`, and `hanumaaaan`. The user confirmed
+the frontend no longer shows them. Future durable public cleanup should keep
+`GD_Public_Index` and `GD_Published_Pointers` aligned by `Article_UUID`.
+
+The live v0.5.0 smoke test published successfully without tags but exposed code
+3001 when a newly created tag was applied. v0.5.1 moved taxonomy persistence to
+the guarded `save_article_taxonomy` Custom API and now passes live save/reload
+and publication. v0.5.2 addressed the subsequent Caption persistence defect
+through `update_media_metadata`; v0.5.5 retesting confirmed cover and inline
+Caption readback again after the input-preservation fix.
+
+Latest Catalyst AppSail package:
+
+- `genedrift-catalyst-appsail-dev-v0.4.3-media-caption.zip`
+- SHA-256:
+  `cdd7eb7e45e2a25ab4214bbdda71a5b94ce386171ff4d588f25e25070eec6e4b`
+- v0.4.3 keeps legacy Credit in the immutable payload shape but no longer
+  renders it into inline-image HTML. The current frontend build applies the
+  same Caption-only rule to cover images.
+
+Migration note:
+
+- Current migrated Creator owner: `piyugene02`
+- Current app link: `genedrift-editorial-platform`
+- Working app URL:
+  `https://creatorapp.zoho.in/piyugene02/genedrift-editorial-platform#Article_Workspace`
+- Use `docs/CREATOR_ACCOUNT_MIGRATION_RUNBOOK.md` before any future client
+  transfer.
+- Rotate OAuth credentials that were exposed during debugging before any real
+  production/client handoff.
+
+The latest widget UX pass made approved authored articles visible to authors,
+separated review decision notes from discussion comments, clarified selected
+tags in the sidebar, preserved latest in-widget category/tag state through
+submit/resubmit, reduced dashboard controls, added person/date filters, capped
+panels at five rows, and kept destructive retraction behind a confirmation
+dialog/overflow path.
+
+The remaining immediate work is to begin Phase 2 design confirmation: prepare
+the three requested website template/design concepts, compare them against the
+LF20 design philosophy and current staging references, capture client direction,
+then start the full Next.js website frontend build after design approval.
+
+## Previous Milestone Context
+
 Milestone 4: Development verification and client-demo readiness
 
-The editorial data foundation and live Article Workspace editor are complete.
-The editor, recovery, conflict detection, submission boundary, reviewer claim,
-review decisions, N+1 changes-requested loop, role-aware dashboard, shared queue,
-and regulated two-reviewer approval path have passed live Creator testing. The
-clean no-media Catalyst immediate-publish case has also passed in Development;
-the current focus is completing the remaining Catalyst promotion matrix.
-The reported Creator cleanup remains explicitly unverified. The live Application
-IDE exposed the export action, but the browser session did not produce a saved DS
-file for audit, and no separate-role negative test evidence is available.
+The Phase 1 Insights/blog product is functionally strong after 2026-09-01 live
+testing. The editor, recovery, conflict detection, submission boundary, reviewer
+claim, review decisions, N+1 changes-requested loop, role-aware dashboard,
+shared queue, regulated two-reviewer approval, separate-role visual matrix,
+immediate publication, scheduled publication, too-soon schedule rejection,
+public listing visibility, and retraction flow have all passed live functional
+checks. The first public website revamp pass for homepage, Insights archive, and
+article detail pages is also live on the existing Vercel project.
 
-The live dashboard now locks publication actions synchronously and derives
-queued/processing state from Creator Publishing Health, so accepted work cannot
-be submitted again after refresh or from another tab. Catalyst pointer insert
-errors also preserve their real platform cause instead of always appearing as
-`POINTER_CONTENTION`. The package was uploaded and its adaptive refresh passed a
-complete live Creator workflow without manual Refresh.
-AppSail `0.2.1` additionally removes the artificial two-minute delay from
-Publish/Retract by using immediate Job Pool dispatch. Scheduled publication keeps
-the chosen time; schedules less than two minutes away are rejected, not shifted.
+The previous resume snapshot was `docs/CURRENT_CHECKPOINT_2026-09-01.md`.
+
+Do not call Phase 1 fully release-ready yet. The remaining evidence gates are:
+fresh Creator DS export audit, duplicate/idempotency stress retest, one fresh
+regulated-review confidence run, media-format validation, accessibility/public
+site QA, and measured 1,800-post scale evidence.
+
+Phase 2 website-revamp baseline has now been received from the client and is
+summarized in `docs/PHASE_2_WEBSITE_REVAMP_CLIENT_BASELINE.md`. It defines a
+bottom-up enterprise website rebuild aligned to the LF20 presentation/design
+system, with three initial sample templates/design concepts requested before
+full development.
+
+Latest deployable artifacts:
+
+- Public frontend:
+  `https://genedrift-vercel-preview-04.vercel.app`
+  - Vercel project `genedrift-vercel-preview-0.4`, deployment
+    `dpl_2XJVNVS1f34WSebPsGs6RkW9o6fc`.
+  - Latest local commits: `a55a727 Revamp GeneDrift public website frontend`
+    and `cdea0c0 Fix Vercel frontend deployment config`.
+  - Vercel account shown in dashboard: `opensourceindia22-8134`
+    (`opensourceindia22@gmail.com`), team/workspace `ztm2`.
+  - Vercel project is not connected to Git; the latest deploy was direct CLI
+    deployment to the existing project. The temporary one-hour token used for
+    deployment was revoked and removed locally.
+- Creator widget:
+  `genedrift-editor-widget-dashboard-ux-v0.4.8.zip`
+  SHA-256
+  `684e9b57d32688b99b5b25ae56a8039ef899b0b5ca7cdfb145b4541996250020`.
+- Catalyst AppSail:
+  `genedrift-catalyst-appsail-dev-v0.4.2.zip`
+  SHA-256
+  `1834f1924a953c21919d242e79f1d0bdaf847bd3abe35415697dd829afc9c3ff`.
 
 ## Completed
 
@@ -123,6 +278,11 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
   ZET packaging.
 - Dashboard, row navigation, New Article, reviewer inbox, claim, and review
   history have passed live tests in the admin and Harsh accounts.
+- The dashboard has passed the 2026-09-01 separate-role visual matrix for
+  Author-only, Reviewer-only, Publisher-only, and Editorial Admin contexts.
+  Inapplicable actions are hidden or unavailable; publisher/admin users see
+  publishing work in Queue/Publishing; authors see active authored work without
+  review or publishing controls.
 - Draft editing is now limited in the widget and save repository to the owner,
   primary author, CEO, or Editorial Admin. Review history carries the exact
   reviewed `revisionId` and unauthorized reviewers cannot open a working Draft.
@@ -132,6 +292,10 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
 - Shared queue behavior has passed live testing: reviewer dashboards show one
   claimable row per regulated revision, while admin can still see queue-slot
   detail.
+- Dashboard polish now includes the GeneDrift purple/lavender palette,
+  less-heavy workflow ownership metadata, scheduled date/time visibility on
+  Scheduled rows, clearer approved-to-publisher handoff text, better empty-state
+  copy, and denser laptop-width row spacing.
 - Historical Publisher/Admin local publishing was implemented in the widget and Deluge:
   Approved articles can be published through a guarded Custom API, creating a
   `Publication_Jobs` row, marking the approved revision Published, moving the
@@ -232,17 +396,20 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
 
 ## In Progress
 
-- The first Next.js public Insights frontend is implemented in `frontend/` and
-  passes strict typecheck and production build. It includes the public homepage,
-  archive search/category/tag filters, pagination, article pages, retraction and
-  error states, responsive styling, metadata, JSON-LD, robots, and sitemap.
-  Vercel project `genedrift-vercel-preview-0.4` is deployed at
+- The Next.js public frontend is implemented in `frontend/` and passes strict
+  typecheck and production build. It includes the public homepage, archive
+  search/category/tag filters, pagination, article pages, retraction and error
+  states, responsive styling, metadata, JSON-LD, robots, and sitemap. The latest
+  public website revamp is deployed to Vercel project
+  `genedrift-vercel-preview-0.4` at
   `https://genedrift-vercel-preview-04.vercel.app` with the Development API and
-  canonical origin configured. Live homepage, archive/category, detail,
-  canonical/JSON-LD, robots, sitemap, 404, retraction/noindex, console, and 390px
-  overflow checks passed. The retracted frontend route returns HTTP 200 rather
-  than strict page-level 410. Lighthouse, final branding/content, and the
-  remaining device/accessibility matrix are pending.
+  canonical origin configured. Post-deploy live checks passed for `/`,
+  `/insights`, and one article detail route with no browser console
+  warnings/errors. Earlier live checks covered homepage, archive/category,
+  detail, canonical/JSON-LD, robots, sitemap, 404, retraction/noindex, console,
+  and 390px overflow. The retracted frontend route returns HTTP 200 rather than
+  strict page-level 410. Lighthouse, final branding/content, and the remaining
+  device/accessibility matrix are pending.
 
 - Cache-hardened AppSail `0.3.1` is deployed and live verified for public
   listing, filtering/pagination, detail, taxonomy, ETag/304, HTTP 410, a
@@ -270,11 +437,15 @@ the chosen time; schedules less than two minutes away are rejected, not shifted.
 - The dashboard package with adaptive five-second active-job refresh,
   45-second idle refresh, hidden-tab pause, in-flight request deduplication,
   and last-updated/error feedback is uploaded and live verified through the
-  complete workflow. Its SHA-256 is
-  `ca2dad31734250c40a2b540d3f78b72b4b8a19f86175e7f61833516fff4dbf1b`.
-- Capture the successful retraction's Creator `Catalyst Article Retracted` audit
-  event, then run the Author/Reviewer denial and Publisher/Admin positive-role
-  retraction matrix.
+  complete workflow. That final-polish widget artifact has been superseded by
+  `genedrift-editor-widget-dashboard-ux-v0.4.8.zip`, SHA-256
+  `684e9b57d32688b99b5b25ae56a8039ef899b0b5ca7cdfb145b4541996250020`.
+- The 2026-09-01 retraction test using
+  `RETRY-02 Scheduled Reconcile — 01 Sep 2026` passed visually: public listing
+  and search removal, former-detail retraction page with reason, Creator
+  Unpublished/Retracted placement, immutable-publication wording, and no normal
+  repeated Retract action after retraction. Optional remaining evidence is a
+  precise HTTP-status capture if strict 410/404 proof is required.
 - Capture Catalyst request/version/pointer/callback rows and the Creator
   Published audit event for the fresh 09:35 IST scheduled success. Creator
   already shows Succeeded, one attempt, and HTTP 200.
@@ -345,7 +516,7 @@ workflow-throughput plan is maintained in
 - The current release edge-case article ID is `471741000000032030`.
 - The current widget upload artifact is `editor-widget/zet/dist/zet.zip`.
   Its current SHA-256 is
-  `ca2dad31734250c40a2b540d3f78b72b4b8a19f86175e7f61833516fff4dbf1b`.
+  `1210fe55854a2aba1ebffa403c8c87e8a5097ea641e2d17ecbacb0bff0fae8ab`.
 - Review workflow installation instructions are in
   `creator/REVIEW_WORKFLOW_SETUP.md`.
 - Publishing installation instructions are in `creator/PUBLISHING_SETUP.md`.
@@ -368,8 +539,9 @@ workflow-throughput plan is maintained in
   Reviewers, and one Publisher were added alongside the existing demo admin.
 - The `submit_article_for_review` map function was compiled and saved successfully
   with `articleId` and `reviewerIdsCsv` arguments.
-- The enabled Custom API endpoint is
-  `https://www.zohoapis.in/creator/custom/opensourceindia22/submit_article_for_review`.
+- Historical old-owner Custom API endpoints used `opensourceindia22`. The
+  migrated app must use `piyugene02`, for example:
+  `https://www.zohoapis.in/creator/custom/piyugene02/submit_article_for_review`.
 - The Custom API is POST, OAuth2, application/json, Key and Value, All users, and
   Standard response.
 
@@ -377,19 +549,24 @@ workflow-throughput plan is maintained in
 
 Read these files before continuing:
 
-1. `docs/HANDOFF.md`
-2. `docs/CATALYST_LIVE_CHECKPOINT_2026-08-28.md`
-3. `docs/STATUS.md`
-3. `docs/EDGE_CASE_AUDIT.md`
-4. `creator/REVIEW_WORKFLOW_SETUP.md`
-5. `creator/PUBLISHING_SETUP.md`
-6. `creator/PERMISSION_SHARING_SETUP.md`
-7. `creator/CATALYST_PUBLISHING_SETUP.md`
-8. `catalyst/README.md`
-9. `creator/NOTIFICATION_SCHEDULING_SETUP.md`
-10. `docs/SCHEDULING_AND_NOTIFICATIONS.md`
-11. `docs/DECISIONS.md`
-12. `docs/WORKFLOW.md`
-13. `docs/DATA_MODEL.md`
-14. `docs/CREATOR_SPEC.md`
-15. `docs/WORKLOG.md`
+1. `docs/CURRENT_CHECKPOINT_2026-09-07.md`
+2. `docs/CURRENT_CHECKPOINT_2026-09-04.md`
+3. `docs/HANDOFF.md`
+4. `docs/CREATOR_ACCOUNT_MIGRATION_RUNBOOK.md`
+5. `docs/PHASE_1_RELEASE_CLOSURE.md`
+6. `docs/MANUAL_VERIFICATION_2026-08-30.md`
+7. `docs/CATALYST_LIVE_CHECKPOINT_2026-08-28.md`
+8. `docs/STATUS.md`
+9. `docs/EDGE_CASE_AUDIT.md`
+10. `creator/REVIEW_WORKFLOW_SETUP.md`
+11. `creator/PUBLISHING_SETUP.md`
+12. `creator/PERMISSION_SHARING_SETUP.md`
+13. `creator/CATALYST_PUBLISHING_SETUP.md`
+14. `catalyst/README.md`
+15. `creator/NOTIFICATION_SCHEDULING_SETUP.md`
+16. `docs/SCHEDULING_AND_NOTIFICATIONS.md`
+17. `docs/DECISIONS.md`
+18. `docs/WORKFLOW.md`
+19. `docs/DATA_MODEL.md`
+20. `docs/CREATOR_SPEC.md`
+21. `docs/WORKLOG.md`

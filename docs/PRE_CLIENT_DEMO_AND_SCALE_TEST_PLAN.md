@@ -1,31 +1,37 @@
 # GeneDrift Pre-Client Demo and Scale Test Plan
 
-Status: Development is functional, but do **not** call the integration verified
-until the full Development matrix, fresh Creator DS export, and negative role
-tests pass.
+Status: Phase 1 is functionally strong after 2026-09-01 live testing, but do
+**not** call the integration fully release-ready until the fresh Creator DS
+export audit, duplicate/idempotency stress evidence, media-format validation,
+accessibility/public-site checks, and measured scale evidence pass.
+
+Latest resume checkpoint: `docs/CURRENT_CHECKPOINT_2026-09-01.md`.
 
 ## 1. Must-pass product checks
 
 Run these in order and keep one screenshot or row export for each group.
 
-- [ ] **Editorial flow:** create, edit, autosave, reload, submit, claim, comment,
+- [x] **Editorial flow:** create, edit, autosave, reload, submit, claim, comment,
   request changes, create revision N+1, resubmit, and approve.
-- [ ] **Review rules:** Standard and Regulated Review pass; self-review and a
+- [x] **Review rules:** Standard and Regulated Review pass; self-review and a
   second decision by the same reviewer are blocked.
-- [ ] **Immediate publish:** one click becomes Processing, duplicate clicks are
+- [x] **Immediate publish:** one click becomes Processing, duplicate clicks are
   blocked, the job succeeds, and the public article appears.
-- [ ] **Scheduled publish:** run two fresh future schedules; publication occurs
-  at the intended time and creates only one version/callback.
-- [ ] **Retraction:** a published article disappears from listings, its Catalyst
-  public API route returns 410, Creator moves it to Retracted/Unpublished, and
-  immutable history remains.
+- [x] **Scheduled publish:** run fresh future schedules; publication occurs at
+  the intended time and creates one visible final published state. Duplicate
+  schedule/reconcile stress remains separate below.
+- [x] **Retraction:** a published article disappears from listings/search,
+  Creator moves it to Retracted/Unpublished, immutable history remains, and the
+  former public detail route shows the retraction page. Capture HTTP status if
+  strict 410 evidence is required.
 - [ ] **Failure recovery:** duplicate handoff, transient retry, callback outage
   and replay, revoked approval, stale revision, and pointer contention do not
   create duplicate public versions.
 - [ ] **Media:** JPEG, PNG, GIF, and WebP publish correctly; invalid size,
   checksum, signature, and dimensions are rejected.
-- [ ] **Role isolation:** test separate Author-only, Reviewer-only,
-  Publisher-only, and Editorial Admin accounts, including direct API attempts.
+- [x] **Role isolation:** separate Author-only, Reviewer-only, Publisher-only,
+  and Editorial Admin visual UI behavior passed. Direct API attempts are still a
+  fresh DS/security-audit follow-up.
 - [ ] **Fresh Creator audit:** export the current DS, record its SHA-256, and
   verify fields, reports, functions, roles, sharing, and menu visibility.
 - [ ] **Security:** rotate the Development internal secret exposed during live
@@ -108,6 +114,12 @@ authorization.
 
 The maintained public index, deterministic 1,800-article generator, matching
 fixture API, read-only k6 suite, and performance-report template are implemented
-locally. They still require `GD_Public_Index` provisioning, AppSail `0.4.0`
-deployment/rebuild, a Vercel Preview, and measured runs on an approved target.
-Do not convert local fixture success into a Catalyst or Vercel scale claim.
+locally. `GD_Public_Index` and AppSail public-read work reached the v0.4 line,
+and the latest AppSail ZIP present is
+`genedrift-catalyst-appsail-dev-v0.4.2.zip`
+(`1834f1924a953c21919d242e79f1d0bdaf847bd3abe35415697dd829afc9c3ff`).
+
+The 1,800-post proof still needs measured runs on an approved non-production
+target. Do not convert local fixture success into a Catalyst or Vercel scale
+claim, and do not send 1,800 publish jobs. Catalog browsing scale, read traffic,
+and workflow throughput must remain separate tests.

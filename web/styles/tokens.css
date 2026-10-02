@@ -1,0 +1,95 @@
+/* ---------------------------------------------------------------------------
+   Genedrift design tokens — the single source of truth for the whole site.
+   Values come from the approved consolidated design and the client's LF20
+   palette in docs/PHASE_2_WEBSITE_REVAMP_CLIENT_BASELINE.md.
+
+   RULE: components never use arbitrary values. No text-[17px], no #5B3FD2.
+   If a value is missing here, add it here — do not inline it.
+--------------------------------------------------------------------------- */
+@import "tailwindcss";
+
+@theme {
+  /* ---- colour ------------------------------------------------------- */
+  --color-canvas:    #ffffff;   /* page ground                            */
+  --color-ink:       #181528;   /* headings, primary text                 */
+  --color-mid:       #5b5770;   /* body copy on light                     */
+  --color-muted:     #6b6880;   /* supporting copy                        */
+  --color-faint:     #9a94b4;   /* labels, metadata                       */
+  --color-ghost:     #c0bad2;   /* numerals, disabled                     */
+
+  --color-line:      #e7e4f2;   /* structural rules                       */
+  --color-hair:      #f1eff8;   /* light dividers inside a block          */
+  --color-surface:   #f4f5f7;   /* neutral card ground                    */
+  --color-lavender:  #f0eefb;   /* tinted surface, highlights             */
+  --color-band:      #f5f4f0;   /* warm band — operating model            */
+
+  --color-accent:    #5b3fd2;   /* primary purple: CTAs, labels, states   */
+  --color-accent-soft: #7c63e8; /* second capability edge                 */
+  --color-deep:      #241653;   /* dark sections, third capability edge   */
+
+  /* on-dark */
+  --color-on-deep:        #ffffff;
+  --color-on-deep-muted:  #b8afdf;
+  --color-on-deep-faint:  #9c92c9;
+  --color-on-deep-accent: #a794ff;
+
+  /* semantic — market status */
+  --color-status-available: #5b3fd2;
+  --color-status-upcoming:  #8a7ad8;
+  --color-status-none:      #a9a3bc;
+
+  /* ---- type --------------------------------------------------------- */
+  --font-sans: var(--font-archivo), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, Menlo, Consolas, monospace;
+
+  --text-display:   3.375rem;  /* 54 — homepage h1                        */
+  --text-display--line-height: 4rem;
+  --text-h1:        2.5rem;    /* 40 — section headings                   */
+  --text-h1--line-height: 1.12;
+  --text-h2:        2.0625rem; /* 33 — billboard, large cards             */
+  --text-h2--line-height: 1.16;
+  --text-h3:        1.5rem;    /* 24 — capability titles                  */
+  --text-h3--line-height: 1.25;
+  --text-h4:        1.3125rem; /* 21 — card titles                        */
+  --text-h4--line-height: 1.3;
+  --text-lead:      1.0625rem; /* 17 — intros, billboard body             */
+  --text-lead--line-height: 1.7;
+  --text-body:      1rem;      /* 16                                      */
+  --text-body--line-height: 1.62;
+  --text-sm:        0.90625rem;/* 14.5 — card copy, nav                   */
+  --text-sm--line-height: 1.6;
+  --text-xs:        0.84375rem;/* 13.5 — ticker, tags                     */
+  --text-xs--line-height: 1.55;
+  --text-label:     0.6875rem; /* 11 — mono eyebrow labels                */
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.16em;
+
+  --tracking-display: -0.035em;
+
+  /* ---- layout ------------------------------------------------------- */
+  --spacing-gutter:  6rem;     /* 96 — page side padding                  */
+  --spacing-section: 7rem;     /* 112 — vertical rhythm between sections  */
+  --spacing-band:    6.5rem;   /* 104 — padding inside dark/warm bands    */
+
+  --container-page:  90rem;    /* 1440 — design canvas width              */
+  --container-body:  78rem;    /* 1248 — content width inside the gutter  */
+
+  --radius-card:     1.125rem; /* 18                                      */
+  --radius-control:  0.5625rem;/* 9 — buttons, fields                     */
+  --radius-pill:     6.25rem;
+
+  --shadow-card: 0 20px 44px rgb(36 22 83 / 0.10), 0 2px 6px rgb(36 22 83 / 0.05);
+
+  /* ---- motion ------------------------------------------------------- */
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Every transition in this design is CSS and must yield to reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

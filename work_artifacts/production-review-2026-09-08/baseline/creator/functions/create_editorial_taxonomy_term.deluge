@@ -1,0 +1,140 @@
+map create_editorial_taxonomy_term(string termType, string termName)
+{
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+
+	kind = ifnull(termType,"").trim().toLowerCase();
+	name = ifnull(termName,"").trim();
+	if(kind != "category" && kind != "tag")
+	{
+		result.put("message","Choose category or tag.");
+		return result;
+	}
+	if(name.length() < 2 || name.length() > 150)
+	{
+		result.put("message","Taxonomy names must contain between 2 and 150 characters.");
+		return result;
+	}
+
+	adminRole = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	authorRole = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Author" && Active == true];
+	if(kind == "category" && adminRole.count() == 0)
+	{
+		result.put("message","Only an Editorial Admin can create categories.");
+		return result;
+	}
+	if(kind == "tag" && adminRole.count() == 0 && authorRole.count() == 0)
+	{
+		result.put("message","Only an Author or Editorial Admin can create tags.");
+		return result;
+	}
+
+	slug = name.toLowerCase().replaceAll("[^a-z0-9]+","-").replaceAll("^-+|-+$","");
+	if(slug == "")
+	{
+		result.put("message","Use a taxonomy name containing at least one letter or number.");
+		return result;
+	}
+
+	created = false;
+	termId = 0;
+	termUuid = "";
+	if(kind == "category")
+	{
+		existingCategory = Categories[Slug == slug];
+		if(existingCategory.count() > 0)
+		{
+			termId = existingCategory.ID;
+			name = existingCategory.Name;
+			if(existingCategory.Active != true)
+			{
+				existingCategory.Active = true;
+			}
+		}
+		else
+		{
+			standardPolicy = Approval_Policies[Policy_Key == "STANDARD" && Active == true];
+			if(standardPolicy.count() == 0)
+			{
+				result.put("message","The Standard Review policy is missing. Run the editorial configuration seed first.");
+				return result;
+			}
+			termUuid = "CAT-CUSTOM-" + zoho.currenttime.toLong();
+			termId = insert into Categories
+			[
+				Category_UUID = termUuid
+				Name = name
+				Slug = slug
+				Default_Approval_Policy = standardPolicy.ID
+				Display_Order = 999
+				Active = true
+			];
+			created = true;
+		}
+	}
+	else
+	{
+		existingTag = Tags[Slug == slug];
+		if(existingTag.count() > 0)
+		{
+			termId = existingTag.ID;
+			name = existingTag.Name;
+			if(existingTag.Active != true)
+			{
+				existingTag.Active = true;
+			}
+		}
+		else
+		{
+			termUuid = "TAG-CUSTOM-" + zoho.currenttime.toLong();
+			termId = insert into Tags
+			[
+				Tag_UUID = termUuid
+				Name = name
+				Slug = slug
+				Active = true
+			];
+			created = true;
+		}
+	}
+
+	metadata = Map();
+	metadata.put("kind",kind);
+	metadata.put("termId",termId);
+	metadata.put("slug",slug);
+	metadata.put("created",created);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-TAXONOMY-" + termId + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Taxonomy"
+		Entity_UUID = if(termUuid != "",termUuid,kind.toUpperCase() + "-" + termId)
+		Event_Type = if(created,"Taxonomy Term Created","Taxonomy Term Reused")
+		Actor_Employee = actor.ID
+		Previous_State = ""
+		New_State = "Active"
+		Event_Summary = actor.Display_Name + if(created," created "," reused ") + kind + " " + name + "."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	result.put("ok",true);
+	result.put("message",if(created,name + " was created.",name + " already exists and is ready to use."));
+	result.put("kind",kind);
+	// Creator record IDs exceed JavaScript's safe integer range. Return the ID as
+	// text so the widget can reuse it without numeric rounding.
+	result.put("termId",termId.toString());
+	result.put("name",name);
+	result.put("created",created);
+	return result;
+}

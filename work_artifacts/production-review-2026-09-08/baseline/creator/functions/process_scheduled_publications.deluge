@@ -1,0 +1,53 @@
+map process_scheduled_publications()
+{
+	result = Map();
+	result.put("ok",true);
+	acceptedJobIds = List();
+	deferredJobIds = List();
+	failedJobIds = List();
+
+	// Reconciliation only: Catalyst owns actual publication timing. Run this
+	// Creator schedule periodically to redeliver handoffs that failed before
+	// Catalyst acknowledged them; it must never mutate an article to Published.
+	queuedJobs = Publication_Jobs[(Status == "Queued" || Status == "Processing") && (Action == "Publish" || Action == "Schedule" || Action == "Unpublish")];
+	for each job in queuedJobs
+	{
+		if(job.Status == "Processing" && job.Requested_At != null && job.Requested_At > zoho.currenttime.addMinutes(-5))
+		{
+			deferredJobIds.add(job.ID);
+			continue;
+		}
+		if(job.Next_Retry_At != null && job.Next_Retry_At > zoho.currenttime)
+		{
+			deferredJobIds.add(job.ID);
+			continue;
+		}
+		try
+		{
+			handoffResult = thisapp.handoff_publication_to_catalyst(job.ID);
+			if(handoffResult.get("ok") == true)
+			{
+				acceptedJobIds.add(job.ID);
+			}
+			else
+			{
+				failedJobIds.add(job.ID);
+			}
+		}
+		catch (handoffError)
+		{
+			job.Error_Code = "CATALYST_HANDOFF_RECONCILIATION_FAILED";
+			job.Error_Summary = handoffError.toString();
+			job.Next_Retry_At = zoho.currenttime.addMinutes(5);
+			failedJobIds.add(job.ID);
+		}
+	}
+
+	result.put("acceptedCount",acceptedJobIds.size());
+	result.put("deferredCount",deferredJobIds.size());
+	result.put("failedCount",failedJobIds.size());
+	result.put("acceptedJobIds",acceptedJobIds);
+	result.put("deferredJobIds",deferredJobIds);
+	result.put("failedJobIds",failedJobIds);
+	return result;
+}

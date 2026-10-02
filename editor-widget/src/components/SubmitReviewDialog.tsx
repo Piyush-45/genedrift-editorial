@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../useDialogFocus'
 import { AlertCircle, Check, Send, Users, X } from 'lucide-react'
 import type { ReviewerOption } from '../domain'
 
@@ -9,6 +10,7 @@ type Props = {
   mode: 'reviewers' | 'queue'
   busy: boolean
   error: string
+  missingItems: string[]
   onModeChange: (mode: 'reviewers' | 'queue') => void
   onSelectionChange: (ids: string[]) => void
   onClose: () => void
@@ -27,11 +29,13 @@ export function SubmitReviewDialog({
   mode,
   busy,
   error,
+  missingItems,
   onModeChange,
   onSelectionChange,
   onClose,
   onSubmit,
 }: Props) {
+  const dialogRef = useDialogFocus(open, busy, onClose)
   if (!open) return null
 
   const toggleReviewer = (id: string) => {
@@ -44,7 +48,7 @@ export function SubmitReviewDialog({
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy) onClose()
     }}>
-      <section className="review-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-review-title">
+      <section ref={dialogRef} tabIndex={-1} className="review-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-review-title">
         <header>
           <div>
             <h2 id="submit-review-title">Submit for review</h2>
@@ -58,6 +62,18 @@ export function SubmitReviewDialog({
             <span>Approval policy</span>
             <strong>{approvalPolicy}</strong>
             <small>Any unfilled approval slots will be placed in the shared review queue.</small>
+          </div>
+
+          <div className={`submission-preflight${missingItems.length ? ' has-missing' : ' is-ready'}`}>
+            <div>
+              {missingItems.length ? <AlertCircle /> : <Check />}
+              <strong>{missingItems.length ? 'Complete before submission' : 'Ready to submit'}</strong>
+            </div>
+            {missingItems.length > 0 ? (
+              <ul>{missingItems.map((item) => <li key={item}>{item}</li>)}</ul>
+            ) : (
+              <p>Required editorial, media, and search fields are present.</p>
+            )}
           </div>
 
           <div className="mode-control" aria-label="Reviewer assignment mode">
@@ -103,7 +119,7 @@ export function SubmitReviewDialog({
           <button
             className="submit-review-command"
             type="button"
-            disabled={busy || (mode === 'reviewers' && selectedIds.length === 0)}
+            disabled={busy || missingItems.length > 0 || (mode === 'reviewers' && selectedIds.length === 0)}
             onClick={onSubmit}
           >
             <Send /> {busy ? 'Submitting' : 'Submit for review'}

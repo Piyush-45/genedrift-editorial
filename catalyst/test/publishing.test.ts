@@ -274,6 +274,44 @@ test("submits a typed one-time AppSail cron to Catalyst Job Scheduling", async (
   assert.equal(immediate.job_meta.url, "/internal/jobs/callback");
 });
 
+test("treats duplicate Job Scheduling cron creation as idempotent", async () => {
+  const submissions: any[] = [];
+  const app = {
+    jobScheduling() {
+      return {
+        cron() {
+          return {
+            async createCron(details: any) {
+              submissions.push(details);
+              if (submissions.length > 1) {
+                throw {
+                  statusCode: 400,
+                  code: "INVALID_INPUT",
+                  message: "The given Cron name already exists. Please give a different name "
+                };
+              }
+              return { id: "cron-first" };
+            }
+          };
+        }
+      };
+    }
+  };
+  const scheduler = new CatalystScheduler(app, {
+    jobPoolName: "gdgenedriftpublishing",
+    appSailName: "gd-genedrift-publishing",
+    appSailBaseUrl: "https://example.catalystappsail.in",
+    publicationPath: "/internal/jobs/publish",
+    callbackPath: "/internal/jobs/callback",
+    internalSecret: "internal-test-secret"
+  }, () => new Date("2026-08-26T10:00:00.000Z").getTime());
+  const runAt = new Date("2100-01-01T00:00:00.000Z");
+
+  assert.equal(await scheduler.schedulePublication("req-duplicate", runAt, true), "cron-first");
+  assert.equal(await scheduler.schedulePublication("req-duplicate", runAt, true), submissions[1].cron_name);
+  assert.equal(submissions[1].cron_name, submissions[0].cron_name);
+});
+
 test("claims a scheduled Catalyst row when its offset timestamp is due in UTC", async () => {
   const queries: string[] = [];
   const row: Record<string, unknown> = {
@@ -541,6 +579,8 @@ test("Creator media is verified, content-addressed in Stratus, and returned in t
   const version = [...h.store.versions.values()][0];
   const document = await h.objects.getJson<any>(version.objectId);
   assert.match(document.html, /https:\/\/published\.example\/media\//);
+  assert.match(document.html, /<figcaption>Caption<\/figcaption>/);
+  assert.doesNotMatch(document.html, /GeneDrift/);
 });
 
 test("a retried success callback reloads media mappings from the immutable published document", async () => {
@@ -737,4 +777,91 @@ test("callback retry dead-letters without changing a successful publication", as
   assert.equal(dead.deliveryAttemptCount, 3);
   assert.equal((await h.store.getRequest(accepted.request.requestId))?.status, "Succeeded");
   assert.equal(h.store.pointers.get("article-uuid-0001")?.revisionNumber, 1);
+});
+
+test("a duplicate terminal handoff reopens and redelivers its dead-letter callback without republishing", async () => {
+  const h = harness();
+  const payload = handoff({ idempotencyKey: "terminal-callback-redelivery" });
+  h.callbacks.failSends = 3;
+  const accepted = await h.service.acceptHandoff(payload);
+  await h.service.processPublication(accepted.request.requestId);
+  const callback = [...h.store.callbackOutbox.values()][0];
+
+  h.setNow("2026-08-26T10:01:00.000Z");
+  await h.service.processCallback(callback.eventId);
+  h.setNow("2026-08-26T10:03:00.000Z");
+  assert.equal((await h.service.processCallback(callback.eventId)).deliveryStatus, "DeadLetter");
+
+  const duplicate = await h.service.acceptHandoff(payload);
+  const replayed = await h.store.getCallback(callback.eventId);
+
+  assert.equal(duplicate.created, false);
+  assert.equal(replayed?.deliveryStatus, "Delivered");
+  assert.equal(replayed?.deliveryAttemptCount, 1);
+  assert.equal(h.store.versions.size, 1);
+  assert.equal(h.store.pointers.get("article-uuid-0001")?.pointerVersion, 1);
+  assert.equal(h.callbacks.delivered.length, 1);
+});
+
+test("1,800 indexed articles support complete deep pagination, filters, and search without body reads", async () => {
+  const h = harness();
+  const accepted = await h.service.acceptHandoff(handoff());
+  await h.service.processPublication(accepted.request.requestId);
+  const seed = h.store.publicIndex.get("article-uuid-0001")!;
+  h.store.publicIndex.clear();
+  for (let i = 1; i <= 1800; i++) {
+    const id = `catalog-${String(i).padStart(4, "0")}`;
+    await h.store.upsertPublicIndex({
+      ...seed, articleUuid: id, publicationId: `pub-${id}`, slug: id,
+      title: `Catalog article ${i}`, searchText: `catalog article ${i}`,
+      primaryCategory: i % 2 === 0 ? "Science" : "Markets",
+      tags: i % 3 === 0 ? ["Policy"] : ["Research"],
+    });
+  }
+  const service = new PublicContentService(h.store, h.objects);
+  const reads = h.objects.publicJsonReads;
+  const ids = new Set<string>();
+  for (let page = 1; page <= 90; page++) {
+    const result = await service.list({ page, limit: 20 });
+    assert.equal(result.pagination.total, 1800);
+    for (const item of result.articles) ids.add(item.articleUuid);
+  }
+  assert.equal(ids.size, 1800);
+  assert.equal((await service.list({ page: 91, limit: 20 })).articles.length, 0);
+  assert.equal((await service.list({ page: 1, limit: 20, category: "Science", tag: "Policy" })).pagination.total, 300);
+  assert.equal((await service.list({ page: 1, limit: 20, query: "catalog article 1800" })).articles[0].slug, "catalog-1800");
+  assert.equal(h.objects.publicJsonReads, reads);
+});
+
+test("real JPEG, PNG, GIF, and WebP fixtures pass the media publication boundary", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { resolve } = await import("node:path");
+  const { publishMediaAssets } = await import("../src/media");
+  for (const [extension, mimeType] of [["jpg", "image/jpeg"], ["png", "image/png"], ["gif", "image/gif"], ["webp", "image/webp"]] as const) {
+    const bytes = await readFile(resolve("test/fixtures", `image-3x2.${extension}`));
+    const asset: PublicationHandoff["media"][number] = {
+      mediaId: `MED-${extension}`, creatorRecordId: "123", mimeType,
+      fileSizeBytes: bytes.length, widthPixels: 3, heightPixels: 2,
+      checksum: sha256Hex(bytes), altText: "Synthetic test rectangle", caption: "",
+      credit: "", originalFilename: `image-3x2.${extension}`,
+    };
+    const result = await publishMediaAssets([asset], { download: async () => bytes }, new MemoryObjectStore(), 10 * 1024 * 1024);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].mimeType, mimeType);
+  }
+});
+
+test("Catalyst index rebuild enumerates every pointer through the paginated SDK iterator", async () => {
+  let queryUsed = false;
+  const app = {
+    zcql: () => ({ executeZCQLQuery: async () => { queryUsed = true; return []; } }),
+    datastore: () => ({ table: () => ({
+      async *getIterableRows() {
+        for (let i = 0; i < 1800; i++) yield { Article_UUID: `article-${i}`, Revision_Number: 1, Pointer_Version: 1, Serving_Status: "Published" };
+      }
+    }) })
+  };
+  const pointers = await new CatalystPublicationStore(app as never).listPointers();
+  assert.equal(pointers.length, 1800);
+  assert.equal(queryUsed, false, "an unpaginated SELECT would silently cap the rebuild");
 });

@@ -93,15 +93,16 @@ export function WorldMap({
     : [];
 
   return (
-    <svg className={cn("real-world-map", atmospheric && "real-world-map-atmospheric")} viewBox="0 0 900 500" role="img" aria-label={atmospheric ? "GeneDrift global operating network" : "GeneDrift operational markets map"}>
+    <svg className={cn("real-world-map", atmospheric && "real-world-map-atmospheric")} viewBox="0 0 900 500" role="img" aria-label={atmospheric ? "Genedrift global operating network" : "Genedrift operational markets map"}>
       <g className="map-geography">
-        {countries.features.map((country) => {
-          const id = String(country.id).padStart(3, "0");
-          const market = marketById.get(id);
+        {countries.features.map((country, index) => {
+          const id = country.id == null ? null : String(country.id).padStart(3, "0");
+          const key = id ?? `unmapped-country-${index}`;
+          const market = id ? marketById.get(id) : undefined;
           const path = drawPath(country);
           if (!path) return null;
           const isSelected = selectedId === id;
-          const isActive = activeIds.has(id);
+          const isActive = Boolean(id && activeIds.has(id));
           const className = cn(
             "map-country",
             market && isActive && "map-country-active",
@@ -111,7 +112,7 @@ export function WorldMap({
           if (market && isActive && onSelect) {
             return (
               <path
-                key={id}
+                key={key}
                 d={path}
                 className={className}
                 role="button"
@@ -127,7 +128,7 @@ export function WorldMap({
               />
             );
           }
-          return <path key={id} d={path} className={className} aria-hidden="true" />;
+          return <path key={key} d={path} className={className} aria-hidden="true" />;
         })}
       </g>
 

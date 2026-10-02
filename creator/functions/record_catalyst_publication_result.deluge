@@ -53,17 +53,37 @@ map record_catalyst_publication_result(string eventId, string requestId, string 
 		publishedMedia = ifnull(mediaJson,"[]").toJSONList();
 		for each publishedMediaItem in publishedMedia
 		{
-			mediaRecordId = ifnull(publishedMediaItem.get("creatorRecordId"),"").toString();
-			mediaId = ifnull(publishedMediaItem.get("mediaId"),"").toString();
-			mediaChecksum = ifnull(publishedMediaItem.get("checksum"),"").toString().toLowerCase();
-			mediaObjectKey = ifnull(publishedMediaItem.get("objectKey"),"").toString();
-			mediaPublishedUrl = ifnull(publishedMediaItem.get("publishedUrl"),"").toString();
-			if(!mediaRecordId.isNumber() || mediaId == "" || mediaChecksum == "" || mediaObjectKey == "" || !mediaPublishedUrl.startsWith("https://"))
+			// toJSONList returns JSON values. getJSON works for both JSON text and
+			// key-value values, while ordinary map get can yield null for these
+			// decoded list items in Creator.
+			mediaRecordId = ifnull(publishedMediaItem.getJSON("creatorRecordId"),"").toString();
+			mediaId = ifnull(publishedMediaItem.getJSON("mediaId"),"").toString();
+			mediaChecksum = ifnull(publishedMediaItem.getJSON("checksum"),"").toString().toLowerCase();
+			mediaObjectKey = ifnull(publishedMediaItem.getJSON("objectKey"),"").toString();
+			mediaPublishedUrl = ifnull(publishedMediaItem.getJSON("publishedUrl"),"").toString();
+			if(mediaId == "" || mediaChecksum == "" || mediaObjectKey == "" || !mediaPublishedUrl.startsWith("https://"))
 			{
-				result.put("message","Published media callback contains an invalid mapping.");
+				result.put("message","Published media callback mapping is missing mediaId, checksum, objectKey, or publishedUrl.");
 				return result;
 			}
-			mediaRecord = Media_Assets[ID == mediaRecordId.toLong()];
+			// Media_UUID is the stable cross-system identity. creatorRecordId is an
+			// optional optimization because Creator may coerce or omit large numeric
+			// IDs while decoding nested callback JSON.
+			mediaRecord = Media_Assets[Media_UUID == mediaId];
+			if(mediaRecordId != "")
+			{
+				try
+				{
+					mediaRecordById = Media_Assets[ID == mediaRecordId.toLong()];
+					if(mediaRecordById.count() > 0 && mediaRecordById.Media_UUID == mediaId)
+					{
+						mediaRecord = mediaRecordById;
+					}
+				}
+				catch (mediaRecordIdError)
+				{
+				}
+			}
 			if(mediaRecord.count() == 0 || mediaRecord.Media_UUID != mediaId || ifnull(mediaRecord.Checksum,"").trim().toLowerCase() != mediaChecksum)
 			{
 				result.put("message","Published media callback does not match Creator media " + mediaId + ".");
@@ -133,10 +153,10 @@ map record_catalyst_publication_result(string eventId, string requestId, string 
 			{
 				for each publishedMediaItem in publishedMedia
 				{
-					mediaRecordId = publishedMediaItem.get("creatorRecordId").toString();
-					mediaRecord = Media_Assets[ID == mediaRecordId.toLong()];
-					mediaRecord.Published_Object_Key = ifnull(publishedMediaItem.get("objectKey"),"").toString();
-					mediaRecord.Published_URL = ifnull(publishedMediaItem.get("publishedUrl"),"").toString();
+					mediaId = ifnull(publishedMediaItem.getJSON("mediaId"),"").toString();
+					mediaRecord = Media_Assets[Media_UUID == mediaId];
+					mediaRecord.Published_Object_Key = ifnull(publishedMediaItem.getJSON("objectKey"),"").toString();
+					mediaRecord.Published_URL = ifnull(publishedMediaItem.getJSON("publishedUrl"),"").toString();
 					mediaRecord.Status = "Ready";
 				}
 				previousPublishedRevisions = Article_Revisions[Article == article.ID && Revision_State == "Published" && ID != revision.ID];

@@ -9,9 +9,14 @@ map process_scheduled_publications()
 	// Reconciliation only: Catalyst owns actual publication timing. Run this
 	// Creator schedule periodically to redeliver handoffs that failed before
 	// Catalyst acknowledged them; it must never mutate an article to Published.
-	queuedJobs = Publication_Jobs[Status == "Queued" && (Action == "Publish" || Action == "Schedule" || Action == "Unpublish")];
+	queuedJobs = Publication_Jobs[(Status == "Queued" || Status == "Processing") && (Action == "Publish" || Action == "Schedule" || Action == "Unpublish")];
 	for each job in queuedJobs
 	{
+		if(job.Status == "Processing" && job.Requested_At != null && job.Requested_At > zoho.currenttime.addMinutes(-5))
+		{
+			deferredJobIds.add(job.ID);
+			continue;
+		}
 		if(job.Next_Retry_At != null && job.Next_Retry_At > zoho.currenttime)
 		{
 			deferredJobIds.add(job.ID);

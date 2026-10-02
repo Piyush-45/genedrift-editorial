@@ -81,6 +81,9 @@ export class PublishingService {
     }
     const request = await this.store.getRequest(requestId);
     if (!request) throw new PublicationError("Publication request disappeared after creation", "REQUEST_NOT_FOUND", true);
+    if (!result.created && (request.status === "Succeeded" || request.status === "Failed")) {
+      await this.replayTerminalCallback(request);
+    }
     return { created: result.created, request };
   }
 
@@ -287,5 +290,20 @@ export class PublishingService {
     if (record.deliveryStatus !== "Delivered" && record.deliveryStatus !== "DeadLetter") {
       await this.processCallback(event.eventId);
     }
+  }
+
+  private async replayTerminalCallback(request: PublicationRequestRecord): Promise<void> {
+    const event = request.status === "Succeeded"
+      ? this.callbackFor(request, "Succeeded", { publicationId: request.publicationId })
+      : this.callbackFor(request, "Failed", {
+          errorCode: request.lastErrorCode,
+          errorMessage: request.lastErrorMessage
+        });
+    const existing = await this.store.getCallback(event.eventId);
+    if (!existing || existing.deliveryStatus === "Delivered") return;
+    if (existing.deliveryStatus === "DeadLetter") {
+      await this.store.reopenDeadLetterCallback(event.eventId);
+    }
+    await this.processCallback(event.eventId);
   }
 }

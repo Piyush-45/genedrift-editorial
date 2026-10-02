@@ -19,12 +19,16 @@ map handoff_publication_to_catalyst(int jobId)
 	}
 	if(job.Status == "Processing")
 	{
-		result.put("ok",true);
-		result.put("message","Catalyst already accepted this publication job.");
-		result.put("jobId",job.ID);
-		return result;
+		staleProcessingCutoff = zoho.currenttime.addMinutes(-5);
+		if(job.Requested_At != null && job.Requested_At > staleProcessingCutoff)
+		{
+			result.put("ok",true);
+			result.put("message","Catalyst already accepted this publication job.");
+			result.put("jobId",job.ID);
+			return result;
+		}
 	}
-	if(job.Status != "Queued")
+	if(job.Status != "Queued" && job.Status != "Processing")
 	{
 		result.put("message","Only queued publication jobs can be handed to Catalyst.");
 		return result;
@@ -34,7 +38,13 @@ map handoff_publication_to_catalyst(int jobId)
 	revision = Article_Revisions[ID == job.Revision.ID];
 	if(article.count() == 0 || revision.count() == 0)
 	{
-		result.put("message","The publication job no longer has a valid article and revision.");
+		validationMessage = "The publication job no longer has a valid article and revision.";
+		job.Status = "Failed";
+		job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+		job.Error_Summary = validationMessage;
+		job.Completed_At = zoho.currenttime;
+		job.Next_Retry_At = null;
+		result.put("message",validationMessage);
 		return result;
 	}
 	isRetraction = job.Action == "Unpublish";
@@ -44,30 +54,60 @@ map handoff_publication_to_catalyst(int jobId)
 		approvedRevisionId = ifnull(article.Published_Revision_ID,"").trim();
 		if(article.Workflow_State != "Published" || approvedRevisionId == "" || approvedRevisionId != revision.ID.toString() || revision.Revision_State != "Published" || ifnull(job.Retraction_Reason,"").trim().length() < 3)
 		{
-			result.put("message","The exact current published revision is no longer retractable, or the reason is missing.");
+			validationMessage = "The exact current published revision is no longer retractable, or the reason is missing.";
+			job.Status = "Failed";
+			job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+			job.Error_Summary = validationMessage;
+			job.Completed_At = zoho.currenttime;
+			job.Next_Retry_At = null;
+			result.put("message",validationMessage);
 			return result;
 		}
 	}
 	else if((article.Workflow_State != "Approved" && article.Workflow_State != "Scheduled") || approvedRevisionId == "" || approvedRevisionId != revision.ID.toString() || revision.Revision_State != "Approved")
 	{
-		result.put("message","The exact approved revision is no longer publishable.");
+		validationMessage = "The exact approved revision is no longer publishable.";
+		job.Status = "Failed";
+		job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+		job.Error_Summary = validationMessage;
+		job.Completed_At = zoho.currenttime;
+		job.Next_Retry_At = null;
+		result.put("message",validationMessage);
 		return result;
 	}
 	if(revision.Editor_Document == null || ifnull(revision.Document_Checksum,"").trim() == "")
 	{
-		result.put("message","The approved revision is missing its editor document or checksum.");
+		validationMessage = "The approved revision is missing its editor document or checksum.";
+		job.Status = "Failed";
+		job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+		job.Error_Summary = validationMessage;
+		job.Completed_At = zoho.currenttime;
+		job.Next_Retry_At = null;
+		result.put("message",validationMessage);
 		return result;
 	}
 	if(job.Requested_By == null || job.Requested_At == null || revision.Approved_At == null)
 	{
-		result.put("message","The publication job is missing requester data or the revision approval timestamp.");
+		validationMessage = "The publication job is missing requester data or the revision approval timestamp.";
+		job.Status = "Failed";
+		job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+		job.Error_Summary = validationMessage;
+		job.Completed_At = zoho.currenttime;
+		job.Next_Retry_At = null;
+		result.put("message",validationMessage);
 		return result;
 	}
 
 	documentText = revision.Editor_Document.content;
 	if(documentText == null || documentText.trim() == "")
 	{
-		result.put("message","The approved editor document could not be read.");
+		validationMessage = "The approved editor document could not be read.";
+		job.Status = "Failed";
+		job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+		job.Error_Summary = validationMessage;
+		job.Completed_At = zoho.currenttime;
+		job.Next_Retry_At = null;
+		result.put("message",validationMessage);
 		return result;
 	}
 
@@ -78,7 +118,13 @@ map handoff_publication_to_catalyst(int jobId)
 		referencedMediaText = ifnull(revision.Referenced_Media_UUIDs,"").trim();
 		if(documentText.contains("\"mediaId\":\"") && referencedMediaText == "")
 		{
-			result.put("message","The approved revision is missing its normalized media references. Re-save the draft before approval and publish again.");
+			validationMessage = "The approved revision is missing its normalized media references. Re-save the draft before approval and publish again.";
+			job.Status = "Failed";
+			job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+			job.Error_Summary = validationMessage;
+			job.Completed_At = zoho.currenttime;
+			job.Next_Retry_At = null;
+			result.put("message",validationMessage);
 			return result;
 		}
 		if(referencedMediaText != "")
@@ -102,7 +148,13 @@ map handoff_publication_to_catalyst(int jobId)
 		}
 		if(referencedMediaIds.size() > 200)
 		{
-			result.put("message","This revision references more than 200 media assets and must be split before publication.");
+			validationMessage = "This revision references more than 200 media assets and must be split before publication.";
+			job.Status = "Failed";
+			job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+			job.Error_Summary = validationMessage;
+			job.Completed_At = zoho.currenttime;
+			job.Next_Retry_At = null;
+			result.put("message",validationMessage);
 			return result;
 		}
 		if(referencedMediaIds.size() > 0)
@@ -112,7 +164,13 @@ map handoff_publication_to_catalyst(int jobId)
 			{
 				if(mediaAsset.Draft_File == null || ifnull(mediaAsset.Original_Filename,"").trim() == "" || ifnull(mediaAsset.MIME_Type,"").trim() == "" || ifnull(mediaAsset.File_Size_Bytes,0) <= 0 || ifnull(mediaAsset.Width_Pixels,0) <= 0 || ifnull(mediaAsset.Height_Pixels,0) <= 0 || ifnull(mediaAsset.Checksum,"").trim() == "" || ifnull(mediaAsset.Alt_Text,"").trim() == "")
 				{
-					result.put("message","Referenced media " + mediaAsset.Media_UUID + " is missing its approved source file or required metadata.");
+					validationMessage = "Referenced media " + mediaAsset.Media_UUID + " is missing its approved source file or required metadata.";
+					job.Status = "Failed";
+					job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+					job.Error_Summary = validationMessage;
+					job.Completed_At = zoho.currenttime;
+					job.Next_Retry_At = null;
+					result.put("message",validationMessage);
 					return result;
 				}
 				mediaItem = Map();
@@ -131,7 +189,13 @@ map handoff_publication_to_catalyst(int jobId)
 			}
 			if(mediaPayload.size() != referencedMediaIds.size())
 			{
-				result.put("message","One or more referenced media records are missing, failed, or archived.");
+				validationMessage = "One or more referenced media records are missing, failed, or archived.";
+				job.Status = "Failed";
+				job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+				job.Error_Summary = validationMessage;
+				job.Completed_At = zoho.currenttime;
+				job.Next_Retry_At = null;
+				result.put("message",validationMessage);
 				return result;
 			}
 		}
@@ -159,7 +223,13 @@ map handoff_publication_to_catalyst(int jobId)
 		actionName = "schedule";
 		if(article.Scheduled_At == null)
 		{
-			result.put("message","The scheduled publication time is missing.");
+			validationMessage = "The scheduled publication time is missing.";
+			job.Status = "Failed";
+			job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+			job.Error_Summary = validationMessage;
+			job.Completed_At = zoho.currenttime;
+			job.Next_Retry_At = null;
+			result.put("message",validationMessage);
 			return result;
 		}
 		scheduledAtIso = article.Scheduled_At.toString("yyyy-MM-dd'T'HH:mm:ss") + "+05:30";
@@ -236,7 +306,13 @@ map handoff_publication_to_catalyst(int jobId)
 		secret = thisapp.variables.Publishing.Signing_Secret.toString();
 		if(baseUrl == "" || secret == "")
 		{
-			result.put("message","Catalyst publishing variables are not configured.");
+			validationMessage = "Catalyst publishing variables are not configured.";
+			job.Status = "Failed";
+			job.Error_Code = "CREATOR_HANDOFF_VALIDATION_FAILED";
+			job.Error_Summary = validationMessage;
+			job.Completed_At = zoho.currenttime;
+			job.Next_Retry_At = null;
+			result.put("message",validationMessage);
 			return result;
 		}
 		path = "/v1/publications";

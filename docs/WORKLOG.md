@@ -1,5 +1,544 @@
 # Work Log
 
+## 2026-09-07 - Phase 2 handoff and CMS architecture consolidated
+
+- Added `docs/CURRENT_CHECKPOINT_2026-09-07.md` as the new first-read context for
+  the next chat, whose active task is applying client feedback to the Phase 2
+  website concepts.
+- Consolidated the website editing plan into a structured Website Workspace:
+  nine IA areas, about 14 reusable frontend page families, a provisional 37–46
+  curated launch-page range, 17 underlying website content/governance record
+  types, and 7–8 client-facing workspace areas.
+- Kept Insights in the existing Article Workspace and specified forms,
+  relationships, controlled sections and real preview for ordinary website
+  pages. The first CMS implementation remains a Home vertical slice through
+  Creator, Catalyst and Next.js.
+- Updated HANDOFF and STATUS resume pointers. No Creator, Catalyst, widget or
+  public frontend source was changed as part of this documentation closure.
+
+## 2026-09-06 - Cross-account workflow test and OAuth publishing support
+
+- Added ZTM as a separate Creator application user with platform role
+  `Editorial Author` and permission `Write`, then assigned internal Author and
+  Reviewer responsibilities.
+- Piyu submitted `testing role based acess version -v` to ZTM. ZTM opened the
+  revision read-only, claimed and approved it. Piyu saw the resulting Approved
+  publishing queue item and matching audit/notification activity.
+- Added Publisher internally to ZTM for capability testing. The ZTM dashboard
+  then exposed Publish and Schedule controls for the approved item. The test was
+  an assigned-review case; it did not freshly exercise a shared-queue claim.
+- Diagnosed article refresh failures. Expired Creator browser authorization
+  first produced HTTP 401/code 2945/Z223. The explicit
+  `#Page:Article_Workspace?...` route reconstructed refreshed detail state more
+  reliably than the shortened hash route. The prepared v0.5.7 widget package
+  remains without captured live-upload evidence.
+- Publish request for `test with Akshay 2`, revision 2, was accepted with HTTP
+  202 but remained Processing in Creator. Catalyst request
+  `req_23feb000c4517b7790cdfef39a93eddd66885ada` showed RetryScheduled,
+  attempt 3 and `CREATOR_OAUTH_REFRESH_FAILED` / HTTP 200.
+- Identified the failure as a missing usable `access_token` from the Creator
+  OAuth refresh response, commonly caused by placing a temporary Self Client
+  code in the refresh-token variable. The operator generated and exchanged a
+  new India Self Client code, updated Catalyst and redeployed the current
+  `genedrift-catalyst-appsail-dev-v0.4.3-media-caption.zip` package.
+- The operator reported remediation complete, but the final Catalyst request,
+  Creator Succeeded state and public URL were not captured in this chat.
+
+## 2026-09-05 - Revised design reference redirect deployed
+
+- Added the temporary public redirect `https://genedrift.site/revised-designs`
+  to `https://starlit-gumption-65a19b.netlify.app/meridian/`.
+- Frontend typecheck and production build passed before deployment.
+- Deployed the current frontend to the existing linked Vercel project
+  `genedrift-vercel-preview-0.4`; Vercel aliased the deployment to
+  `https://genedrift.site`.
+- Live verification passed: the new route returns HTTP 307 with the intended
+  Netlify destination, the followed destination returns HTTP 200, and both the
+  homepage and `/insights` continue to return HTTP 200.
+- A user-supplied non-expiring Vercel access token was used only in a hidden
+  deployment-session variable and was unset locally after deployment. It should
+  be revoked in Vercel after this deployment.
+
+## 2026-09-05 - Dashboard refresh and development reset packaged
+
+- Clarified the dashboard live status so it shows the automatic check interval
+  and the last refresh without contradictory `updated 1m ago / every 5s` copy.
+- Slowed active publication polling from 5 seconds to 30 seconds and set idle
+  dashboard polling to 1 minute.
+- Added an admin-only Reset test content button with an exact
+  `RESET TEST CONTENT` confirmation phrase.
+- Added guarded Creator function
+  `creator/functions/reset_editorial_test_content.deluge`. It deletes Creator
+  article workspace test content while preserving users, roles, policies,
+  taxonomy, site settings, and redirects.
+- TypeScript, production build, ZET validation, ZET packaging, and ZIP integrity
+  pass.
+- Packaged
+  `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.4-refresh-reset.zip`,
+  SHA-256
+  `091f7bff1877b963b71ef1b5bc937840b10ea10dfe56dd7eb98af073a65b4d42`.
+- Upgrading from v0.5.3 requires one new private Custom API:
+  `reset_editorial_test_content`.
+- User uploaded v0.5.4, added the matching function/API, and verified the live
+  dashboard reset returns the migrated `piyugene02` Creator app to a clean
+  zero-count workspace. Full role-by-role smoke testing after reset remains
+  pending.
+- After Creator reset, the user cleaned the Catalyst/public side for orphaned
+  development posts `editable-tags-checking`, `smoke-test-1`, and `hanumaaaan`;
+  the public frontend no longer shows those posts. Future durable cleanup should
+  keep `GD_Public_Index` and `GD_Published_Pointers` in sync by `Article_UUID`.
+
+## 2026-09-04 - Editorial Command Center dashboard packaged
+
+- Replaced implicit metric-card navigation with visible role-aware Today,
+  Articles, Reviews, Publishing, and Archive workspace tabs; avoided adding a
+  second sidebar beside Zoho Creator navigation.
+- Added a personalized Today summary, contextual search/filter controls, compact
+  connected attention metrics, and focused full-width operational list views.
+- Consolidated removed drafts into a dedicated recoverable Archive and removed
+  duplicate Published, Retracted, Trash, and review-history panels from
+  unrelated dashboard views.
+- Added responsive overflow, keyboard focus treatment, and reduced-motion
+  behavior. TypeScript, production build, ZET validation, mock visual checks,
+  and ZIP integrity pass.
+- Packaged
+  `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.3-command-center.zip`,
+  SHA-256
+  `dfd448e1ed812ebc091d3de0f6e2f817f5c7c8721095117bb71322b27eb56b6a`.
+- Upgrading from v0.5.2 requires only this widget ZIP. Upgrading directly from
+  v0.5.1 still requires the `update_media_metadata` function and private Custom
+  API introduced for v0.5.2.
+
+## 2026-09-04 - Media polish and newest-first drafts packaged
+
+- Confirmed from live testing that Alt Text persisted but Caption could be
+  silently dropped or end in `Creator did not verify the updated image details`.
+- Added guarded `update_media_metadata` Deluge persistence for Alt Text and
+  Caption and routed both new uploads and later edits through it.
+- Removed Credit from the authoring UI and new public Caption rendering while
+  retaining the Creator field and historical payload shape for compatibility.
+- Added live Caption preview, no-change save protection, stable dialog scrolling
+  and save states, inline image size/alignment/edit/remove controls, and Undo for
+  cover removal.
+- Added descending Creator record ID as the fallback for Most recent article
+  sorting, preventing timestamp-less drafts from reverting to title order.
+- Added publishing regression coverage proving Caption renders and Credit does
+  not. Widget, Catalyst, and frontend type checks/builds pass; all 31 Catalyst
+  tests pass; local mock Caption edit/reopen and cover Undo checks pass.
+- Packaged
+  `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.2-media.zip`,
+  SHA-256
+  `8ea5fba0d89489e660c7591cd1ca947a0fd5260a127fd2940adf36d0ae04cb92`.
+- Packaged the matching Caption-only inline renderer as
+  `genedrift-catalyst-appsail-dev-v0.4.3-media-caption.zip`, SHA-256
+  `cdd7eb7e45e2a25ab4214bbdda71a5b94ce386171ff4d588f25e25070eec6e4b`.
+- Live installation requires only the new `update_media_metadata` function/API
+  plus the widget ZIP; no Creator schema change is required.
+
+## 2026-09-04 - Newly created tag code-3001 correction packaged
+
+- The first live v0.5.0 smoke test confirmed that a tag could be created and the
+  article could publish without tags, but applying the new tag failed at the
+  article taxonomy save boundary with Creator code 3001.
+- Isolated the failure from the review/publishing workflow: the Tag record was
+  created successfully; the Widget SDK rejected the subsequent multi-select
+  lookup update.
+- Added guarded `save_article_taxonomy` Deluge persistence. It accepts record IDs
+  as strings, verifies article ownership/state and active taxonomy records,
+  converts tag IDs to Creator's required Number list, saves Category and Tags,
+  and records an audit event.
+- Updated `create_editorial_taxonomy_term` to return its record ID as text so an
+  18-digit Creator ID cannot be rounded by JavaScript.
+- Replaced the widget's direct Article lookup update with the new private Custom
+  API call.
+- TypeScript, production build, `git diff --check`, ZET validation, bundle API
+  inspection, and ZIP integrity pass.
+- Packaged
+  `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.1-taxonomy-fix.zip`,
+  SHA-256
+  `1068232c6d529c4df7a0c573d9b58e699321ccc83149f0837e684362bb4634bd`.
+- Live Creator installation and tag save/reload confirmation remain pending.
+
+## 2026-09-04 - Article Workspace workflow-polish candidate completed locally
+
+- Completed the requested workflow UX pass across the Article Workspace,
+  dashboard, review, and publishing surfaces.
+- Added post-submit, post-review, and post-publish outcomes with Continue,
+  Review next, and Dashboard routes.
+- Added recoverable draft Trash/restore with server-side role/state checks and
+  audit events; no permanent delete is exposed.
+- Added governed inline taxonomy creation: tags for Authors/Admins and categories
+  for Editorial Admins, with duplicate reuse/reactivation.
+- Made category optional while drafting but mandatory in both client and server
+  review-submission preflight. Exposed Standard/Regulated approval counts and
+  descriptions during article creation.
+- Added role-specific attention metrics, publication health, article workflow
+  history, saved review feedback, and previous-revision comparison.
+- Replaced plain-text workflow notification bodies with escaped branded HTML and
+  deep links back to the Article Workspace.
+- TypeScript, production build, `git diff --check`, ZET validation, packaging,
+  ZIP integrity, mock dashboard/editor visual inspection, review preflight,
+  workflow timeline, and browser console checks pass.
+- Packaged
+  `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.0.zip`, SHA-256
+  `74b23dbb48587a2c4b9f4b6c45e96ce2fae8602f56e2ecdd91f651bbf106fa13`.
+- Added `creator/WORKFLOW_POLISH_SETUP.md` with the exact Creator function/API
+  installation order and separate-role smoke matrix.
+- Live Creator upload and role verification remain pending. v0.4.16 remains the
+  known-good rollback until those checks pass.
+- Deliberately excluded a whole-database reset. It requires a non-production
+  environment guard and explicit test-data marker before it can be safe.
+
+## 2026-09-04 - Creator account migration dry run completed
+
+- Migrated/imported the Creator app under owner `piyugene02` and verified the
+  correct production app route:
+  `https://creatorapp.zoho.in/piyugene02/genedrift-editorial-platform#Article_Workspace`.
+- Recreated Creator Custom APIs under Microservices with the new owner in the
+  endpoint URLs.
+- Confirmed approval policies: Standard Review uses one approval; Regulated
+  Review is dynamic through the `Required Approvals` policy value and currently
+  supports two or more distinct reviewers when configured.
+- Uploaded and validated widget
+  `editor-widget/genedrift-editor-widget-dashboard-ux-v0.4.16-save-verify-fix.zip`.
+  This supersedes the v0.4.15 faster-load package because v0.4.15 could produce
+  false draft save-verification failures.
+- Updated Catalyst AppSail environment variables for the new Creator owner/app
+  and direct OAuth path. `CREATOR_CONNECTION_NAME` must remain blank/deleted for
+  this setup.
+- Generated a new Zoho Self Client refresh token for the `piyugene02` account
+  using scopes `ZohoCreator.customapi.EXECUTE,ZohoCreator.report.READ`, then
+  stored the resulting refresh token in Catalyst `CREATOR_OAUTH_REFRESH_TOKEN`.
+- Redeployed AppSail with `genedrift-catalyst-appsail-dev-v0.4.2.zip`.
+- Final result: a fresh publish test succeeded in Catalyst and the blog appeared
+  on the public frontend.
+- Follow-up: rotate any OAuth credentials exposed during manual debugging before
+  a real client-owned production handoff.
+- Documentation updated: `docs/CREATOR_ACCOUNT_MIGRATION_RUNBOOK.md` is now the
+  primary future account-transfer guide, and
+  `docs/CURRENT_CHECKPOINT_2026-09-04.md` captured that migration checkpoint.
+
+## 2026-09-01 - Duplicate Catalyst cron retry handled idempotently
+
+- After the Creator-side scheduled reconcile fix, clicking Reconcile on
+  `ROLE-03 Publisher-only` reached Catalyst but returned
+  `The given Cron name already exists. Please give a different name`.
+- The article then appeared back in the publishing queue as Approved/ready with
+  the Publish button, indicating the failed retry rolled the stale scheduled
+  article back to publisher action.
+- Classification: second recovery-path defect. The original schedule handoff had
+  already created or attempted the one-time Catalyst cron; the duplicate retry
+  tried to create the same cron name and Catalyst rejected it.
+- Local fix: `catalyst/src/adapters/catalyst.ts` now treats duplicate one-time
+  Job Scheduling cron creation as idempotent, matching the already-existing
+  duplicate handling for immediate Job Pool submissions.
+- Regression coverage added in `catalyst/test/publishing.test.ts` for Catalyst's
+  observed `The given Cron name already exists` error text.
+- Verification: `npm test` in `catalyst/` passes 31/31 tests. AppSail package
+  `genedrift-catalyst-appsail-dev-v0.4.2.zip` was created with SHA-256
+  `1834f1924a953c21919d242e79f1d0bdaf847bd3abe35415697dd829afc9c3ff`.
+- Additional dashboard fix: `editor-widget/src/App.tsx` no longer marks a future
+  scheduled article as `Needs retry` merely because its Catalyst handoff has
+  been Processing for more than five minutes. Future Schedule jobs remain shown
+  as Scheduled until their due time, and the queue summary can count scheduled
+  rows separately.
+- Verification: `npm run typecheck` in `editor-widget/` passes.
+- Live retest started with `RETRY-02 Scheduled Reconcile — 01 Sep 2026`,
+  scheduled for `01 Sep, 06:04`. At `06:03`, the Articles view showed the row as
+  `Scheduled` instead of `Needs retry`, which supports the pre-due dashboard fix.
+- At `06:04`, `RETRY-02 Scheduled Reconcile — 01 Sep 2026` moved to Published.
+  The All Articles list showed the row as `Published`, and the Published
+  Articles panel showed it with publish time `01 Sep at 06:04 AM` plus the
+  expected Retract/Open actions.
+- Result: fresh scheduled publication after the Creator/Catalyst/widget recovery
+  fixes passes. A forced duplicate/reconcile case remains useful but is no
+  longer needed to prove ordinary scheduled publication.
+- Product-polish note: in the Articles view, a Scheduled badge without the
+  scheduled date/time is too vague. Show `Scheduled · 06:04` or
+  `Scheduled for 01 Sep, 06:04` wherever a scheduled article row is displayed,
+  not only inside the publishing queue detail line.
+- Retest needed after deploying the updated Catalyst AppSail package: trigger a
+  duplicate/reconcile path for an existing scheduled job and confirm the cron
+  duplicate is accepted as the same scheduled trigger rather than reported as a
+  handoff failure.
+
+## 2026-09-01 - Scheduled reconcile defect diagnosed and fixed locally
+
+- Clicking Reconcile on scheduled article `ROLE-03 Publisher-only` returned
+  `Only an article with an approved revision pointer can be published.`
+- Classification: recovery-path defect, not a failure of normal scheduled
+  publication. The earlier valid schedule test still reached the public frontend.
+- Cause: the Reconcile action routes through `publish_approved_article`. That
+  function accepted already-published idempotency and approved immediate
+  publishing, but rejected a `Scheduled` article before redelivering its existing
+  open schedule job.
+- Local fix: `creator/functions/publish_approved_article.deluge` now allows a
+  `Scheduled` article with an approved revision pointer and an open Schedule job
+  to call `handoff_publication_to_catalyst` for that existing job. It does not
+  create a duplicate publication job.
+- Retest needed after updating the live Creator function: click Reconcile once
+  on `ROLE-03 Publisher-only`. Expected result is either a safe
+  already-processing/accepted message or successful callback reconciliation, not
+  the approved-pointer guard error.
+
+## 2026-09-01 - Too-soon schedule prevention passed
+
+- The Schedule dialog for approved article `UAT-02 Changes Requested Flow — 31
+  Aug 2026` rejected `01/09/2026, 01:17 AM` because it was less than two minutes
+  ahead of the current time.
+- The user-facing validation message was `Scheduled publication must be at least
+  two minutes in the future.`
+- Result: too-soon schedule prevention passes; no publication handoff was
+  started for the invalid attempt.
+
+## 2026-09-01 - Valid scheduled publication reached public frontend
+
+- Anshika authored `SCHED-01 Too-soon Schedule Rejection`, ZTM/Admin approved it,
+  and the article was scheduled for `01 Sep, 01:11`.
+- This did not exercise the true too-soon rejection path because the selected
+  schedule was far enough ahead to be accepted. Treat the article title as a
+  misleading test label.
+- The row entered Processing and then appeared as Published in Creator with a
+  Retract action. The public frontend Insights listing also showed the article,
+  proving scheduled publication reached delivery.
+- Result: valid scheduled publication passes for this article. The genuine
+  under-two-minute rejection test remains pending.
+- Product-polish note: authored Approved items move out of active author work
+  toward publisher workflow. If the client expects newly approved authored work
+  or latest updates to surface more prominently per role, refine dashboard
+  sorting/discoverability before demo.
+
+## 2026-09-01 - ROLE-04 admin-only visibility passed
+
+- Harshuu was changed to include Editorial Admin, but the dashboard header still
+  showed active Publisher as well. Treat this as mixed admin/publisher evidence,
+  not clean admin-only verification.
+- In `All` scope, Harshuu could see broad supervisory data: 27 articles, 18
+  review items, queued reviews, active article work, publishing queue, and
+  published articles with Retract actions.
+- The scheduled `ROLE-03 Publisher-only` row remained visible as Scheduled for
+  `01 Sep, 01:55`.
+- Harshuu's Publisher role was then removed/expired. After refresh, the header
+  showed only `Editorial Admin`, and `All` scope still exposed broad
+  supervision: queued reviews, active article work, publishing queue, published
+  articles with Retract actions, retracted articles, and closed review history.
+- Result: non-owner admin-only visibility and supervision pass. The separate
+  Author-only, Reviewer-only, Publisher-only, and Editorial Admin role matrix is
+  now complete, while the wider integration remains unverified until scheduled
+  execution, remaining publishing edge cases, fresh DS audit, accessibility, and
+  scale checks pass.
+
+## 2026-09-01 - ROLE-03 publisher-only queue visibility in progress
+
+- Harshuu was adjusted from reviewer-only to active Publisher-only for the
+  publisher matrix test.
+- Anshika authored/submitted `ROLE-03 Publisher-only`, and ZTM/Admin approved it
+  so it was ready for publisher action.
+- Harshuu's Publisher-only dashboard showed zero review inbox items, zero active
+  article work, and no current review-history work. Under the default `Mine`
+  scope, the Publishing queue was empty because Harshuu does not own the article.
+- Switching to `Queue` scope and/or the `Publishing` tab exposed the approved
+  publishing queue with six ready items, including `ROLE-03 Publisher-only`, and
+  visible Publish/Schedule/Open actions.
+- Opening the approved article showed no claim/approve/request-changes/reject
+  controls. Harshuu then scheduled `ROLE-03 Publisher-only` for `01 Sep, 01:55`;
+  the publishing queue changed that row to `Scheduled` with no immediate
+  Publish/Schedule buttons on the row.
+- Follow-up clarification confirmed Harshuu could not edit the opened article or
+  persist content/metadata changes.
+- Result: publisher-only can see approved publishing work in the proper queue
+  scope, does not show reviewer/author work, cannot make review decisions,
+  cannot edit content, and can schedule approved work. Publisher-only permission
+  behavior passes. The timed schedule execution remains a separate publishing
+  workflow check.
+
+## 2026-09-01 - ROLE-02 author-only denial passed
+
+- Anshika Tyagi was adjusted to active Author-only for the negative role matrix.
+- Fresh article `ROLE-02 Author-only Denial — 01 Sep 2026` was created, saved,
+  given taxonomy/media content, and submitted for review. Creator reported
+  `Article submitted for review. 1 assignment created.`
+- After submission, the article moved to `In Review` and became read-only for
+  the author. The account showed no active claim/approve/request-changes/reject
+  controls and no usable Publish/Schedule/Retract actions.
+- Historical review-history cards from Anshika's earlier reviewer-role tests
+  remain visible as legacy records only; current active role evidence is
+  Author-only.
+- Result: author-only can create/save/submit owned work and cannot review or
+  publish. Permission behavior passes.
+
+## 2026-09-01 - ROLE-01 reviewer-only denial passed
+
+- Harshuu was adjusted away from mixed Reviewer+Publisher access for the
+  reviewer-only matrix test. Duplicate active Reviewer rows were removed before
+  the test run.
+- Fresh article `ROLE-01 Reviewer-only Denial` was submitted to Harshuu only.
+  The reviewer dashboard showed one assigned review, zero active articles, zero
+  history, and no article work.
+- The `New article` action was visible but disabled. The assigned submitted
+  article opened in `In Review`, with the article body and right-side metadata
+  non-editable and `Save draft` disabled.
+- Harshuu claimed the review and added `ROLE01-REVIEWER-CAN-COMMENT`, which
+  appeared in the article Review feedback panel and review dialog before any
+  approve/request-changes/reject decision.
+- Harshuu recorded a terminal approval decision. The reviewer-only dashboard then
+  showed zero inbox items, zero article work, the approved decision in Review
+  history, one `My approvals` count, and no usable Publish/Schedule/Retract
+  actions.
+- Result: reviewer-only can receive, claim, comment, and decide on assigned work,
+  but cannot author, save article edits, or publish. Permission behavior passes.
+- Product-polish note: the reviewer-only dashboard still shows a disabled `New
+  article` action. This is permission-safe, but hiding it may make the client
+  demo cleaner.
+
+## 2026-09-01 - UAT-02 Changes Requested N+1 loop passed
+
+- Piyush created fresh article `UAT-02B Changes Requested Flow — 01 Sep 2026`
+  and completed the real Request Changes branch with Anshika Tyagi as reviewer.
+- Anshika added a standalone discussion comment, entered a decision summary, and
+  selected Request changes. The decision closed into Review history as
+  `Changes Requested`.
+- The author account reopened the article in Changes Requested state and saw an
+  editable cloned Draft Revision 2 with the original Revision 1 content and media
+  still visible.
+- After the author edited and resubmitted, Anshika claimed/reviewed Revision 2
+  and requested changes again. The author account then saw the article back in
+  Changes Requested with editable Draft Revision 3 and both feedback cards
+  visible.
+- Functional result: multi-cycle Changes Requested, N+1 clone creation,
+  resubmission, feedback persistence, and media carry-forward pass.
+- Product-polish note: the Review feedback panel currently shows decision
+  summary, decision entry, and general comment as separate stacked text blocks
+  that look repetitive. Keep the data model intact, but improve labels/hierarchy
+  before client demo if time allows.
+- Overall integration status remains Unverified until the complete Development
+  matrix, fresh Creator DS export audit, and separate-role negative tests pass.
+
+## 2026-09-01 - UAT-02 setup reached Standard Review approval, not Changes Requested
+
+- Piyush created `UAT-02 Changes Requested Flow — 31 Aug 2026`, saved and
+  submitted it to Anshika Tyagi. The submission notification email arrived and
+  the article moved to In Review.
+- The submitted revision was non-editable in both the author and reviewer
+  sessions. Cover and inline media were visible in the separate reviewer
+  session. Anshika claimed the assignment successfully.
+- Anshika selected Approve. The article consequently moved to Approved and
+  appeared in the Publisher/Admin publishing queue, which is correct for the
+  Standard Review approval path.
+- The supplied review-dialog evidence showed `No comments yet` in Discussion;
+  the visible text was entered in Decision Summary. Standalone discussion-comment
+  persistence is therefore not yet proven by this packet.
+- Follow-up evidence confirmed the decision summary appears under the article's
+  Review feedback panel and in Anshika Tyagi's Review history/activity entry.
+  Decision-summary persistence and closed-review discoverability therefore pass
+  for the approval path.
+- Preserve this Approved article as positive Standard Review evidence. It cannot
+  complete the Changes Requested case; a fresh article must use Request changes,
+  verify immutable Revision 1 plus cloned Draft Revision 2, then resubmit.
+- Overall integration status remains Unverified.
+
+## 2026-08-31 - Fresh UAT media publication passed end to end
+
+- Piyush completed the clean `UAT-01 Complete Publishing Flow` author, save,
+  review, approval, and immediate-publish path without the prior media, taxonomy,
+  concurrency, or callback error recurring.
+- Creator reached `Published` at 23:34 IST and exposed the normal Retract action.
+  The Vercel Insights search displayed the article and its cover image.
+- The live Development detail API independently confirms publication
+  `pub_60c71fd69ef455df0e4605a6589321aecf50fe79`, pointer version 1, the final
+  Regulatory Affairs category, five tags, and two immutable media mappings.
+  Both inline and cover media have content-addressed Stratus object keys and
+  HTTPS public URLs, and the rendered HTML references the published media URL.
+- This fresh positive flow passes. The two older `Syncing` cards remain legacy
+  callback-recovery records and are not evidence of a UAT-01 failure. The overall
+  integration is still not marked verified until the remaining Development
+  matrix, fresh Creator DS export audit, and separate-role negative tests pass.
+
+## 2026-08-31 - Creator media callback JSON decoding defect isolated
+
+- Re-read the live immutable public object for `dekhti hai yeh nighaeen` and
+  confirmed that both published media mappings contain the required stable media
+  UUID, Creator record ID, checksum, immutable object key, and HTTPS URL.
+- Isolated the remaining Creator rejection to Deluge parsing: `toJSONList()`
+  yields JSON values, but the callback used ordinary map `get()` for each item.
+  Zoho's supported JSON-list pattern reads those values with `getJSON()`.
+- Updated `record_catalyst_publication_result` to use `getJSON()` for every media
+  callback field while retaining UUID-first Creator record resolution. Catalyst's
+  complete 30-test regression suite remains green and `git diff --check` passes.
+- The installed Creator callback function must be updated once, followed by one
+  idempotent `Reconcile` of job `471741000000063130`. Do not create or republish
+  another article for this recovery check.
+- Piyush pasted the updated callback exactly (294/294 lines) and the reconciled
+  articles moved from `Needs retry` into `Published articles`, proving Creator
+  applied the success callback. The remaining `processing the retraction` text
+  was a dashboard classification defect: every active job attached to a
+  Published article was described as a retraction regardless of its Action.
+- The dashboard now chooses the newest active job for each article and labels
+  only `Unpublish` as `Retracting`; a residual Publish/Schedule confirmation is
+  shown as `Syncing`. Typecheck, production build, ZET validation, packaging,
+  and archive integrity pass. The updated `zet.zip` SHA-256 is
+  `3fee7b34c1ef7034601b98d0f0e028efc00f1f2b887f8bec35d8dee421a08c9b`.
+
+## 2026-08-31 - Callback recovery deployed and dashboard reconciliation packaged
+
+- Confirmed the Development health endpoint is serving AppSail `0.4.1`.
+- Re-ran the focused Catalyst suite after deployment preparation: all 30 tests
+  pass, including verified media promotion and dead-letter callback replay
+  without a second version or pointer advance.
+- Confirmed the live public index still contains one publication for `dekhti hai
+  yeh nighaeen`, with the same publication ID, final category, four tags, and
+  immutable featured-media URL. `testing image 5` is likewise publicly
+  published while its Creator callback status remains unreconciled.
+- Changed the Publisher dashboard to distinguish Ready, Processing, and
+  Processing-over-five-minutes states. A stale item now shows `Needs retry` and
+  offers a safe `Reconcile` action that redelivers the existing Creator job and
+  idempotency key instead of creating another publication.
+- Rebuilt, ZET-validated, and packed `editor-widget/zet/dist/zet.zip`; archive
+  integrity passed and SHA-256 is
+  `8c50bf7ee6b00272317e58fda84fd6c04e693f511ae84d5a9e7bc60527b876bb`.
+- The existing job `471741000000063130` must still be replayed once and observed
+  as Creator Succeeded / callback Delivered before this callback case passes.
+
+## 2026-08-31 - Full image/taxonomy/review publication passed; callback evidence pending
+
+- Fresh article `ART-dc7ce0522b7275a39a5421a0f7c47d56` passed recovery,
+  inline and cover media persistence, multiple sequential body/taxonomy saves,
+  claimed cross-account review with comment, approval, and immediate Publish.
+- Creator accepted the handoff at 15:22:06 IST. AppSail `0.4.0` published the
+  exact revision into the maintained public index at 15:22:08.046 IST with its
+  final category, four tags, immutable content, and content-addressed featured
+  media.
+- The live Vercel article route returned HTTP 200 and rendered the final content.
+  Catalyst's 29-test regression suite remains green.
+- Creator was observed retaining `Processing`/HTTP 202 after the public commit.
+  The publication worker is therefore not stuck; inspect the matching
+  `GD_Callback_Outbox` row and refresh Creator before classifying the remaining
+  issue as callback retry/failure or stale UI state.
+- Do not mark the integration verified: final callback evidence, the rest of the
+  Development matrix, a fresh Creator DS audit, and separate-role negative tests
+  remain required.
+
+## 2026-08-31 - Media success callback dead letter diagnosed and recovery prepared
+
+- Catalyst callback `callback_b531d3e9f0295fafe7f4b571162d4a1d805a0957`
+  dead-lettered after eight Creator rejections with `Published media callback
+  contains an invalid mapping`, explaining the stale Creator Processing state.
+- The immutable publication contains two complete valid media mappings. Changed
+  Creator callback application to resolve each mapping by stable `Media_UUID`;
+  nested `creatorRecordId` is now only an optional lookup optimization.
+- Added terminal-callback self-healing to AppSail: a duplicate handoff for an
+  already Succeeded/Failed request reopens its existing dead-letter callback and
+  redelivers it, without republishing or advancing the pointer.
+- Extended the safe Creator reconciliation sweep to redeliver Processing jobs
+  older than five minutes using the same idempotency key.
+- AppSail version `0.4.1` passes 30 tests including exact dead-letter replay and
+  single-version/single-pointer assertions. Package
+  `genedrift-catalyst-appsail-dev-v0.4.1.zip` has SHA-256
+  `1d4b35fdded678f36651678ea3d5244775e434f504e4965ebe8a4b971b987b9a`.
+- Deploy the three Creator functions and AppSail package, then redeliver the
+  existing Processing job. Do not create a new article until Creator reaches
+  Succeeded and the existing callback reaches Delivered.
+
 ## 2026-08-30 - Maintained public index and scale-test tooling implemented locally
 
 - Created the repository's first preservation checkpoint, commit `da11492`,
@@ -26,7 +565,9 @@
 - Opened the signed-in Creator Application IDE and located its DS Export action,
   but the browser did not produce a saved file. A fresh DS audit therefore
   remains pending. The app-access view also did not provide separate Publisher
-  and Admin test identities, so the negative role matrix remains pending.
+  and Admin test identities, so the negative role matrix remained pending at
+  this checkpoint. Later 2026-09-01 visual separate-role checks passed; direct
+  API/security evidence remains open.
 - Captured a complete positive Creator audit loop for
   `ART-022254fb3b8ade6547c08e54b3c79187`: Catalyst Published at 23:49:05 and
   Catalyst Retracted at 23:49:44 on 2026-08-29, including retraction job
@@ -63,7 +604,9 @@
   Next.js frontend.
 - Added the Vercel/client migration guide and pre-client demo/scale test plan to
   the mandatory new-task reading order. Development remains unverified until the
-  complete matrix, fresh Creator DS audit, and negative role tests pass.
+  complete matrix, fresh Creator DS audit, and then-pending role tests passed.
+  Later 2026-09-01 visual separate-role checks passed; direct API/security
+  evidence remains open.
 
 ## 2026-08-29 - Vercel hosting and client migration runbook added
 
@@ -148,8 +691,10 @@
   update time. Manual Refresh remains available and automatic failures retain
   the current dashboard while retrying later.
 - Typecheck, production build, ZET validation/pack, and ZIP integrity pass.
-  Upload `editor-widget/zet/dist/zet.zip`; SHA-256
+  Historical upload artifact SHA-256:
   `ca2dad31734250c40a2b540d3f78b72b4b8a19f86175e7f61833516fff4dbf1b`.
+  This is superseded by 2026-09-01 widget
+  `genedrift-editor-widget-final-polish-v0.4.5.zip`.
 - The package was uploaded and the complete live workflow was exercised in
   Creator. State changes appeared automatically without manual Refresh; the
   adaptive dashboard update behavior is live verified.
@@ -524,7 +1069,9 @@
 - No live state was changed. The request row's `Status`, `Snapshot_Object_ID`,
   `Request_ID`, `Last_Error_Code`, and `Last_Error_Message` remain the next
   mandatory evidence. The integration remains unverified, and the Development
-  matrix, fresh Creator DS export, and negative role tests remain outstanding.
+  matrix, fresh Creator DS export, and role tests were outstanding at this
+  historical checkpoint. Later 2026-09-01 visual separate-role checks passed;
+  direct API/security evidence remains open.
 - The operator subsequently supplied the row. It is `Queued`, has the expected
   immutable `Snapshot_Object_ID`, has `Attempt_Count = 0`, and has no stored
   error. This proves the Data Store attachment succeeded and narrows the live
@@ -1087,3 +1634,266 @@
   test, and controlled publication-workflow throughput test. Recorded that the
   maintained public index is required before claiming a credible large-catalog
   Catalyst benchmark; the current public API still scans all pointer objects.
+
+## 2026-08-31
+
+- Diagnosed the live inline-image disappearance as an expiring Creator preview
+  source: the media node remained and displayed alt text, but the widget copied
+  a host-owned `setImageData` source from a temporary image into TipTap.
+- Changed Creator media hydration to prefer `FILE.readFile` bytes and generate a
+  widget-owned object URL, with nested host-response handling and `setImageData`
+  retained only as a compatibility fallback. Newly uploaded images also use a
+  separate widget-owned preview during the first autosave.
+- TypeScript, production build, ZET validation, ZIP archive integrity, and all 29
+  Catalyst publication/media tests pass. Repacked
+  `editor-widget/zet/dist/zet.zip`; SHA-256
+  `cabb80d71ef1b73ae84a4156c166a491673b5820897db9ca8a36e3b5972fe811`.
+- Live widget replacement and manual wait/save/reload verification remain pending;
+  the integration is not marked verified.
+- Confirmed live that the next cover and inline uploads created valid Media Library
+  rows; image permissions and storage succeeded. The revision save instead failed
+  on the widget's stale-version guard, leaving the server revision blank.
+- Added bounded save-precondition consistency reads so Creator's temporarily stale
+  report state cannot turn sequential same-session media edits into a false
+  multi-tab conflict. Genuine divergent checksums/tokens remain blocked.
+- Rebuilt and ZET-validated the widget. Current package SHA-256 is
+  `7f7a6f4dd57f6f744113e57248b0724b7bda631b058bfa95c52185c7a57fd783`.
+- The next live test reached `Saved`, but both the saved cover and inline image
+  rehydrated as broken image boxes. This narrowed the remaining defect to the
+  widget decoding Creator's post-save file response, not storage or saving.
+- Updated Creator image hydration to recognize SDK API file paths and nested URL
+  wrappers, resolve Creator-protected image sources through `UTIL.setImageData`,
+  and retain a widget-owned Blob URL when the resolved source can be read.
+- TypeScript, production build, ZET validation, packaging, and ZIP integrity pass.
+  Current `editor-widget/zet/dist/zet.zip` SHA-256 is
+  `413927f23f6dc6802f6c9e83b9cc531a67caf5a45b6ef285816b1ca322bf8870`.
+  Live wait/save/reload confirmation remains required; integration is unverified.
+- Cross-browser Safari and Arc testing showed the stored image still failed after
+  the local preview and confirmed the defect is not browser cache. Arc's separate
+  stale-session warning cleared on hard reload; the image failure remained.
+- Replaced copied temporary Creator preview URLs with protected-source markers.
+  Cover, media-dialog, and TipTap node-view images now give their actual DOM image
+  element to Creator SDK `UTIL.setImageData` after every render and reload.
+- TypeScript, production build, ZET validation, bundle inspection, packaging, ZIP
+  integrity, and `git diff --check` pass. Current package SHA-256 is
+  `7539085845948824a40cad45bcce1d978367ad21c5236154405a9fc6e366eb5f`.
+  Live media persistence verification remains pending; integration is unverified.
+- The next live test confirmed the cover survives autosave but the inline image
+  disappears at the autosave transition. Creator media retrieval therefore passes;
+  the remaining failure was isolated to TipTap's inline node lifecycle.
+- Replaced the imperative inline media node with a React node view so Creator's
+  protected image loader runs after the final editor image element is mounted.
+- TypeScript, production build, ZET validation, packaging, and ZIP integrity pass.
+  Current package SHA-256 is
+  `af854c48fd03dd6ec0da7f0b951e4c53fe791324b7ce95aac95f4f55eebc4c67`.
+  Live inline autosave/reload verification remains pending; integration is unverified.
+- The mounted inline node still failed after autosave while the cover continued
+  to pass. The remaining difference was the media lookup response: inline `MED-*`
+  UUIDs used a list query, while the cover used a full record-by-ID response.
+- Inline UUID resolution now re-fetches the matched Creator record by ID before
+  resolving `Draft_File`, making inline and cover retrieval identical.
+- TypeScript, production build, ZET validation, packaging, ZIP integrity, and
+  `git diff --check` pass. Current package SHA-256 is
+  `fd7cc1bf5623590097076ac65181d348e0396e0498a5a9e062ce3050c6e4e673`.
+  Live inline autosave/reload verification remains pending; integration is unverified.
+- The follow-up made the remaining timing boundary explicit: immediately after
+  upload, the new media row is available by Creator record ID before a `MED-*`
+  report criteria query is guaranteed to expose it.
+- Inline media nodes now retain both the portable UUID and Creator record ID. The
+  editor hydrates by direct record ID on the first autosave; publication continues
+  to persist and validate only the portable media UUID.
+- TypeScript, production build, ZET validation, packaging, ZIP integrity, and
+  `git diff --check` pass. Current package SHA-256 is
+  `35100750e0f85eaa709350993608984ce6c1485b3fb38a69b9a10ddd54ce38dd`.
+  Fresh inline autosave/reload verification remains pending; integration is unverified.
+- Live inline autosave now functionally passes: the image briefly blinked while
+  switching from the local preview to Creator's protected source, then returned
+  and remained visible in the Saved state. Reload persistence is still required;
+  the momentary autosave flicker is retained as a UI-polish defect.
+- Cross-account reload now passes in Anshika Tyagi's Reviewer session: the article
+  entered In Review and both inline and cover media loaded from Creator. Media
+  persistence is functionally passed. The initial missing-image/blink remains a
+  tracked loading-state polish item; overall integration remains unverified.
+- Diagnosed the later `draft metadata changed` save failure with a read-only live
+  record audit. The server still held the complete 2,051-word Draft, media, SEO,
+  and checksum; the new excerpt alone remained in local recovery. A separate
+  account merely viewing the article did not cause the conflict.
+- Replaced the save precondition's all-or-nothing metadata comparison with a
+  three-way merge. Non-overlapping metadata propagation is accepted, while body,
+  media, workflow-state, and same-field divergent edits retain strict conflict
+  protection. Publishing and media code paths were not changed.
+- TypeScript, production build, ZET validation, packaging, bundle inspection,
+  ZIP integrity, and `git diff --check` pass. Current package SHA-256 is
+  `cfae8494d8d848937af7920f16402a4a34372c0c96c4fe1ff9e2183e95743b13`.
+  Live replacement and recovery/save confirmation remain pending; integration is
+  unverified.
+- Live inspection confirmed the later category/tag error was another false
+  negative: Creator stored Industry and Market Insights, Cosmetics and Dossiers
+  even though widget readback reported failure. The first correction used the
+  REST API's documented comma-separated multi-select value and allowed an
+  omitted Tags readback after a successful update.
+- Widened the desktop writing surface, reduced unused canvas padding, narrowed
+  the inspector slightly and allowed toolbar groups to wrap instead of clipping.
+  Local visual verification at 1280px displayed the entire formatting toolbar.
+- TypeScript, production build, ZET validation, packaging, ZIP integrity, and
+  `git diff --check` pass. Current package SHA-256 is
+  `b6f5d9b24c3e2a31f1eb41c050983d6277d739daf16d3d9cab7f4da5b6e51ba0`.
+  Live taxonomy save/reload and embedded-layout confirmation remain pending;
+  integration is unverified.
+- Live embedded-widget testing rejected that REST-style tag payload with code
+  3001. Restored the ID-array value already proven by the current Widget SDK.
+- Decoupled taxonomy from routine revision autosaves. Body, excerpt, SEO and
+  media still autosave, while category and tags are written only when the user
+  actually changes them. Failed taxonomy saves remain dirty and retryable, and
+  local recovery retains taxonomy selections.
+- TypeScript, production build, ZET validation, packaging, ZIP integrity, and
+  `git diff --check` pass. Current package SHA-256 is
+  `7d3f090566140f48444f63d0afcbfdfa58097518cff9f678209c7d9b0d8006e9`.
+  Live taxonomy save/reload confirmation remains pending; integration is
+  unverified.
+
+## 2026-09-01
+
+- Completed and deployed the public website revamp checkpoint to the existing
+  Vercel project `genedrift-vercel-preview-0.4`. Stable live alias:
+  `https://genedrift-vercel-preview-04.vercel.app`; deployment ID:
+  `dpl_2XJVNVS1f34WSebPsGs6RkW9o6fc`.
+- Recovered Vercel dashboard context for future handoff: account
+  `opensourceindia22-8134` / `opensourceindia22@gmail.com`, team slug `ztm2`,
+  team ID `team_8OHZR3PCWIiPgfRTWDp7crr8`, project ID
+  `prj_Nz73OBb1V6bZBIV6W6Qdjj2S2gpG`.
+- Confirmed the Vercel project is not connected to Git. The latest deploy was a
+  direct CLI production deploy to the existing project. A temporary one-hour
+  project-scoped token was created, used, revoked in Vercel, and removed from
+  local temporary storage.
+- Fixed the Vercel production build by removing `output: "standalone"` from
+  `frontend/next.config.ts`; Vercel's managed Next.js build expected the standard
+  output layout and had failed with missing `.next/next-server.js.nft.json`.
+  Committed this as `cdea0c0 Fix Vercel frontend deployment config`; the public
+  revamp commit immediately before it is `a55a727 Revamp GeneDrift public
+  website frontend`.
+- Post-deploy live checks passed for `/`, `/insights`, and one article detail
+  route. The pages rendered the new design/content and had no browser console
+  warnings/errors in the checked browser session.
+- Continued Phase 1 release-closure testing against the live Creator/Catalyst/
+  Vercel setup. Core blog product behavior is now functionally strong, but the
+  final release claim still requires fresh Creator DS audit, duplicate/
+  idempotency evidence, media-format validation, accessibility/public-site QA,
+  and measured 1,800-post scale evidence.
+- Completed separate-role visual checks for Author-only, Reviewer-only,
+  Publisher-only, and Editorial Admin configurations. Inapplicable actions were
+  unavailable; publisher/admin views exposed publishing work correctly; authors
+  did not receive review or publishing controls after submission.
+- Verified too-soon schedule validation: attempts less than two minutes in the
+  future are rejected with a clear error and do not start publication.
+- Verified a valid scheduled publication path using
+  `SCHED-01 Too-soon Schedule Rejection` at `01 Sep, 01:11`; despite the title,
+  the selected time was valid. The article processed, became Published, and
+  appeared on the public frontend.
+- Diagnosed the stale scheduled-reconcile path from `ROLE-03 Publisher-only`.
+  The first live Reconcile attempt hit the approved-revision-pointer guard; the
+  next attempt exposed duplicate cron-name handling. Fixes were prepared so a
+  Scheduled article with an approved pointer and existing open Schedule job can
+  redeliver the same handoff, and duplicate scheduled cron creation is treated
+  idempotently for the same generated cron name.
+- Deployed/tested the corrected scheduled path with
+  `RETRY-02 Scheduled Reconcile — 01 Sep 2026`. The article showed Scheduled
+  before its due time, published at `01 Sep, 06:04`, appeared in the Published
+  panel and public frontend, then was retracted with reason
+  `testing retraction`.
+- Verified public retraction behavior visually: the retracted article disappeared
+  from public listing/search and its former detail route showed
+  `This article has been retracted` with the supplied reason and a browse-current
+  action instead of serving the article body. Creator retained the
+  Unpublished/Retracted record and immutable-publication wording.
+- Verified stale author-edit guard visually using
+  `SAFETY-01 Stale Approval Guard — 01 Sep 2026`. After submission, the author
+  context was read-only and Save Draft was unusable. After approval/publish, the
+  public route served the approved content.
+- Added dashboard workflow ownership traces so rows can show who wrote,
+  approved, scheduled, published, or retracted an article even when approval or
+  rejection comments are blank.
+- Applied final dashboard polish using the requested palette: dark deep purple
+  `#241653`, primary purple `#5B3FD2`, light lavender `#F0EEFB`, white,
+  dark/dark-grey text, and very light neutral surfaces. Ownership traces were
+  softened from bulky pills to quieter inline metadata. Scheduled rows now show
+  scheduled date/time in general article lists; Approved rows explain they are
+  waiting for publisher action; dense laptop-width row spacing was tightened.
+- Final widget artifact:
+  `genedrift-editor-widget-final-polish-v0.4.5.zip`, SHA-256
+  `1210fe55854a2aba1ebffa403c8c87e8a5097ea641e2d17ecbacb0bff0fae8ab`.
+  TypeScript, production build, ZET pack, and ZIP integrity passed.
+- Latest AppSail artifact present:
+  `genedrift-catalyst-appsail-dev-v0.4.2.zip`, SHA-256
+  `1834f1924a953c21919d242e79f1d0bdaf847bd3abe35415697dd829afc9c3ff`.
+- Added `docs/CURRENT_CHECKPOINT_2026-09-01.md` as the new first-read checkpoint
+  for fresh chats. Updated resume/status/release-closure/pre-client docs to
+  point at it and record the latest artifact hashes, tested behavior, remaining
+  release gates, and Phase 2 boundary.
+- Received the client's Phase 2 website-revamp email and attachments:
+  `Genedrift Final Sitemap Vendor Development Brief.docx`,
+  `Genedrift LF20 Website Design Philosophy 2 (1).pdf`, and
+  `Genedrift Presentation.pdf`.
+- Extracted the durable Phase 2 requirements into
+  `docs/PHASE_2_WEBSITE_REVAMP_CLIENT_BASELINE.md`. Key baseline: bottom-up
+  enterprise website rebuild, not current-site reskin; nine-pillar IA of Home,
+  Explore, Expertise, Markets, Knowledge Hub, Client Success, Company, Careers,
+  Contact; LF20 visual system is the design source of truth; avoid generic stock
+  imagery; prepare three initial design/template concepts before full website
+  development.
+- Captured the production architecture interpretation for client-editable
+  website content: Creator remains the CMS/editorial workspace, Catalyst remains
+  the approved public content/version/API layer, and Vercel/Next.js remains the
+  public presentation layer. Public visitors should not read directly from
+  Creator; Phase 2 should extend the already-proven Insights publishing model to
+  homepage, expertise, market, company, client-success, careers and other page
+  families.
+- Diagnosed and fixed the v0.5.4 author-input preservation defect found during
+  manual Creator testing on 2026-09-05. The server-side taxonomy and media
+  metadata functions used `replaceAll("[[:space:]]+"," ")`, which Zoho Deluge
+  treated in a way that removed letters such as `s`, `a`, and `e` from category
+  names, tag names, and image alt text. Updated
+  `create_editorial_taxonomy_term` and `update_media_metadata` to preserve
+  entered display text with only edge trimming, aligned the mock repository, and
+  added widget-side verification that saved image alt text and Caption are
+  returned and readable after metadata updates.
+- Packaged
+  `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.5-input-preserve.zip`,
+  SHA-256
+  `c30186d81ff2d14558df67afb0de0864e9a5ce424aa784670305c03811ee77fe`.
+  Typecheck, production build, ZET validation, and ZET packing passed. Live
+  Creator upload/function replacement is still pending.
+- The user then installed/tested the v0.5.5 function/widget changes manually and
+  shared screenshots showing clean taxonomy preservation, cover alt text and
+  edited Caption readback, inline image Caption readback, Saved state, and
+  submit-for-review retention for `SMOKE v0.5.5 Input Preserve Final Test`.
+- Added v0.5.6 publishing-notification polish: dashboard publish, schedule,
+  retry, retraction, and in-workspace publish outcomes now render as floating
+  notices with a Publishing dashboard action, while ordinary editor notices stay
+  inline. Packaged
+  `editor-widget/genedrift-editor-widget-workflow-polish-v0.5.6-floating-publishing-notice.zip`,
+  SHA-256
+  `2ed7f79bcfd2670266501b695fef13f6d9c43de69e4d787739184c1eaafd1561`.
+  Typecheck, production build, ZET validation, and ZET packing passed; live
+  upload and publish-message verification are still pending.
+- Updated the project handoff context for the Phase 2 transition. Phase 1
+  Article Workflow Platform is now treated as completed/shared and in
+  support/testing mode, with v0.5.5 input preservation visually verified and
+  v0.5.6 prepared. The forward project focus is Phase 2 Website Design
+  Confirmation: prepare three website template/design concepts, compare them
+  against the LF20 design philosophy and current staging references, get client
+  direction, then proceed to the full Next.js frontend rebuild after approval.
+# 2026-09-05 — Creator refreshed-article support package v0.5.7
+
+- Reproduced the intermittent article-refresh failure in live Creator. An
+  expired Creator session first produced HTTP 401 / code 2945 / Z223 responses;
+  after a fresh login, the shortened `#Article_Workspace?...` route could still
+  strand Creator's live-page loader while `#Page:Article_Workspace?...`
+  successfully reconstructed the article after refresh.
+- Changed dashboard and article navigation to Creator's explicit `#Page:` URL
+  form. Added a no-op callback to `UTIL.setImageData` because the current V2 SDK
+  invokes the documented-optional callback on some protected-image failures.
+- TypeScript, production build, and ZET validation pass. Packaged
+  `editor-widget/genedrift-editor-widget-support-v0.5.7-refresh-route.zip` with
+  SHA-256 `4868fce60fc067539e44ccca0418289f3ec36a3b62c9dd976ac5b9d180f30df3`.
+- Live upload and manual refresh verification remain pending.

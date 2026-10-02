@@ -2,6 +2,7 @@ type ZohoResponse<T> = {
   code: number
   data: T
   message?: string
+  record_cursor?: string
 }
 
 type ZohoCustomApiResponse = {

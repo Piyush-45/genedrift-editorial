@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   AlertCircle,
+  ArchiveRestore,
   ArrowLeft,
   CalendarClock,
   Check,
@@ -23,18 +24,38 @@ import {
   Search,
   Send,
   ShieldCheck,
+  SlidersHorizontal,
+  Trash2,
   X,
 } from 'lucide-react'
-import type { Article, AuditEvent, CurrentEmployee, DashboardData, MediaAsset, MediaMetadata, ReviewAssignment, Revision, SaveRevisionInput, WorkspaceData } from './domain'
+import type { Article, AuditEvent, CurrentEmployee, DashboardData, LookupValue, MediaAsset, MediaMetadata, PublicationJob, ReviewAssignment, ReviewComment, ReviewFeedback, Revision, SaveRevisionInput, TaxonomyKind, WorkspaceData } from './domain'
 import { ArticleEditor } from './components/ArticleEditor'
 import { Inspector } from './components/Inspector'
+import { DialogFrame } from './components/DialogFrame'
 import { SubmitReviewDialog } from './components/SubmitReviewDialog'
 import { ReviewActionDialog } from './components/ReviewActionDialog'
 import { createRepository } from './repository'
 import { canonicalizeMedia } from './media'
-import { errorMessage, metricsFor, slugify } from './utils'
+import { createRecoveryStorage, parseRecovery } from './recovery'
+import { documentText, errorMessage, formatProductTimestamp, formatRefreshTimestamp, metricsFor, parseProductTimestamp, slugify } from './utils'
 
 type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+type ActionOutcome = {
+  title: string
+  message: string
+  dashboardLabel: string
+  floating?: boolean
+  nextReview?: { articleId: string; revisionId: string }
+}
+
+type FloatingNoticeState = {
+  id: number
+  tone: 'success' | 'error'
+  title: string
+  message: string
+  actionLabel?: string
+  onAction?: () => void
+}
 
 const repository = createRepository()
 
@@ -42,7 +63,7 @@ function recoveryKey(revisionId: string) {
   return `genedrift:recovery:${revisionId}`
 }
 
-function saveInput(revision: Revision): SaveRevisionInput {
+function saveInput(revision: Revision, article?: Article, saveTaxonomy = false): SaveRevisionInput {
   return {
     id: revision.id,
     title: revision.title,
@@ -57,17 +78,24 @@ function saveInput(revision: Revision): SaveRevisionInput {
     document: canonicalizeMedia(revision.document),
     expectedChecksum: revision.checksum || '',
     expectedVersionToken: revision.versionToken,
+    primaryCategoryId: article?.primaryCategory?.ID,
+    tagIds: article?.tags.map((tag) => tag.ID).filter(Boolean) || [],
+    saveTaxonomy,
   }
 }
 
 const CLOSED_ASSIGNMENT_STATES = new Set<ReviewAssignment['status']>(['Approved', 'Changes Requested', 'Rejected', 'Cancelled'])
 const ACTIVE_ASSIGNMENT_STATES = new Set<ReviewAssignment['status']>(['Queued', 'Assigned', 'Claimed'])
 const WORKING_ARTICLE_STATES = new Set(['Draft', 'Changes Requested', 'In Review'])
-const CREATOR_APP_URL = 'https://creatorapp.zoho.in/opensourceindia22/genedrift-editorial-platform/'
+const CREATOR_APP_SLUG = 'genedrift-editorial-platform'
+const ACTIVE_PUBLICATION_REFRESH_MS = 30_000
+const IDLE_DASHBOARD_REFRESH_MS = 60_000
+const RESET_TEST_CONTENT_CONFIRMATION = 'RESET TEST CONTENT'
 
-type DashboardStateFilter = 'all' | 'draft' | 'in-review' | 'changes-requested' | 'approved' | 'scheduled' | 'published' | 'unpublished' | 'queued' | 'assigned' | 'claimed' | 'closed'
-type DashboardView = 'all' | 'articles' | 'reviews' | 'publishing'
+type DashboardStateFilter = 'all' | 'draft' | 'in-review' | 'changes-requested' | 'approved' | 'scheduled' | 'published' | 'unpublished' | 'archived' | 'queued' | 'assigned' | 'claimed' | 'closed'
+type DashboardView = 'all' | 'articles' | 'reviews' | 'publishing' | 'archive'
 type DashboardSort = 'recent' | 'title' | 'state'
+type DashboardDateFilter = 'all' | 'today' | 'week'
 
 const DASHBOARD_STATE_OPTIONS: Record<DashboardView, Array<{ value: DashboardStateFilter; label: string }>> = {
   all: [
@@ -109,6 +137,9 @@ const DASHBOARD_STATE_OPTIONS: Record<DashboardView, Array<{ value: DashboardSta
     { value: 'published', label: 'Published' },
     { value: 'unpublished', label: 'Unpublished' },
   ],
+  archive: [
+    { value: 'archived', label: 'Trash' },
+  ],
 }
 
 function displayLookup(value?: { zc_display_value?: string; display_value?: string }) {
@@ -125,24 +156,19 @@ function initials(name?: string) {
 }
 
 function formatShortDate(value?: string) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat(undefined, {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  return formatProductTimestamp(value)
+}
+
+function formatDashboardDateTime(value?: string) {
+  return formatProductTimestamp(value)
 }
 
 function formatClockTime(value?: number) {
-  if (!value) return 'just now'
-  return new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(new Date(value))
+  return formatRefreshTimestamp(value)
+}
+
+function formatRefreshInterval(value: number) {
+  return value >= 60_000 ? `${Math.round(value / 60_000)}m` : `${Math.round(value / 1000)}s`
 }
 
 function formatDateTimeLocal(date: Date) {
@@ -151,12 +177,7 @@ function formatDateTimeLocal(date: Date) {
 }
 
 function timestampValue(value?: string) {
-  if (!value) return 0
-  const direct = Date.parse(value)
-  if (!Number.isNaN(direct)) return direct
-  const normalized = value.replace(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/, '$1 $2 $3')
-  const fallback = Date.parse(normalized)
-  return Number.isNaN(fallback) ? 0 : fallback
+  return parseProductTimestamp(value)
 }
 
 function latestAssignmentTime(assignment: ReviewAssignment) {
@@ -174,14 +195,24 @@ function activeReviewAssignment(assignment: ReviewAssignment, article?: Article)
 }
 
 function creatorParentBaseUrl() {
-  const referrer = document.referrer
-  if (referrer.includes('/opensourceindia22/genedrift-editorial-platform/')) {
-    return referrer.split('#')[0]
+  for (const candidate of [document.referrer, window.location.href]) {
+    try {
+      const url = new URL(candidate)
+      const segments = url.pathname.split('/').filter(Boolean)
+      const appIndex = segments.indexOf(CREATOR_APP_SLUG)
+      if (appIndex >= 0) {
+        return `${url.origin}/${segments.slice(0, appIndex + 1).join('/')}/`
+      }
+    } catch {
+      // Try the next possible Creator URL source.
+    }
   }
-  if (window.location.href.includes('/opensourceindia22/genedrift-editorial-platform/')) {
-    return window.location.href.split('#')[0]
-  }
-  return CREATOR_APP_URL
+  return undefined
+}
+
+function creatorNavigationUrl(fragment: string) {
+  const baseUrl = creatorParentBaseUrl()
+  return baseUrl ? `${baseUrl}${fragment}` : fragment
 }
 
 function navigateParent(url: string) {
@@ -200,7 +231,7 @@ function navigateParent(url: string) {
 function openWorkspaceArticle(articleId: string, revisionId?: string) {
   const revisionQuery = revisionId ? `&revisionId=${encodeURIComponent(revisionId)}` : ''
   if (repository.source === 'creator') {
-    navigateParent(`${creatorParentBaseUrl()}#Page:Article_Workspace?articleId=${encodeURIComponent(articleId)}${revisionQuery}`)
+    navigateParent(creatorNavigationUrl(`#Page:Article_Workspace?articleId=${encodeURIComponent(articleId)}${revisionQuery}`))
     return
   }
   window.location.href = `${window.location.pathname}?articleId=${encodeURIComponent(articleId)}${revisionQuery}`
@@ -208,16 +239,34 @@ function openWorkspaceArticle(articleId: string, revisionId?: string) {
 
 function openNewArticleForm() {
   if (repository.source === 'creator') {
-    navigateParent(`${creatorParentBaseUrl()}#Form:Articles`)
+    navigateParent(creatorNavigationUrl('#Form:Articles'))
     return
   }
   window.location.reload()
 }
 
+function openDashboard() {
+  if (repository.source === 'creator') {
+    navigateParent(creatorNavigationUrl('#Page:Article_Workspace'))
+    return
+  }
+  window.location.href = window.location.pathname
+}
+
 function defaultApprovalPolicyId(data: DashboardData) {
-  return data.approvalPolicies.find((policy) => displayLookup(policy) === 'Standard Review')?.ID
+  return data.approvalPolicies.find((policy) => policy.isDefault)?.ID
+    || data.approvalPolicies.find((policy) => displayLookup(policy) === 'Standard Review')?.ID
     || data.approvalPolicies[0]?.ID
     || ''
+}
+
+function approvalPolicySummary(data: DashboardData, policyId: string) {
+  const policy = data.approvalPolicies.find((item) => item.ID === policyId)
+  if (!policy) return ''
+  const approvals = policy.requiredApprovals > 0
+    ? `${policy.requiredApprovals} distinct approval${policy.requiredApprovals === 1 ? '' : 's'}`
+    : ''
+  return [approvals, policy.description].filter(Boolean).join(' · ')
 }
 
 function StatusPill({ state }: { state: string }) {
@@ -294,6 +343,191 @@ function assignmentMatchesFilter(assignment: ReviewAssignment, article: Article 
   return stateMatches && queryMatches
 }
 
+function latestArticleEvent(article: Article, auditEvents: AuditEvent[], eventTypes: string[]) {
+  const wanted = new Set(eventTypes.map((eventType) => eventType.toLowerCase()))
+  return auditEvents
+    .filter((event) => event.entityUuid === article.uuid && wanted.has(event.eventType.toLowerCase()))
+    .sort((a, b) => timestampValue(b.occurredAt) - timestampValue(a.occurredAt))[0]
+}
+
+function approvedReviewerNames(article: Article, assignments: ReviewAssignment[]) {
+  const names = assignments
+    .filter((assignment) => assignment.articleId === article.id && assignment.status === 'Approved')
+    .sort((a, b) => timestampValue(b.decidedAt) - timestampValue(a.decidedAt))
+    .map((assignment) => assignment.reviewerName || 'Reviewer')
+    .filter(Boolean)
+  return Array.from(new Set(names))
+}
+
+function compactText(value?: string) {
+  return (value || '').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+function visibleFeedbackComments(entry: { reviewerName: string; decisionSummary: string; comments: ReviewComment[] }) {
+  const summary = compactText(entry.decisionSummary)
+  if (!summary) return entry.comments.filter((comment) => compactText(comment.body))
+  return entry.comments.filter((comment) => {
+    const body = compactText(comment.body)
+    if (!body) return false
+    const sameAuthor = compactText(comment.authorName) === compactText(entry.reviewerName)
+    const sameDecisionNote = body === summary && (sameAuthor || comment.type === 'Change Request')
+    return !sameDecisionNote
+  })
+}
+
+function reviewFeedbackHasVisibleContent(entry: ReviewFeedback) {
+  return Boolean(compactText(entry.decisionSummary) || visibleFeedbackComments(entry).length)
+}
+
+function readinessMissing(article: Article, revision: Revision) {
+  const category = displayLookup(article.primaryCategory)
+  return [
+    revision.wordCount < 1 && 'Article content',
+    !revision.excerpt.trim() && 'Excerpt',
+    (!category || category === 'Unassigned') && 'Category',
+    !revision.featuredMediaId && 'Cover image',
+    revision.featuredMediaId && !revision.featuredMedia?.altText.trim() && 'Cover alt text',
+    !revision.seoTitle.trim() && 'SEO title',
+    !revision.slug.trim() && 'Slug',
+  ].filter(Boolean) as string[]
+}
+
+function latestArticleTime(article: Article, activity?: number) {
+  return Math.max(
+    activity || 0,
+    timestampValue(article.lastPublishedAt),
+    timestampValue(article.scheduledAt),
+  )
+}
+
+function compareRecordIdsNewestFirst(a: string, b: string) {
+  if (!/^\d+$/.test(a) || !/^\d+$/.test(b)) return 0
+  const normalizedA = a.replace(/^0+/, '') || '0'
+  const normalizedB = b.replace(/^0+/, '') || '0'
+  return normalizedB.length - normalizedA.length || normalizedB.localeCompare(normalizedA)
+}
+
+function withinDashboardDateFilter(timestamp: number, filter: DashboardDateFilter) {
+  if (filter === 'all') return true
+  if (!timestamp) return false
+  const now = Date.now()
+  if (filter === 'today') return new Date(timestamp).toDateString() === new Date(now).toDateString()
+  if (filter === 'week') return timestamp >= now - 7 * 24 * 60 * 60 * 1000
+  return true
+}
+
+function matchesPersonFilter(values: string[], personFilter: string) {
+  if (personFilter === 'all') return true
+  const target = normalizedIdentity(personFilter)
+  return values.some((value) => normalizedIdentity(value) === target)
+}
+
+function workflowAttributionLine({
+  article,
+  assignments,
+  auditEvents,
+  activeJob,
+  statusText,
+}: {
+  article: Article
+  assignments: ReviewAssignment[]
+  auditEvents: AuditEvent[]
+  activeJob?: PublicationJob
+  statusText: string
+}) {
+  const author = displayLookup(article.primaryAuthor)
+  const reviewers = approvedReviewerNames(article, assignments)
+  const publishEvent = latestArticleEvent(article, auditEvents, [
+    'Catalyst Article Published',
+    'Publication Queued',
+    'Article Scheduled',
+  ])
+  const actor = activeJob?.requestedBy ? displayLookup(activeJob.requestedBy) : publishEvent?.actorName || ''
+  const reviewerText = reviewers.length ? `approved by ${reviewers.slice(0, 2).join(', ')}${reviewers.length > 2 ? ` +${reviewers.length - 2}` : ''}` : ''
+  const actorText = actor ? `published by ${actor}` : ''
+  const when = formatShortDate(article.lastPublishedAt || article.scheduledAt)
+  return [
+    author,
+    reviewerText,
+    actorText,
+    statusText,
+    when,
+  ].filter(Boolean).join(' · ').replace(/^(.+?) · approved by/, '$1 → approved by')
+}
+
+function workflowFactLines({
+  article,
+  assignments,
+  auditEvents,
+  activeJob,
+  includePublisher = false,
+  publisherLabel = 'Published by',
+  includeRetraction = false,
+}: {
+  article: Article
+  assignments: ReviewAssignment[]
+  auditEvents: AuditEvent[]
+  activeJob?: PublicationJob
+  includePublisher?: boolean
+  publisherLabel?: string
+  includeRetraction?: boolean
+}) {
+  const author = displayLookup(article.primaryAuthor)
+  const reviewers = approvedReviewerNames(article, assignments)
+  const publishEvent = latestArticleEvent(article, auditEvents, [
+    'Catalyst Article Published',
+    'Publication Queued',
+    'Article Scheduled',
+  ])
+  const retractionEvent = latestArticleEvent(article, auditEvents, [
+    'Retraction Queued',
+    'Catalyst Article Retracted',
+  ])
+  const publisher = activeJob?.requestedBy ? displayLookup(activeJob.requestedBy) : publishEvent?.actorName || ''
+  const retractedBy = retractionEvent?.actorName || ''
+  return [
+    author && `Written by ${author}`,
+    reviewers.length > 0 && `Approved by ${reviewers.slice(0, 2).join(', ')}${reviewers.length > 2 ? ` +${reviewers.length - 2}` : ''}`,
+    includePublisher && publisher && `${publisherLabel} ${publisher}`,
+    includeRetraction && retractedBy && `Retracted by ${retractedBy}`,
+  ].filter(Boolean) as string[]
+}
+
+function articlePanelNote(article: Article) {
+  const author = displayLookup(article.primaryAuthor)
+  const category = displayLookup(article.primaryCategory)
+  if (article.workflowState === 'Scheduled') {
+    return [author, `scheduled ${formatDashboardDateTime(article.scheduledAt)}`].filter(Boolean).join(' · ')
+  }
+  if (article.workflowState === 'Published') {
+    return [author, `published ${formatDashboardDateTime(article.lastPublishedAt)}`].filter(Boolean).join(' · ')
+  }
+  if (article.workflowState === 'Unpublished') {
+    return [author, 'unpublished · audit retained'].filter(Boolean).join(' · ')
+  }
+  if (article.workflowState === 'Approved') {
+    return [author, 'approved · waiting for publisher'].filter(Boolean).join(' · ')
+  }
+  if (article.workflowState === 'Changes Requested') {
+    return [author, 'changes requested'].filter(Boolean).join(' · ')
+  }
+  if (article.workflowState === 'In Review') {
+    return [author, 'waiting for reviewer decision'].filter(Boolean).join(' · ')
+  }
+  return [author, category].filter(Boolean).join(' · ')
+}
+
+function articlePanelStatusDetail(article: Article) {
+  if (article.workflowState === 'Archived') return 'Stored safely with revisions and audit history intact.'
+  if (article.workflowState === 'Scheduled') return `Scheduled for ${formatDashboardDateTime(article.scheduledAt)}`
+  if (article.workflowState === 'Published') return `Published ${formatDashboardDateTime(article.lastPublishedAt)}`
+  if (article.workflowState === 'Unpublished') return 'Removed from public listings. Audit history is retained.'
+  if (article.workflowState === 'Approved') return 'Approved and waiting for publisher action.'
+  if (article.workflowState === 'Changes Requested') return 'Back with the author for revision.'
+  if (article.workflowState === 'In Review') return 'Submitted and waiting on reviewer decision.'
+  return ''
+}
+
 function RoleBadge({ role }: { role: string }) {
   return <span className={`role-badge is-${eventTone(role)}`}>{role}</span>
 }
@@ -325,16 +559,63 @@ function DashboardMetric({
   )
 }
 
+function WorkflowOutcome({ outcome, onDismiss }: { outcome: ActionOutcome; onDismiss: () => void }) {
+  return (
+    <section className="workflow-outcome" role="status" aria-live="polite">
+      <span className="workflow-outcome-icon" aria-hidden="true"><Check /></span>
+      <div>
+        <strong>{outcome.title}</strong>
+        <p>{outcome.message}</p>
+      </div>
+      <div className="workflow-outcome-actions">
+        <button type="button" className="secondary-command" onClick={onDismiss}>Continue viewing</button>
+        {outcome.nextReview && (
+          <button type="button" className="secondary-command" onClick={() => openWorkspaceArticle(outcome.nextReview!.articleId, outcome.nextReview!.revisionId)}>
+            <ClipboardCheck /> Review next
+          </button>
+        )}
+        <button type="button" className="submit-review-command" onClick={openDashboard}>
+          <LayoutDashboard /> {outcome.dashboardLabel}
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function FloatingNotice({ notice, onDismiss }: { notice: FloatingNoticeState; onDismiss: () => void }) {
+  return (
+    <section className={`floating-notice is-${notice.tone}`} role="status" aria-live="polite">
+      <span className="floating-notice-icon" aria-hidden="true">
+        {notice.tone === 'error' ? <AlertCircle /> : <Check />}
+      </span>
+      <div>
+        <strong>{notice.title}</strong>
+        <p>{notice.message}</p>
+      </div>
+      {notice.onAction && notice.actionLabel && (
+        <button type="button" className="floating-notice-action" onClick={notice.onAction}>
+          {notice.actionLabel}
+        </button>
+      )}
+      <button type="button" className="floating-notice-close" aria-label="Dismiss notification" onClick={onDismiss}>
+        <X />
+      </button>
+    </section>
+  )
+}
+
 function DashboardRow({
   article,
   assignment,
   label,
   compact,
+  onOpenArticle,
 }: {
   article?: Article
   assignment?: ReviewAssignment
   label?: string
   compact?: boolean
+  onOpenArticle: (articleId: string, revisionId?: string) => void
 }) {
   const articleTitle = article?.workingTitle || assignment?.articleTitle || assignment?.revisionTitle || 'Unavailable article'
   const meta = [
@@ -358,7 +639,7 @@ function DashboardRow({
       </div>
       <div className="row-actions">
         <StatusPill state={state} />
-        <button type="button" className="secondary-command" disabled={!targetArticleId} onClick={() => targetArticleId && openWorkspaceArticle(targetArticleId, assignment?.revisionId)}>
+        <button type="button" className="secondary-command" disabled={!targetArticleId} onClick={() => targetArticleId && onOpenArticle(targetArticleId, assignment?.revisionId)}>
           Open
         </button>
       </div>
@@ -369,9 +650,11 @@ function DashboardRow({
 function ReviewHistoryRow({
   assignment,
   article,
+  onOpenArticle,
 }: {
   assignment: ReviewAssignment
   article?: Article
+  onOpenArticle: (articleId: string, revisionId?: string) => void
 }) {
   const articleTitle = article?.workingTitle || assignment.articleTitle || assignment.revisionTitle || 'Unavailable article'
   const reviewer = assignment.reviewerName || 'Reviewer'
@@ -393,25 +676,143 @@ function ReviewHistoryRow({
         </dl>
         {summary && <p>{summary}</p>}
       </div>
-      <button type="button" className="secondary-command" disabled={!assignment.articleId || !assignment.revisionId} onClick={() => openWorkspaceArticle(assignment.articleId, assignment.revisionId)}>
+      <button type="button" className="secondary-command" disabled={!assignment.articleId || !assignment.revisionId} onClick={() => onOpenArticle(assignment.articleId, assignment.revisionId)}>
         Open snapshot
       </button>
     </li>
   )
 }
 
+function ReviewFeedbackPanel({ feedback }: { feedback: ReviewFeedback[] }) {
+  const visible = feedback.filter(reviewFeedbackHasVisibleContent)
+  if (!visible.length) return null
+  return (
+    <section className="review-feedback-hero" aria-labelledby="changes-feedback-title">
+      <div className="review-feedback-hero-head">
+        <div>
+          <span>Reviewer feedback</span>
+          <h2 id="changes-feedback-title">Changes requested</h2>
+        </div>
+        <em>{visible.length} reviewer thread{visible.length === 1 ? '' : 's'}</em>
+      </div>
+      <div className="review-feedback-threads">
+        {visible.map((entry) => {
+          const comments = visibleFeedbackComments(entry)
+          return (
+            <article className="review-feedback-thread" key={entry.id}>
+              <header>
+                <div>
+                  <strong>{entry.reviewerName}</strong>
+                  {entry.decidedAt && <time>{formatShortDate(entry.decidedAt)}</time>}
+                </div>
+                <StatusPill state={entry.status} />
+              </header>
+              {entry.decisionSummary && (
+                <section className="feedback-decision-note">
+                  <span>Decision note</span>
+                  <p className="decision-summary">{entry.decisionSummary}</p>
+                </section>
+              )}
+              {comments.length > 0 && (
+                <div className="review-feedback-thread-comments">
+                  <span className="feedback-section-label">Discussion comments</span>
+                  {comments.map((comment) => (
+                    <div className="feedback-comment" key={comment.id}>
+                      <span>{comment.authorName} · {comment.type}</span>
+                      <p>{comment.body}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </article>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function ArticleWorkflowTimeline({ article, auditEvents }: { article: Article; auditEvents: AuditEvent[] }) {
+  const events = [...auditEvents]
+    .filter((event) => event.entityUuid === article.uuid)
+    .sort((a, b) => timestampValue(a.occurredAt) - timestampValue(b.occurredAt))
+  return (
+    <details className="article-workflow-timeline">
+      <summary>
+        <span><History /> Workflow history</span>
+        <em>{events.length ? `${events.length} recorded event${events.length === 1 ? '' : 's'}` : `Current state · ${article.workflowState}`}</em>
+      </summary>
+      {events.length > 0 ? (
+        <ol>
+          {events.map((event) => (
+            <li key={event.id}>
+              <span className={`timeline-dot is-${eventTone(event.newState || event.eventType)}`} aria-hidden="true" />
+              <div>
+                <strong>{event.eventType}</strong>
+                <p>{event.summary}</p>
+                <em>{event.actorName || 'Editorial system'} · {formatShortDate(event.occurredAt)}</em>
+              </div>
+              <StatusPill state={event.newState || event.eventType} />
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p>No workflow events are visible to your current role yet.</p>
+      )}
+    </details>
+  )
+}
+
+function RevisionComparison({ current, previous }: { current: Revision; previous?: Revision }) {
+  if (!previous) return null
+  const clean = (value: string) => value.trim().replace(/\s+/g, ' ')
+  const shorten = (value: string) => value.length > 180 ? `${value.slice(0, 177)}…` : value || 'Not set'
+  const fields = [
+    { label: 'Title', before: previous.title, after: current.title },
+    { label: 'Slug', before: previous.slug, after: current.slug },
+    { label: 'Excerpt', before: previous.excerpt, after: current.excerpt },
+    { label: 'SEO title', before: previous.seoTitle, after: current.seoTitle },
+    { label: 'SEO description', before: previous.seoDescription, after: current.seoDescription },
+    { label: 'Article body', before: documentText(previous.document), after: documentText(current.document) },
+    { label: 'Cover image', before: previous.featuredMedia?.altText || previous.featuredMediaId || '', after: current.featuredMedia?.altText || current.featuredMediaId || '' },
+  ].filter((field) => clean(field.before) !== clean(field.after))
+  return (
+    <details className="revision-comparison">
+      <summary>
+        <span><GitBranch /> Compare with revision {previous.number}</span>
+        <em>{fields.length} changed field{fields.length === 1 ? '' : 's'}</em>
+      </summary>
+      {fields.length > 0 ? (
+        <div className="revision-change-list">
+          {fields.map((field) => (
+            <section key={field.label}>
+              <strong>{field.label}</strong>
+              <div><span>Revision {previous.number}</span><p>{shorten(clean(field.before))}</p></div>
+              <div className="is-current"><span>Revision {current.number}</span><p>{shorten(clean(field.after))}</p></div>
+            </section>
+          ))}
+        </div>
+      ) : <p>No content or metadata differences were detected.</p>}
+    </details>
+  )
+}
+
 function ArticleStatusRow({
   article,
   note,
+  statusDetail,
   statusOverride,
   actionLabel = 'Open',
   secondaryAction,
   tertiaryAction,
+  overflowActions,
+  onOpenArticle,
   secondaryBusy,
   tertiaryBusy,
 }: {
   article: Article
   note?: string
+  statusDetail?: string
   statusOverride?: string
   actionLabel?: string
   secondaryAction?: {
@@ -428,6 +829,13 @@ function ArticleStatusRow({
     icon?: ReactNode
     busyLabel?: string
   }
+  overflowActions?: Array<{
+    label: string
+    onClick: () => void
+    disabled?: boolean
+    icon?: ReactNode
+  }>
+  onOpenArticle: (articleId: string, revisionId?: string) => void
   secondaryBusy?: boolean
   tertiaryBusy?: boolean
 }) {
@@ -439,6 +847,7 @@ function ArticleStatusRow({
           <strong title={article.workingTitle || 'Untitled article'}>{article.workingTitle || 'Untitled article'}</strong>
         </div>
         <span>{note || [displayLookup(article.primaryAuthor), displayLookup(article.primaryCategory)].filter(Boolean).join(' · ')}</span>
+        {statusDetail && <em className="row-state-detail">{statusDetail}</em>}
       </div>
       <div className="row-actions">
         <StatusPill state={statusOverride || article.workflowState} />
@@ -452,9 +861,21 @@ function ArticleStatusRow({
             {tertiaryAction.icon} {tertiaryBusy ? tertiaryAction.busyLabel || tertiaryAction.label : tertiaryAction.label}
           </button>
         )}
-        <button type="button" className="secondary-command" onClick={() => openWorkspaceArticle(article.id)}>
+        <button type="button" className="secondary-command" onClick={() => onOpenArticle(article.id)}>
           {actionLabel}
         </button>
+        {overflowActions && overflowActions.length > 0 && (
+          <details className="row-overflow">
+            <summary aria-label="More actions">•••</summary>
+            <div>
+              {overflowActions.map((action) => (
+                <button key={action.label} type="button" disabled={action.disabled} onClick={action.onClick}>
+                  {action.icon}{action.label}
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     </li>
   )
@@ -615,10 +1036,12 @@ function ActivityTimeline({
 function EditorialDashboard({
   data,
   onRefresh,
+  onOpenArticle,
   updatedAt,
 }: {
   data: DashboardData
   onRefresh: () => Promise<void>
+  onOpenArticle: (articleId: string, revisionId?: string) => void
   updatedAt: number
 }) {
   const [scope, setScope] = useState<'mine' | 'queue' | 'all'>('mine')
@@ -626,14 +1049,20 @@ function EditorialDashboard({
   const [query, setQuery] = useState('')
   const [stateFilter, setStateFilter] = useState<DashboardStateFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [personFilter, setPersonFilter] = useState('all')
+  const [dateFilter, setDateFilter] = useState<DashboardDateFilter>('all')
   const [sortOrder, setSortOrder] = useState<DashboardSort>('recent')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [expandedPanels, setExpandedPanels] = useState<Set<string>>(() => new Set())
   const [refreshBusy, setRefreshBusy] = useState(false)
   const [liveRefreshBusy, setLiveRefreshBusy] = useState(false)
   const [liveRefreshError, setLiveRefreshError] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [createTitle, setCreateTitle] = useState('')
-  const [createCategoryId, setCreateCategoryId] = useState(data.categories[0]?.ID || '')
+  const [createCategoryId, setCreateCategoryId] = useState('')
   const [createPolicyId, setCreatePolicyId] = useState(defaultApprovalPolicyId(data))
+  const [createCategoryName, setCreateCategoryName] = useState('')
+  const [createCategoryBusy, setCreateCategoryBusy] = useState(false)
   const [createBusy, setCreateBusy] = useState(false)
   const [createError, setCreateError] = useState('')
   const [publishBusyId, setPublishBusyId] = useState('')
@@ -648,23 +1077,54 @@ function EditorialDashboard({
   const [replacementPath, setReplacementPath] = useState('')
   const [retractBusy, setRetractBusy] = useState(false)
   const [retractError, setRetractError] = useState('')
+  const [archiveArticleTarget, setArchiveArticleTarget] = useState<Article | null>(null)
+  const [archiveBusyId, setArchiveBusyId] = useState('')
+  const [archiveError, setArchiveError] = useState('')
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [resetConfirmation, setResetConfirmation] = useState('')
+  const [resetBusy, setResetBusy] = useState(false)
+  const [resetError, setResetError] = useState('')
   const [dashboardNotice, setDashboardNotice] = useState('')
   const [dashboardError, setDashboardError] = useState('')
+  const [publishingNotice, setPublishingNotice] = useState<FloatingNoticeState | null>(null)
   const currentEmployee = data.currentEmployee
   const roles = Array.from(new Set(currentEmployee?.roles || []))
   const isReviewer = roles.includes('Reviewer')
   const isAuthor = roles.includes('Author')
   const isPublisher = roles.includes('Publisher')
-  const showAll = !currentEmployee || roles.includes('CEO') || roles.includes('Editorial Admin')
+  const showAll = roles.includes('CEO') || roles.includes('Editorial Admin')
+  const canCreateCategory = !!currentEmployee && showAll
+  const canResetTestContent = repository.source === 'mock'
   const articlesById = new Map(data.articles.map((article) => [article.id, article]))
-  const activePublicationJobByArticleId = new Map(
-    data.publicationJobs
-      .filter((job) => job.status === 'Queued' || job.status === 'Processing')
-      .map((job) => [job.articleId, job]),
-  )
+  const activePublicationJobByArticleId = data.publicationJobs
+    .filter((job) => job.status === 'Queued' || job.status === 'Processing')
+    .reduce((jobs, job) => {
+      const current = jobs.get(job.articleId)
+      if (!current || timestampValue(job.requestedAt) >= timestampValue(current.requestedAt)) {
+        jobs.set(job.articleId, job)
+      }
+      return jobs
+    }, new Map<string, PublicationJob>())
   const hasActivePublicationJobs = activePublicationJobByArticleId.size > 0
+  const dashboardRefreshDelayMs = hasActivePublicationJobs ? ACTIVE_PUBLICATION_REFRESH_MS : IDLE_DASHBOARD_REFRESH_MS
+  const publicationIsFutureSchedule = (articleId: string) => {
+    const article = articlesById.get(articleId)
+    const job = activePublicationJobByArticleId.get(articleId)
+    if (!article || !job || article.workflowState !== 'Scheduled' || job.action !== 'Schedule') return false
+    const scheduledAt = timestampValue(article.scheduledAt)
+    return scheduledAt > Date.now()
+  }
   const publicationPending = (articleId: string) => optimisticPublicationIds.has(articleId)
-    || activePublicationJobByArticleId.has(articleId)
+    || (activePublicationJobByArticleId.has(articleId) && !publicationIsFutureSchedule(articleId))
+  const publicationNeedsReconciliation = (articleId: string) => {
+    const job = activePublicationJobByArticleId.get(articleId)
+    if (!job || job.status !== 'Processing') return false
+    if (publicationIsFutureSchedule(articleId)) return false
+    const nextRetryAt = timestampValue(job.nextRetryAt)
+    if (nextRetryAt > Date.now()) return false
+    const requestedAt = timestampValue(job.requestedAt)
+    return requestedAt > 0 && requestedAt <= Date.now() - (5 * 60 * 1000)
+  }
   const validAssignments = data.assignments.filter((assignment) => assignment.articleId && assignment.revisionId)
   const queryText = query.trim().toLowerCase()
   const articleIsMine = (article: Article) => lookupBelongsToEmployee(article.owner, currentEmployee)
@@ -691,8 +1151,25 @@ function EditorialDashboard({
       .map((article) => displayLookup(article.primaryCategory))
       .filter((category) => category && category !== 'Unassigned'),
   )).sort((a, b) => a.localeCompare(b))
+  const personOptions = Array.from(new Set([
+    ...visibleArticles.flatMap((article) => [displayLookup(article.owner), displayLookup(article.primaryAuthor)]),
+    ...validAssignments.map((assignment) => assignment.reviewerName || ''),
+    ...data.publicationJobs.map((job) => job.requestedBy ? displayLookup(job.requestedBy) : ''),
+    ...data.auditEvents.map((event) => event.actorName || ''),
+  ].filter((name) => name && name !== 'Unassigned'))).sort((a, b) => a.localeCompare(b))
   const matchesCategory = (article?: Article) => categoryFilter === 'all'
     || normalizedIdentity(displayLookup(article?.primaryCategory)) === normalizedIdentity(categoryFilter)
+  const articleMatchesPerson = (article: Article) => matchesPersonFilter([
+    displayLookup(article.owner),
+    displayLookup(article.primaryAuthor),
+    ...validAssignments.filter((assignment) => assignment.articleId === article.id).map((assignment) => assignment.reviewerName || ''),
+    ...data.publicationJobs.filter((job) => job.articleId === article.id && job.requestedBy).map((job) => displayLookup(job.requestedBy)),
+  ], personFilter)
+  const assignmentMatchesPerson = (assignment: ReviewAssignment, article?: Article) => matchesPersonFilter([
+    assignment.reviewerName || '',
+    displayLookup(article?.owner),
+    displayLookup(article?.primaryAuthor),
+  ], personFilter)
   const latestActivityByArticleId = new Map<string, number>()
   const noteArticleActivity = (articleId: string | undefined, at: string | undefined) => {
     if (!articleId) return
@@ -713,18 +1190,32 @@ function EditorialDashboard({
     return assignmentBelongsToCurrentReviewer(assignment, currentEmployee)
   }).filter((assignment) => {
     const linkedArticle = articlesById.get(assignment.articleId)
-    return matchesCategory(linkedArticle) && assignmentMatchesFilter(assignment, linkedArticle, queryText, stateFilter)
+    return matchesCategory(linkedArticle)
+      && assignmentMatchesPerson(assignment, linkedArticle)
+      && withinDashboardDateFilter(latestAssignmentTime(assignment), dateFilter)
+      && assignmentMatchesFilter(assignment, linkedArticle, queryText, stateFilter)
   })
   const scopedArticles = visibleArticles.filter((article) => {
     if (scope === 'queue') return article.workflowState === 'Approved' || article.workflowState === 'Scheduled'
     if (scope === 'mine') return articleIsMine(article)
     return true
-  }).filter((article) => matchesCategory(article) && articleMatchesFilter(article, queryText, stateFilter))
+  }).filter((article) => matchesCategory(article)
+    && articleMatchesPerson(article)
+    && withinDashboardDateFilter(latestArticleTime(article, latestActivityByArticleId.get(article.id)), dateFilter)
+    && articleMatchesFilter(article, queryText, stateFilter))
   const articleSort = (a: Article, b: Article) => {
     if (sortOrder === 'title') return a.workingTitle.localeCompare(b.workingTitle)
     if (sortOrder === 'state') return a.workflowState.localeCompare(b.workflowState) || a.workingTitle.localeCompare(b.workingTitle)
-    return (latestActivityByArticleId.get(b.id) || timestampValue(b.lastPublishedAt) || timestampValue(b.scheduledAt))
-      - (latestActivityByArticleId.get(a.id) || timestampValue(a.lastPublishedAt) || timestampValue(a.scheduledAt))
+    const articleActivityTime = (article: Article) => Math.max(
+      latestActivityByArticleId.get(article.id) || 0,
+      timestampValue(article.lastPublishedAt),
+      timestampValue(article.scheduledAt),
+    )
+    const activityA = articleActivityTime(a)
+    const activityB = articleActivityTime(b)
+    if (activityA && activityB && activityA !== activityB) return activityB - activityA
+    return compareRecordIdsNewestFirst(a.id, b.id)
+      || activityB - activityA
       || a.workingTitle.localeCompare(b.workingTitle)
   }
   const assignmentSort = (a: ReviewAssignment, b: ReviewAssignment) => {
@@ -748,13 +1239,17 @@ function EditorialDashboard({
     .filter((assignment) => CLOSED_ASSIGNMENT_STATES.has(assignment.status) && canSeeAssignment(assignment))
     .sort(assignmentSort)
   const workArticles = scopedArticles
-    .filter((article) => WORKING_ARTICLE_STATES.has(article.workflowState))
+    .filter((article) => WORKING_ARTICLE_STATES.has(article.workflowState)
+      || (article.workflowState === 'Approved' && !(isPublisher || showAll)))
     .sort(articleSort)
   const publishedArticles = scopedArticles
     .filter((article) => article.workflowState === 'Published')
     .sort(articleSort)
   const unpublishedArticles = scopedArticles
     .filter((article) => article.workflowState === 'Unpublished')
+    .sort(articleSort)
+  const archivedArticles = scopedArticles
+    .filter((article) => article.workflowState === 'Archived')
     .sort(articleSort)
   const reviewerOnly = isReviewer && !showAll && !roles.includes('Author')
   const approvedCount = reviewerOnly
@@ -765,6 +1260,11 @@ function EditorialDashboard({
   const sharedQueueCount = inboxAssignments.filter((assignment) => assignment.status === 'Queued').length
   const assignedToMeCount = inboxAssignments.filter((assignment) => assignmentBelongsToCurrentReviewer(assignment, currentEmployee)).length
   const changesRequestedCount = workArticles.filter((article) => article.workflowState === 'Changes Requested').length
+  const myActiveArticleCount = visibleArticles.filter((article) => articleIsMine(article) && WORKING_ARTICLE_STATES.has(article.workflowState)).length
+  const readyToPublishCount = data.articles.filter((article) => article.workflowState === 'Approved').length
+  const failedPublicationCount = data.publicationJobs.filter((job) => job.status === 'Failed').length
+  const needsPublicationAttentionCount = failedPublicationCount
+    + data.articles.filter((article) => publicationNeedsReconciliation(article.id)).length
   const publishingQueue = data.articles
     .filter((article) => (article.workflowState === 'Approved' || article.workflowState === 'Scheduled') && (
       showAll
@@ -775,9 +1275,34 @@ function EditorialDashboard({
     .filter((article) => {
       if (scope === 'mine' && !articleIsMine(article)) return false
       if (scope === 'all' && !showAll && !articleIsMine(article)) return false
-      return matchesCategory(article) && articleMatchesFilter(article, queryText, stateFilter === 'all' ? 'all' : stateFilter)
+      return matchesCategory(article)
+        && articleMatchesPerson(article)
+        && withinDashboardDateFilter(latestArticleTime(article, latestActivityByArticleId.get(article.id)), dateFilter)
+        && articleMatchesFilter(article, queryText, stateFilter === 'all' ? 'all' : stateFilter)
     })
     .sort(articleSort)
+  const showReviewNavigation = isReviewer || showAll || visibleAssignments.length > 0
+  const showPublishingNavigation = isPublisher || showAll || visibleArticles.some((article) => (
+    article.workflowState === 'Approved'
+    || article.workflowState === 'Scheduled'
+    || article.workflowState === 'Published'
+    || article.workflowState === 'Unpublished'
+  ))
+  const priorityCount = changesRequestedCount
+    + assignedToMeCount
+    + (isReviewer || showAll ? sharedQueueCount : 0)
+    + (isPublisher || showAll ? readyToPublishCount + needsPublicationAttentionCount : 0)
+  const todayTitle = priorityCount
+    ? `${priorityCount} item${priorityCount === 1 ? '' : 's'} need your attention`
+    : 'Your editorial queue is clear'
+  const todayDetail = changesRequestedCount
+    ? `${changesRequestedCount} article${changesRequestedCount === 1 ? '' : 's'} returned for changes`
+    : assignedToMeCount
+      ? `${assignedToMeCount} review${assignedToMeCount === 1 ? '' : 's'} ready for you`
+      : readyToPublishCount && (isPublisher || showAll)
+        ? `${readyToPublishCount} approved article${readyToPublishCount === 1 ? '' : 's'} ready to publish`
+        : 'Recent work and team activity are organized below.'
+  const loadedContentCount = data.articles.length + validAssignments.length + data.publicationJobs.length + data.auditEvents.length
   const visibleAuditEvents = data.auditEvents.filter((event) => {
     if (showAll) return true
     if (event.actorId === currentEmployee?.id) return true
@@ -785,7 +1310,9 @@ function EditorialDashboard({
   }).filter((event) => {
     const linkedArticle = articlesByUuidForActivity.get(event.entityUuid)
     if (linkedArticle && !matchesCategory(linkedArticle)) return false
-    return includesQuery([
+    return matchesPersonFilter([event.actorName || '', linkedArticle ? displayLookup(linkedArticle.primaryAuthor) : ''], personFilter)
+      && withinDashboardDateFilter(timestampValue(event.occurredAt), dateFilter)
+      && includesQuery([
       event.eventType,
       event.actorName || '',
       event.summary || '',
@@ -796,12 +1323,32 @@ function EditorialDashboard({
   })
   const roleLine = roles.length ? roles.join(', ') : 'Editorial user'
   const currentStateOptions = DASHBOARD_STATE_OPTIONS[view]
-  const filtersActive = query.trim() !== '' || stateFilter !== 'all' || categoryFilter !== 'all' || sortOrder !== 'recent'
-  const emptyMessage = filtersActive ? 'No items match the current filters.' : 'Nothing here right now.'
+  const filterCount = [
+    stateFilter !== 'all' && !(view === 'archive' && stateFilter === 'archived'),
+    categoryFilter !== 'all',
+    personFilter !== 'all',
+    dateFilter !== 'all',
+    sortOrder !== 'recent',
+  ].filter(Boolean).length
+  const filtersActive = query.trim() !== '' || filterCount > 0
+  const emptyMessage = filtersActive
+    ? 'No items match these filters. Clear filters or switch scope to see other work.'
+    : scope === 'mine'
+    ? 'Nothing assigned to you here right now. Queue or All may still have work.'
+    : scope === 'queue'
+    ? 'No shared queue work matches this view right now.'
+    : 'Nothing here right now.'
   const showReviewPanels = view === 'all' || view === 'reviews'
-  const showArticlePanels = view === 'all' || view === 'articles'
+  const showArticlePanels = view === 'all' || view === 'articles' || view === 'archive'
   const showPublishingPanels = view === 'all' || view === 'publishing'
-  const articlePanelItems = view === 'articles' ? [...scopedArticles].sort(articleSort) : workArticles
+  const articlePanelItems = view === 'archive'
+    ? archivedArticles
+    : view === 'articles'
+      ? scopedArticles.filter((article) => article.workflowState !== 'Archived').sort(articleSort)
+      : workArticles
+  const panelLimit = 5
+  const panelItems = <T,>(panelId: string, items: T[]) => expandedPanels.has(panelId) ? items : items.slice(0, panelLimit)
+  const expandPanel = (panelId: string) => setExpandedPanels((current) => new Set(current).add(panelId))
 
   useEffect(() => {
     setOptimisticPublicationIds((current) => {
@@ -816,14 +1363,43 @@ function EditorialDashboard({
 
   const changeView = (nextView: DashboardView) => {
     setView(nextView)
-    setStateFilter('all')
+    setStateFilter(nextView === 'archive' ? 'archived' : 'all')
+    setQuery('')
+    setFiltersOpen(false)
   }
+
+  const openPublishingView = () => {
+    setScope(showAll ? 'all' : 'queue')
+    changeView('publishing')
+  }
+
+  const showPublishingNotice = (tone: FloatingNoticeState['tone'], title: string, message: string) => {
+    setPublishingNotice({
+      id: Date.now(),
+      tone,
+      title,
+      message,
+      actionLabel: 'Publishing dashboard',
+      onAction: openPublishingView,
+    })
+  }
+
+  useEffect(() => {
+    if (!publishingNotice || publishingNotice.tone === 'error') return undefined
+    const timer = window.setTimeout(() => {
+      setPublishingNotice((current) => current?.id === publishingNotice.id ? null : current)
+    }, 9_000)
+    return () => window.clearTimeout(timer)
+  }, [publishingNotice])
 
   const clearFilters = () => {
     setQuery('')
-    setStateFilter('all')
+    setStateFilter(view === 'archive' ? 'archived' : 'all')
     setCategoryFilter('all')
+    setPersonFilter('all')
+    setDateFilter('all')
     setSortOrder('recent')
+    setFiltersOpen(false)
   }
 
   const refreshDashboard = async () => {
@@ -841,11 +1417,10 @@ function EditorialDashboard({
   useEffect(() => {
     let disposed = false
     let timer: number | undefined
-    const delay = hasActivePublicationJobs ? 5_000 : 45_000
 
     const schedule = () => {
       if (disposed) return
-      timer = window.setTimeout(() => void tick(), delay)
+      timer = window.setTimeout(() => void tick(), dashboardRefreshDelayMs)
     }
 
     const tick = async () => {
@@ -881,7 +1456,7 @@ function EditorialDashboard({
       if (timer !== undefined) window.clearTimeout(timer)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [hasActivePublicationJobs, onRefresh])
+  }, [dashboardRefreshDelayMs, onRefresh])
 
   const createArticle = async () => {
     setCreateBusy(true)
@@ -892,11 +1467,102 @@ function EditorialDashboard({
         categoryId: createCategoryId || undefined,
         approvalPolicyId: createPolicyId,
       })
-      openWorkspaceArticle(result.articleId)
+      onOpenArticle(result.articleId)
     } catch (error) {
       setCreateError(errorMessage(error, 'The article could not be created.'))
     } finally {
       setCreateBusy(false)
+    }
+  }
+
+  const createCategory = async () => {
+    if (!canCreateCategory || createCategoryName.trim().length < 2) return
+    setCreateCategoryBusy(true)
+    setCreateError('')
+    try {
+      const result = await repository.createTaxonomyTerm('category', createCategoryName)
+      setCreateCategoryId(result.term.ID)
+      setCreateCategoryName('')
+      setDashboardNotice(result.message || `${displayLookup(result.term)} is ready to use.`)
+      await refreshDashboard()
+    } catch (error) {
+      setCreateError(errorMessage(error, 'The category could not be created.'))
+    } finally {
+      setCreateCategoryBusy(false)
+    }
+  }
+
+  const openArchiveDialog = (article: Article) => {
+    setArchiveArticleTarget(article)
+    setArchiveError('')
+    setDashboardNotice('')
+    setDashboardError('')
+  }
+
+  const openResetDialog = () => {
+    setResetConfirmation('')
+    setResetError('')
+    setDashboardNotice('')
+    setDashboardError('')
+    setResetDialogOpen(true)
+  }
+
+  const archiveDraft = async () => {
+    if (!archiveArticleTarget || archiveBusyId) return
+    const article = archiveArticleTarget
+    setArchiveBusyId(article.id)
+    setArchiveError('')
+    try {
+      const result = await repository.archiveDraftArticle(article.id)
+      setArchiveArticleTarget(null)
+      setDashboardNotice(result.message || `${article.workingTitle} was moved to Trash.`)
+      await refreshDashboard()
+    } catch (error) {
+      setArchiveError(errorMessage(error, 'The draft could not be moved to Trash.'))
+    } finally {
+      setArchiveBusyId('')
+    }
+  }
+
+  const restoreDraft = async (article: Article) => {
+    if (archiveBusyId) return
+    setArchiveBusyId(article.id)
+    setDashboardNotice('')
+    setDashboardError('')
+    try {
+      const result = await repository.restoreArchivedArticle(article.id)
+      setDashboardNotice(result.message || `${article.workingTitle} was restored.`)
+      await refreshDashboard()
+    } catch (error) {
+      setDashboardError(errorMessage(error, 'The draft could not be restored.'))
+    } finally {
+      setArchiveBusyId('')
+    }
+  }
+
+  const resetTestContent = async () => {
+    if (!canResetTestContent || resetBusy || resetConfirmation.trim() !== RESET_TEST_CONTENT_CONFIRMATION) return
+    setResetBusy(true)
+    setResetError('')
+    try {
+      const result = await repository.resetTestContent(resetConfirmation.trim())
+      const deletedTotal = result.deletedArticles
+        + result.deletedRevisions
+        + result.deletedReviewAssignments
+        + result.deletedReviewComments
+        + result.deletedPublicationJobs
+        + result.deletedMediaAssets
+        + result.deletedAuditEvents
+      setResetDialogOpen(false)
+      setResetConfirmation('')
+      setScope('mine')
+      changeView('all')
+      setDashboardNotice(result.message || `Deleted ${deletedTotal} test records from Creator.`)
+      await refreshDashboard()
+    } catch (error) {
+      setResetError(errorMessage(error, 'Creator could not reset the test content.'))
+    } finally {
+      setResetBusy(false)
     }
   }
 
@@ -907,17 +1573,37 @@ function EditorialDashboard({
     setPublishBusyId(article.id)
     setDashboardNotice('')
     setDashboardError('')
+    setPublishingNotice(null)
     try {
       const result = await repository.publishArticle(article.id)
-      setDashboardNotice(result.message || `${article.workingTitle} was published.`)
-      await onRefresh()
+      showPublishingNotice('success', 'Publishing started', result.message || `${article.workingTitle} was sent for publishing.`)
+      await refreshDashboard()
     } catch (error) {
       setOptimisticPublicationIds((current) => {
         const next = new Set(current)
         next.delete(article.id)
         return next
       })
-      setDashboardError(errorMessage(error, 'The article could not be published.'))
+      showPublishingNotice('error', 'Publishing failed', errorMessage(error, 'The article could not be published.'))
+    } finally {
+      publicationActionRef.current.delete(article.id)
+      setPublishBusyId('')
+    }
+  }
+
+  const reconcilePublication = async (article: Article) => {
+    if (publicationActionRef.current.has(article.id) || !publicationNeedsReconciliation(article.id)) return
+    publicationActionRef.current.add(article.id)
+    setPublishBusyId(article.id)
+    setDashboardNotice('')
+    setDashboardError('')
+    setPublishingNotice(null)
+    try {
+      const result = await repository.publishArticle(article.id)
+      showPublishingNotice('success', 'Publishing retried', result.message || `${article.workingTitle} publication status was reconciled.`)
+      await refreshDashboard()
+    } catch (error) {
+      showPublishingNotice('error', 'Retry failed', errorMessage(error, 'The publication status could not be reconciled.'))
     } finally {
       publicationActionRef.current.delete(article.id)
       setPublishBusyId('')
@@ -941,11 +1627,12 @@ function EditorialDashboard({
     setOptimisticPublicationIds((current) => new Set(current).add(articleId))
     setScheduleBusy(true)
     setScheduleError('')
+    setPublishingNotice(null)
     try {
       const result = await repository.scheduleArticle(scheduleArticleTarget.id, scheduleAt)
-      setDashboardNotice(result.message || `${scheduleArticleTarget.workingTitle} was scheduled.`)
+      showPublishingNotice('success', 'Article scheduled', result.message || `${scheduleArticleTarget.workingTitle} was scheduled.`)
       setScheduleArticleTarget(null)
-      await onRefresh()
+      await refreshDashboard()
     } catch (error) {
       setOptimisticPublicationIds((current) => {
         const next = new Set(current)
@@ -976,11 +1663,12 @@ function EditorialDashboard({
     setOptimisticPublicationIds((current) => new Set(current).add(articleId))
     setRetractBusy(true)
     setRetractError('')
+    setPublishingNotice(null)
     try {
       const result = await repository.retractArticle(retractArticleTarget.id, retractReason.trim(), replacementPath.trim())
-      setDashboardNotice(result.message || `${retractArticleTarget.workingTitle} retraction was accepted.`)
+      showPublishingNotice('success', 'Retraction started', result.message || `${retractArticleTarget.workingTitle} retraction was accepted.`)
       setRetractArticleTarget(null)
-      await onRefresh()
+      await refreshDashboard()
     } catch (error) {
       setOptimisticPublicationIds((current) => {
         const next = new Set(current)
@@ -996,81 +1684,88 @@ function EditorialDashboard({
 
   return (
     <main className="dashboard-shell">
+      {publishingNotice && <FloatingNotice notice={publishingNotice} onDismiss={() => setPublishingNotice(null)} />}
+      {data.warnings?.map((message) => <div key={message} className="error-banner" role="alert"><AlertCircle /> {message}</div>)}
       <header className="dashboard-header">
         <div>
-          <div className="dashboard-kicker"><LayoutDashboard /> Editorial dashboard</div>
-          <h1>GeneDrift Insights</h1>
-          <p>{currentEmployee ? `${currentEmployee.displayName} · ${roleLine}` : 'Editorial user'}</p>
+          <div className="dashboard-kicker"><LayoutDashboard /> GeneDrift Insights</div>
+          <h1>Editorial command center</h1>
+          <p>{currentEmployee ? `${currentEmployee.displayName.split(/\s+/)[0]}, here’s your editorial workspace.` : 'Your editorial workspace.'}</p>
           <div className="role-badges">
             {roles.map((role) => <RoleBadge key={role} role={role} />)}
             {isAuthor && isReviewer && <span className="role-note"><ShieldCheck /> Self-review blocked</span>}
           </div>
         </div>
-        <button type="button" className="submit-review-command" disabled={!canCreateArticle} onClick={() => {
+        {canCreateArticle && <button type="button" className="submit-review-command" onClick={() => {
           setCreateTitle('')
-          setCreateCategoryId(data.categories[0]?.ID || '')
+          setCreateCategoryId('')
           setCreatePolicyId(defaultApprovalPolicyId(data))
+          setCreateCategoryName('')
           setCreateError('')
           setCreateOpen(true)
         }}>
           <Plus /> New article
-        </button>
+        </button>}
       </header>
 
-      <section className="dashboard-commandbar" aria-label="Dashboard filters">
+      <div className="dashboard-control-stack">
+        <nav className="dashboard-workspace-nav" aria-label="Editorial workspace">
+          <button type="button" aria-pressed={view === 'all'} className={view === 'all' ? 'is-active' : ''} onClick={() => { setScope('mine'); changeView('all') }}>
+            <LayoutDashboard /><span>Today</span>{priorityCount > 0 && <em>{priorityCount}</em>}
+          </button>
+          <button type="button" aria-pressed={view === 'articles'} className={view === 'articles' ? 'is-active' : ''} onClick={() => { setScope('mine'); changeView('articles') }}>
+            <FileText /><span>Articles</span><em>{visibleArticles.filter((article) => article.workflowState !== 'Archived').length}</em>
+          </button>
+          {showReviewNavigation && (
+            <button type="button" aria-pressed={view === 'reviews'} className={view === 'reviews' ? 'is-active' : ''} onClick={() => { setScope('mine'); changeView('reviews') }}>
+              <Inbox /><span>Reviews</span>{inboxAssignments.length > 0 && <em>{inboxAssignments.length}</em>}
+            </button>
+          )}
+          {showPublishingNavigation && (
+            <button type="button" aria-pressed={view === 'publishing'} className={view === 'publishing' ? 'is-active' : ''} onClick={() => { setScope(showAll ? 'all' : 'queue'); changeView('publishing') }}>
+              <Send /><span>Publishing</span>{publishingQueue.length > 0 && <em>{publishingQueue.length}</em>}
+            </button>
+          )}
+          <button type="button" aria-pressed={view === 'archive'} className={view === 'archive' ? 'is-active' : ''} onClick={() => { setScope(showAll ? 'all' : 'mine'); changeView('archive') }}>
+            <Trash2 /><span>Archive</span>{archivedArticles.length > 0 && <em>{archivedArticles.length}</em>}
+          </button>
+        </nav>
+
+      <section className={`dashboard-commandbar${view === 'all' ? ' is-today' : ''}`} aria-label="Dashboard filters">
         <div className="dashboard-command-primary">
-          <div className="dashboard-scope" role="tablist" aria-label="Dashboard scope">
-            <button type="button" className={scope === 'mine' ? 'is-active' : ''} onClick={() => setScope('mine')}>Mine</button>
-            <button type="button" className={scope === 'queue' ? 'is-active' : ''} onClick={() => setScope('queue')}>Queue</button>
-            <button type="button" className={scope === 'all' ? 'is-active' : ''} disabled={!showAll} onClick={() => setScope('all')}>All</button>
+          <div className="dashboard-scope" role="group" aria-label="Dashboard scope">
+            <button type="button" className={scope === 'mine' ? 'is-active' : ''} onClick={() => setScope('mine')}>My work</button>
+            {(view === 'all' || view === 'reviews' || view === 'publishing') && (
+              <button type="button" className={scope === 'queue' ? 'is-active' : ''} onClick={() => setScope('queue')}>
+                {view === 'publishing' ? 'Publishing queue' : 'Shared queue'}
+              </button>
+            )}
+            <button type="button" className={scope === 'all' ? 'is-active' : ''} disabled={!showAll} onClick={() => setScope('all')}>All workspace</button>
           </div>
-          <label className="dashboard-search">
-            <Search />
-            <span className="sr-only">Search dashboard</span>
-            <input value={query} placeholder="Search titles, people, categories or decisions" onChange={(event) => setQuery(event.target.value)} />
-            {query && <button type="button" className="search-clear" aria-label="Clear search" onClick={() => setQuery('')}><X /></button>}
-          </label>
+          {view === 'all' ? (
+            <div className="dashboard-today-context" aria-live="polite">
+              <strong>{todayTitle}</strong>
+              <span>{todayDetail}</span>
+            </div>
+          ) : (
+            <label className="dashboard-search">
+              <Search />
+              <span className="sr-only">Search this view</span>
+              <input value={query} placeholder={`Search ${view === 'archive' ? 'archived articles' : view}`} onChange={(event) => setQuery(event.target.value)} />
+              {query && <button type="button" className="search-clear" aria-label="Clear search" onClick={() => setQuery('')}><X /></button>}
+            </label>
+          )}
           <button type="button" className="dashboard-refresh" disabled={refreshBusy} onClick={() => void refreshDashboard()}>
             <RotateCcw /> {refreshBusy ? 'Refreshing' : 'Refresh'}
           </button>
-        </div>
-
-        <div className="dashboard-filterbar">
-          <div className="dashboard-view" role="tablist" aria-label="Work type">
-            {([
-              ['all', 'All work'],
-              ['articles', 'Articles'],
-              ['reviews', 'Reviews'],
-              ...((isPublisher || showAll) ? [['publishing', 'Publishing'] as [DashboardView, string]] : []),
-            ] as Array<[DashboardView, string]>).map(([value, label]) => (
-              <button key={value} type="button" className={view === value ? 'is-active' : ''} onClick={() => changeView(value)}>{label}</button>
-            ))}
-          </div>
-          <label className="dashboard-filter">
-            <span>State</span>
-            <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value as DashboardStateFilter)}>
-              {currentStateOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-            <ChevronDown aria-hidden="true" />
-          </label>
-          <label className="dashboard-filter">
-            <span>Category</span>
-            <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-              <option value="all">All categories</option>
-              {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
-            </select>
-            <ChevronDown aria-hidden="true" />
-          </label>
-          <label className="dashboard-filter">
-            <span>Sort</span>
-            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as DashboardSort)}>
-              <option value="recent">Most recent</option>
-              <option value="title">Title A–Z</option>
-              <option value="state">Workflow state</option>
-            </select>
-            <ChevronDown aria-hidden="true" />
-          </label>
-          <button type="button" className="clear-filters" disabled={!filtersActive} onClick={clearFilters}>Clear filters</button>
+          <button type="button" className={`dashboard-filter-trigger${filterCount > 0 ? ' has-filters' : ''}`} aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}>
+            <SlidersHorizontal /> Filters · {filterCount}
+          </button>
+          {canResetTestContent && (
+            <button type="button" className="dashboard-reset-trigger" disabled={resetBusy} onClick={openResetDialog}>
+              <Trash2 /> Reset test content
+            </button>
+          )}
         </div>
 
         <div className="dashboard-results" aria-live="polite">
@@ -1081,127 +1776,326 @@ function EditorialDashboard({
             <span className={`dashboard-live-dot${liveRefreshBusy ? ' is-refreshing' : ''}`} aria-hidden="true" />
             {liveRefreshError || (liveRefreshBusy
               ? 'Updating live data…'
-              : `Live · updated ${formatClockTime(updatedAt)}${hasActivePublicationJobs ? ' · every 5s' : ''}`)}
+              : `Live · checks every ${formatRefreshInterval(dashboardRefreshDelayMs)} · last checked ${formatClockTime(updatedAt)}`)}
           </span>
         </div>
+
+        {filtersOpen && (
+          <div className="dashboard-filter-drawer">
+            <label className="dashboard-filter">
+              <span>State</span>
+              <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value as DashboardStateFilter)}>
+                {currentStateOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <ChevronDown aria-hidden="true" />
+            </label>
+            <label className="dashboard-filter">
+              <span>Category</span>
+              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+                <option value="all">All categories</option>
+                {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+              <ChevronDown aria-hidden="true" />
+            </label>
+            <label className="dashboard-filter">
+              <span>Person</span>
+              <select value={personFilter} onChange={(event) => setPersonFilter(event.target.value)}>
+                <option value="all">All people</option>
+                {personOptions.map((person) => <option key={person} value={person}>{person}</option>)}
+              </select>
+              <ChevronDown aria-hidden="true" />
+            </label>
+            <label className="dashboard-filter">
+              <span>Date</span>
+              <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as DashboardDateFilter)}>
+                <option value="all">Any time</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 days</option>
+              </select>
+              <ChevronDown aria-hidden="true" />
+            </label>
+            <label className="dashboard-filter">
+              <span>Sort</span>
+              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as DashboardSort)}>
+                <option value="recent">Most recent</option>
+                <option value="title">Title A–Z</option>
+                <option value="state">Workflow state</option>
+              </select>
+              <ChevronDown aria-hidden="true" />
+            </label>
+            <button type="button" className="clear-filters" disabled={!filtersActive} onClick={clearFilters}>Clear filters</button>
+          </div>
+        )}
       </section>
+      </div>
 
       {(dashboardNotice || dashboardError) && (
         <p className={`dashboard-alert${dashboardError ? ' is-error' : ''}`}>{dashboardError || dashboardNotice}</p>
       )}
 
-      <section className="metric-strip" aria-label="Editorial work summary">
-        <DashboardMetric icon={<Inbox />} value={inboxAssignments.length} label="Review inbox" detail={`${assignedToMeCount} assigned · ${sharedQueueCount} queue`} active={view === 'reviews' && stateFilter === 'all'} onClick={() => { changeView('reviews'); setStateFilter('all') }} />
-        <DashboardMetric icon={<FileText />} value={workArticles.length} label="Active articles" detail={`${changesRequestedCount} changes requested`} active={view === 'articles' && stateFilter === 'all'} onClick={() => { changeView('articles'); setStateFilter('all') }} />
-        <DashboardMetric icon={<History />} value={reviewHistory.length} label="Review history" detail="Closed decisions" active={view === 'reviews' && stateFilter === 'closed'} onClick={() => { changeView('reviews'); setStateFilter('closed') }} />
-        <DashboardMetric
-          icon={<ClipboardCheck />}
-          value={approvedCount}
-          label={approvedLabel}
-          detail={reviewerOnly ? 'Approved decisions' : 'Ready for next step'}
-          active={view === (reviewerOnly ? 'reviews' : 'publishing') && stateFilter === 'approved'}
-          onClick={() => { changeView(reviewerOnly ? 'reviews' : 'publishing'); setStateFilter('approved') }}
-        />
-      </section>
+      {view === 'all' && (
+        <section className="metric-strip" aria-label="Work requiring attention">
+          {(isAuthor || showAll) && (
+            <DashboardMetric
+              icon={<FileText />}
+              label="Continue writing"
+              value={myActiveArticleCount}
+              detail={changesRequestedCount ? `${changesRequestedCount} returned for changes` : 'Your active article work'}
+              onClick={() => { setScope('mine'); changeView('articles') }}
+            />
+          )}
+          {showReviewNavigation && (
+            <DashboardMetric
+              icon={<Inbox />}
+              label="Your reviews"
+              value={assignedToMeCount}
+              detail="Assigned and waiting for action"
+              onClick={() => { setScope('mine'); changeView('reviews') }}
+            />
+          )}
+          {(isReviewer || showAll) && (
+            <DashboardMetric
+              icon={<ShieldCheck />}
+              label="Shared queue"
+              value={sharedQueueCount}
+              detail="Available review assignments"
+              onClick={() => { setScope('queue'); changeView('reviews') }}
+            />
+          )}
+          {(isPublisher || showAll) ? (
+            <DashboardMetric
+              icon={needsPublicationAttentionCount ? <AlertCircle /> : <Send />}
+              label={needsPublicationAttentionCount ? 'Publishing attention' : 'Ready to publish'}
+              value={needsPublicationAttentionCount || readyToPublishCount}
+              detail={needsPublicationAttentionCount ? `${failedPublicationCount} failed or stalled` : 'Approved content awaiting action'}
+              onClick={() => { setScope(showAll ? 'all' : 'queue'); changeView('publishing') }}
+            />
+          ) : reviewerOnly ? (
+            <DashboardMetric
+              icon={<Check />}
+              label={approvedLabel}
+              value={approvedCount}
+              detail="Completed approvals"
+              onClick={() => { setScope('mine'); setView('reviews'); setStateFilter('approved') }}
+            />
+          ) : null}
+        </section>
+      )}
 
-      <div className="dashboard-grid">
+      <div className={`dashboard-grid${view === 'all' ? '' : ' is-focused'}`}>
         {showReviewPanels && (
-          <DashboardPanel title="Review inbox" icon={<Inbox />} empty={inboxAssignments.length === 0} emptyMessage={emptyMessage} aside={<span>{inboxAssignments.length} items · {sharedQueueCount} queue</span>}>
+          <DashboardPanel title="Review inbox" icon={<Inbox />} empty={inboxAssignments.length === 0} emptyMessage={emptyMessage} aside={<span>{inboxAssignments.length} items · {sharedQueueCount} queue</span>} wide={view === 'reviews'}>
             <ul className="dashboard-list">
-              {inboxAssignments.map((assignment) => (
-                <DashboardRow key={assignment.id} assignment={assignment} article={articlesById.get(assignment.articleId)} />
+              {panelItems('review-inbox', inboxAssignments).map((assignment) => (
+                <DashboardRow key={assignment.id} assignment={assignment} article={articlesById.get(assignment.articleId)} onOpenArticle={onOpenArticle} />
               ))}
             </ul>
+            {!expandedPanels.has('review-inbox') && inboxAssignments.length > panelLimit && (
+              <button type="button" className="panel-view-all" onClick={() => expandPanel('review-inbox')}>View all {inboxAssignments.length} →</button>
+            )}
           </DashboardPanel>
         )}
 
         {showArticlePanels && (
-          <DashboardPanel title={view === 'articles' ? 'All articles' : 'Article work'} icon={<FileText />} empty={articlePanelItems.length === 0} emptyMessage={emptyMessage} aside={<span>{articlePanelItems.length} {view === 'articles' ? 'shown' : 'active'}</span>}>
+          <DashboardPanel
+            title={view === 'archive' ? 'Archived articles' : view === 'articles' ? 'All articles' : 'Continue your work'}
+            icon={view === 'archive' ? <Trash2 /> : <FileText />}
+            empty={articlePanelItems.length === 0}
+            emptyMessage={view === 'archive' && !filtersActive ? 'Archive is empty. Removed drafts will remain recoverable here.' : emptyMessage}
+            aside={<span>{articlePanelItems.length} {view === 'archive' ? 'recoverable' : view === 'articles' ? 'shown' : 'active'}</span>}
+            wide={view === 'articles' || view === 'archive'}
+          >
             <ul className="dashboard-list">
-              {articlePanelItems.map((article) => (
-                <ArticleStatusRow key={article.id} article={article} />
+              {panelItems('article-work', articlePanelItems).map((article) => (
+                <ArticleStatusRow
+                  key={article.id}
+                  article={article}
+                  note={articlePanelNote(article)}
+                  statusDetail={articlePanelStatusDetail(article)}
+                  secondaryAction={view === 'archive' ? {
+                    label: 'Restore',
+                    busyLabel: 'Restoring',
+                    disabled: archiveBusyId !== '',
+                    onClick: () => void restoreDraft(article),
+                    icon: <ArchiveRestore />,
+                  } : undefined}
+                  secondaryBusy={view === 'archive' && archiveBusyId === article.id}
+                  overflowActions={view !== 'archive' && canEditArticle(article, currentEmployee)
+                    && (article.workflowState === 'Draft' || article.workflowState === 'Changes Requested') ? [{
+                      label: 'Move to Trash',
+                      disabled: archiveBusyId !== '',
+                      onClick: () => openArchiveDialog(article),
+                      icon: <Trash2 />,
+                    }] : undefined}
+                  onOpenArticle={onOpenArticle}
+                />
               ))}
             </ul>
+            {!expandedPanels.has('article-work') && articlePanelItems.length > panelLimit && (
+              <button type="button" className="panel-view-all" onClick={() => expandPanel('article-work')}>View all {articlePanelItems.length} →</button>
+            )}
           </DashboardPanel>
         )}
 
         {showPublishingPanels && (isPublisher || showAll) && (
-          <DashboardPanel title="Publishing queue" icon={<Send />} empty={publishingQueue.length === 0} emptyMessage={emptyMessage} aside={<span>{publishingQueue.length} ready</span>}>
+          <DashboardPanel
+            title="Publishing queue"
+            icon={<Send />}
+            empty={publishingQueue.length === 0}
+            emptyMessage={emptyMessage}
+            aside={<span>{[
+              publishingQueue.filter((article) => publicationNeedsReconciliation(article.id)).length > 0
+                ? `${publishingQueue.filter((article) => publicationNeedsReconciliation(article.id)).length} needs retry`
+                : '',
+              publishingQueue.filter((article) => publicationPending(article.id) && !publicationNeedsReconciliation(article.id)).length > 0
+                ? `${publishingQueue.filter((article) => publicationPending(article.id) && !publicationNeedsReconciliation(article.id)).length} processing`
+                : '',
+              publishingQueue.filter((article) => article.workflowState === 'Scheduled' && !publicationPending(article.id)).length > 0
+                ? `${publishingQueue.filter((article) => article.workflowState === 'Scheduled' && !publicationPending(article.id)).length} scheduled`
+                : '',
+              publishingQueue.filter((article) => article.workflowState === 'Approved' && !publicationPending(article.id)).length > 0
+                ? `${publishingQueue.filter((article) => article.workflowState === 'Approved' && !publicationPending(article.id)).length} ready`
+                : '',
+            ].filter(Boolean).join(' · ') || 'No open work'}</span>}
+            wide={view === 'publishing'}
+          >
             <ul className="dashboard-list">
-              {publishingQueue.map((article) => (
-                <ArticleStatusRow
-                  key={article.id}
-                  article={article}
-                  statusOverride={publicationPending(article.id) ? 'Processing' : undefined}
-                  note={publicationPending(article.id)
-                    ? `${displayLookup(article.primaryAuthor)} · Catalyst is processing this revision`
-                    : article.workflowState === 'Scheduled'
-                    ? `${displayLookup(article.primaryAuthor)} · scheduled ${formatShortDate(article.scheduledAt)}`
-                    : `${displayLookup(article.primaryAuthor)} · ready for publisher action`}
-                  secondaryAction={article.workflowState === 'Approved' && !publicationPending(article.id) ? {
-                    label: 'Publish',
-                    disabled: publishBusyId !== '' || scheduleBusy,
-                    onClick: () => void publishArticle(article),
-                    busyLabel: 'Publishing',
-                  } : undefined}
-                  tertiaryAction={article.workflowState === 'Approved' && !publicationPending(article.id) ? {
-                    label: 'Schedule',
-                    disabled: publishBusyId !== '' || scheduleBusy,
-                    onClick: () => openScheduleDialog(article),
-                    icon: <CalendarClock />,
-                  } : undefined}
-                  secondaryBusy={publishBusyId === article.id}
-                />
-              ))}
+              {panelItems('publishing-queue', publishingQueue).map((article) => {
+                const pending = publicationPending(article.id)
+                const needsReconciliation = publicationNeedsReconciliation(article.id)
+                const statusText = needsReconciliation
+                  ? 'needs retry'
+                  : pending
+                  ? 'processing'
+                  : article.workflowState === 'Scheduled'
+                  ? 'scheduled'
+                  : 'ready to publish'
+                return (
+                  <ArticleStatusRow
+                    key={article.id}
+                    article={article}
+                    statusOverride={needsReconciliation ? 'Needs retry' : pending ? 'Processing' : undefined}
+                    statusDetail={needsReconciliation
+                      ? 'Publication finished, waiting for Creator confirmation.'
+                      : pending
+                      ? 'Publication job is running now.'
+                      : article.workflowState === 'Scheduled'
+                      ? `Scheduled for ${formatDashboardDateTime(article.scheduledAt)}`
+                      : 'Approved and ready for publisher action.'}
+                    note={workflowAttributionLine({
+                      article,
+                      assignments: validAssignments,
+                      auditEvents: data.auditEvents,
+                      activeJob: activePublicationJobByArticleId.get(article.id),
+                      statusText,
+                    })}
+                    secondaryAction={needsReconciliation ? {
+                      label: 'Reconcile',
+                      disabled: publishBusyId !== '' || scheduleBusy,
+                      onClick: () => void reconcilePublication(article),
+                      busyLabel: 'Reconciling',
+                      icon: <RotateCcw />,
+                    } : article.workflowState === 'Approved' && !pending ? {
+                      label: 'Publish',
+                      disabled: publishBusyId !== '' || scheduleBusy,
+                      onClick: () => void publishArticle(article),
+                      busyLabel: 'Publishing',
+                    } : undefined}
+                    tertiaryAction={article.workflowState === 'Approved' && !pending ? {
+                      label: 'Schedule',
+                      disabled: publishBusyId !== '' || scheduleBusy,
+                      onClick: () => openScheduleDialog(article),
+                      icon: <CalendarClock />,
+                    } : undefined}
+                    onOpenArticle={onOpenArticle}
+                    secondaryBusy={publishBusyId === article.id}
+                  />
+                )
+              })}
             </ul>
+            {!expandedPanels.has('publishing-queue') && publishingQueue.length > panelLimit && (
+              <button type="button" className="panel-view-all" onClick={() => expandPanel('publishing-queue')}>View all {publishingQueue.length} →</button>
+            )}
           </DashboardPanel>
         )}
 
-        {(showArticlePanels || showPublishingPanels) && (stateFilter === 'published' || publishedArticles.length > 0 || view === 'publishing') && (
+        {view === 'publishing' && (stateFilter === 'published' || publishedArticles.length > 0 || stateFilter === 'all') && (
           <DashboardPanel title="Published articles" icon={<Check />} empty={publishedArticles.length === 0} emptyMessage={emptyMessage} aside={<span>{publishedArticles.length} published</span>}>
             <ul className="dashboard-list">
-              {publishedArticles.map((article) => (
-                <ArticleStatusRow
-                  key={article.id}
-                  article={article}
-                  statusOverride={publicationPending(article.id) ? 'Processing' : undefined}
-                  note={publicationPending(article.id)
-                    ? `${displayLookup(article.primaryAuthor)} · Catalyst is processing the retraction`
-                    : `${displayLookup(article.primaryAuthor)} · published ${formatShortDate(article.lastPublishedAt)}`}
-                  secondaryAction={(isPublisher || showAll) && !publicationPending(article.id) ? {
-                    label: 'Retract',
-                    disabled: retractBusy || publishBusyId !== '' || scheduleBusy,
-                    onClick: () => openRetractDialog(article),
-                    icon: <EyeOff />,
-                  } : undefined}
-                  secondaryBusy={retractBusy && retractArticleTarget?.id === article.id}
-                />
-              ))}
+              {panelItems('published-articles', publishedArticles).map((article) => {
+                const activeJob = activePublicationJobByArticleId.get(article.id)
+                const pending = publicationPending(article.id)
+                const retracting = activeJob?.action === 'Unpublish'
+                  || (optimisticPublicationIds.has(article.id) && retractBusy)
+                return (
+                  <ArticleStatusRow
+                    key={article.id}
+                    article={article}
+                    statusOverride={pending ? (retracting ? 'Retracting' : 'Syncing') : undefined}
+                    statusDetail={pending
+                      ? retracting
+                        ? 'Retraction is being confirmed.'
+                        : 'Creator is confirming the public version.'
+                      : `Published ${formatDashboardDateTime(article.lastPublishedAt)}`}
+                    note={workflowAttributionLine({
+                      article,
+                      assignments: validAssignments,
+                      auditEvents: data.auditEvents,
+                      activeJob,
+                      statusText: pending ? (retracting ? 'retraction processing' : 'syncing') : 'published',
+                    })}
+                    overflowActions={(isPublisher || showAll) && !pending ? [{
+                      label: 'Retract',
+                      disabled: retractBusy || publishBusyId !== '' || scheduleBusy,
+                      onClick: () => openRetractDialog(article),
+                      icon: <EyeOff />,
+                    }] : undefined}
+                    onOpenArticle={onOpenArticle}
+                    secondaryBusy={retractBusy && retractArticleTarget?.id === article.id}
+                  />
+                )
+              })}
             </ul>
+            {!expandedPanels.has('published-articles') && publishedArticles.length > panelLimit && (
+              <button type="button" className="panel-view-all" onClick={() => expandPanel('published-articles')}>View all {publishedArticles.length} →</button>
+            )}
           </DashboardPanel>
         )}
 
-        {(showArticlePanels || showPublishingPanels) && (stateFilter === 'unpublished' || unpublishedArticles.length > 0) && (
+        {view === 'publishing' && (stateFilter === 'unpublished' || unpublishedArticles.length > 0) && (
           <DashboardPanel title="Retracted articles" icon={<EyeOff />} empty={unpublishedArticles.length === 0} emptyMessage={emptyMessage} aside={<span>{unpublishedArticles.length} retracted</span>}>
             <ul className="dashboard-list">
-              {unpublishedArticles.map((article) => (
+              {panelItems('retracted-articles', unpublishedArticles).map((article) => (
                 <ArticleStatusRow
                   key={article.id}
                   article={article}
-                  note={`${displayLookup(article.primaryAuthor)} · immutable publication retained`}
+                  statusDetail="Removed from public listings. Audit history is retained."
+                  note={workflowAttributionLine({
+                    article,
+                    assignments: validAssignments,
+                    auditEvents: data.auditEvents,
+                    statusText: 'retracted · audit retained',
+                  })}
+                  onOpenArticle={onOpenArticle}
                 />
               ))}
             </ul>
+            {!expandedPanels.has('retracted-articles') && unpublishedArticles.length > panelLimit && (
+              <button type="button" className="panel-view-all" onClick={() => expandPanel('retracted-articles')}>View all {unpublishedArticles.length} →</button>
+            )}
           </DashboardPanel>
         )}
 
-        {showReviewPanels && (
+        {view === 'reviews' && (
           <DashboardPanel title="Review history" icon={<History />} empty={reviewHistory.length === 0} emptyMessage={emptyMessage} aside={<span>{reviewHistory.length} closed</span>}>
             <ul className="history-list">
-              {reviewHistory.map((assignment) => (
-                <ReviewHistoryRow key={assignment.id} assignment={assignment} article={articlesById.get(assignment.articleId)} />
+              {panelItems('review-history', reviewHistory).map((assignment) => (
+                <ReviewHistoryRow key={assignment.id} assignment={assignment} article={articlesById.get(assignment.articleId)} onOpenArticle={onOpenArticle} />
               ))}
             </ul>
+            {!expandedPanels.has('review-history') && reviewHistory.length > panelLimit && (
+              <button type="button" className="panel-view-all" onClick={() => expandPanel('review-history')}>View all {reviewHistory.length} →</button>
+            )}
           </DashboardPanel>
         )}
 
@@ -1219,7 +2113,7 @@ function EditorialDashboard({
 
       {createOpen && (
         <div className="dialog-backdrop" role="presentation">
-          <section className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="new-article-title">
+          <DialogFrame busy={createBusy || createCategoryBusy} onClose={() => setCreateOpen(false)} className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="new-article-title">
             <header>
               <div>
                 <h2 id="new-article-title">New article</h2>
@@ -1249,6 +2143,28 @@ function EditorialDashboard({
                   ))}
                 </select>
               </label>
+              {canCreateCategory && (
+                <div className="taxonomy-create-row in-dialog">
+                  <label>
+                    <span>Create a category</span>
+                    <input
+                      value={createCategoryName}
+                      maxLength={150}
+                      placeholder="New governed category"
+                      onChange={(event) => setCreateCategoryName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault()
+                          void createCategory()
+                        }
+                      }}
+                    />
+                  </label>
+                  <button type="button" className="secondary-command" disabled={createCategoryBusy || createCategoryName.trim().length < 2} onClick={() => void createCategory()}>
+                    <Plus /> {createCategoryBusy ? 'Adding' : 'Add'}
+                  </button>
+                </div>
+              )}
               <label className="field-label">
                 Approval policy
                 <select value={createPolicyId} onChange={(event) => setCreatePolicyId(event.target.value)}>
@@ -1257,6 +2173,9 @@ function EditorialDashboard({
                   ))}
                 </select>
               </label>
+              {approvalPolicySummary(data, createPolicyId) && (
+                <p className="policy-choice-summary"><ShieldCheck /> {approvalPolicySummary(data, createPolicyId)}</p>
+              )}
               {createError && <p className="dialog-error">{createError}</p>}
             </div>
             <footer>
@@ -1270,13 +2189,13 @@ function EditorialDashboard({
                 <Plus /> Create and open
               </button>
             </footer>
-          </section>
+          </DialogFrame>
         </div>
       )}
 
       {scheduleArticleTarget && (
         <div className="dialog-backdrop" role="presentation">
-          <section className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-article-title">
+          <DialogFrame busy={scheduleBusy} onClose={() => setScheduleArticleTarget(null)} className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-article-title">
             <header>
               <div>
                 <h2 id="schedule-article-title">Schedule article</h2>
@@ -1290,10 +2209,11 @@ function EditorialDashboard({
                 <input
                   type="datetime-local"
                   value={scheduleAt}
-                  min={formatDateTimeLocal(new Date())}
+                  min={formatDateTimeLocal(new Date(Date.now() + 2 * 60 * 1000))}
                   onChange={(event) => setScheduleAt(event.target.value)}
                 />
               </label>
+              <p className="field-help">Choose a time at least two minutes from now.</p>
               {scheduleError && <p className="dialog-error">{scheduleError}</p>}
             </div>
             <footer>
@@ -1304,13 +2224,13 @@ function EditorialDashboard({
                 <CalendarClock /> {scheduleBusy ? 'Scheduling' : 'Schedule'}
               </button>
             </footer>
-          </section>
+          </DialogFrame>
         </div>
       )}
 
       {retractArticleTarget && (
         <div className="dialog-backdrop" role="presentation">
-          <section className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="retract-article-title">
+          <DialogFrame busy={retractBusy} onClose={() => setRetractArticleTarget(null)} className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="retract-article-title">
             <header>
               <div>
                 <h2 id="retract-article-title">Retract published article</h2>
@@ -1336,7 +2256,66 @@ function EditorialDashboard({
                 <EyeOff /> {retractBusy ? 'Retracting' : 'Retract article'}
               </button>
             </footer>
-          </section>
+          </DialogFrame>
+        </div>
+      )}
+
+      {resetDialogOpen && (
+        <div className="dialog-backdrop" role="presentation">
+          <DialogFrame busy={resetBusy} onClose={() => setResetDialogOpen(false)} className="review-dialog new-article-dialog reset-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-content-title">
+            <header>
+              <div>
+                <h2 id="reset-content-title">Reset test content?</h2>
+                <p>This deletes article workspace test data from Creator.</p>
+              </div>
+              <button className="icon-command" type="button" title="Close" aria-label="Close" disabled={resetBusy} onClick={() => setResetDialogOpen(false)}><X /></button>
+            </header>
+            <div className="review-dialog-body">
+              <div className="reset-warning-panel">
+                <AlertCircle />
+                <div>
+                  <strong>This cannot be undone from the widget.</strong>
+                  <p>It deletes articles, revisions, media rows, review rows, publication jobs, and audit events. Employees, roles, policies, categories, tags, and site settings stay in place.</p>
+                </div>
+              </div>
+              <p className="section-hint">{loadedContentCount} loaded dashboard records will be removed, plus related revision, media, and comment records that are not loaded in the dashboard.</p>
+              <label className="field-label">
+                Type {RESET_TEST_CONTENT_CONFIRMATION} to confirm
+                <input value={resetConfirmation} onChange={(event) => setResetConfirmation(event.target.value)} placeholder={RESET_TEST_CONTENT_CONFIRMATION} />
+              </label>
+              {resetError && <p className="dialog-error">{resetError}</p>}
+            </div>
+            <footer>
+              <button type="button" className="secondary-command" disabled={resetBusy} onClick={() => setResetDialogOpen(false)}>Cancel</button>
+              <button type="button" className="submit-review-command danger-command" disabled={resetBusy || resetConfirmation.trim() !== RESET_TEST_CONTENT_CONFIRMATION} onClick={() => void resetTestContent()}>
+                <Trash2 /> {resetBusy ? 'Resetting' : 'Reset content'}
+              </button>
+            </footer>
+          </DialogFrame>
+        </div>
+      )}
+
+      {archiveArticleTarget && (
+        <div className="dialog-backdrop" role="presentation">
+          <DialogFrame busy={Boolean(archiveBusyId)} onClose={() => setArchiveArticleTarget(null)} className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="archive-article-title">
+            <header>
+              <div>
+                <h2 id="archive-article-title">Move draft to Trash?</h2>
+                <p>{archiveArticleTarget.workingTitle}</p>
+              </div>
+              <button className="icon-command" type="button" title="Close" aria-label="Close" disabled={archiveBusyId !== ''} onClick={() => setArchiveArticleTarget(null)}><X /></button>
+            </header>
+            <div className="review-dialog-body">
+              <p>The draft will leave active work, but its revisions and audit history will be preserved. It can be restored later.</p>
+              {archiveError && <p className="dialog-error">{archiveError}</p>}
+            </div>
+            <footer>
+              <button type="button" className="secondary-command" disabled={archiveBusyId !== ''} onClick={() => setArchiveArticleTarget(null)}>Cancel</button>
+              <button type="button" className="submit-review-command danger-command" disabled={archiveBusyId !== ''} onClick={() => void archiveDraft()}>
+                <Trash2 /> {archiveBusyId ? 'Moving' : 'Move to Trash'}
+              </button>
+            </footer>
+          </DialogFrame>
         </div>
       )}
     </main>
@@ -1350,6 +2329,8 @@ function App() {
   const [revision, setRevision] = useState<Revision | null>(null)
   const [loadingError, setLoadingError] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [recoveryWarning, setRecoveryWarning] = useState('')
+  const recoveryStorage = useMemo(() => createRecoveryStorage(() => window.localStorage, setRecoveryWarning), [])
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [changeVersion, setChangeVersion] = useState(0)
   const [preview, setPreview] = useState(false)
@@ -1361,15 +2342,21 @@ function App() {
   const [reviewBusy, setReviewBusy] = useState(false)
   const [reviewError, setReviewError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
+  const [actionOutcome, setActionOutcome] = useState<ActionOutcome | null>(null)
   const [reviewActionOpen, setReviewActionOpen] = useState(false)
   const [reviewActionBusy, setReviewActionBusy] = useState(false)
   const [reviewActionError, setReviewActionError] = useState('')
+  const [workspacePublishBusy, setWorkspacePublishBusy] = useState(false)
   const revisionRef = useRef<Revision | null>(null)
+  const articleRef = useRef<Article | null>(null)
   const changeVersionRef = useRef(0)
   const savePromiseRef = useRef<Promise<boolean> | null>(null)
   const saveQueuedRef = useRef(false)
+  const taxonomyDirtyRef = useRef(false)
+  const taxonomyVersionRef = useRef(0)
   const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const dashboardRefreshPromiseRef = useRef<Promise<void> | null>(null)
+  const workspaceLoadRef = useRef(0)
 
   useEffect(() => {
     let active = true
@@ -1392,15 +2379,17 @@ function App() {
         setWorkspace(data)
         setRevision(data.revision)
         revisionRef.current = data.revision
-        const stored = localStorage.getItem(recoveryKey(data.revision.id))
+        articleRef.current = data.article
+        const stored = recoveryStorage.getItem(recoveryKey(data.revision.id))
         if (stored && canEditArticle(data.article, data.review.currentEmployee)
           && data.revision.state === 'Draft'
           && (data.article.workflowState === 'Draft' || data.article.workflowState === 'Changes Requested')) {
           try {
-            const parsed = JSON.parse(stored) as SaveRevisionInput
+            const parsed = parseRecovery(stored, data.revision.id)
             if (parsed.id === data.revision.id) setRecovery(parsed)
           } catch {
-            localStorage.removeItem(recoveryKey(data.revision.id))
+            setRecoveryWarning('A damaged local recovery copy was ignored. The saved Creator draft is unchanged.')
+            recoveryStorage.removeItem(recoveryKey(data.revision.id))
           }
         }
       } catch (error) {
@@ -1415,8 +2404,10 @@ function App() {
 
   const refreshDashboard = useCallback((): Promise<void> => {
     if (dashboardRefreshPromiseRef.current) return dashboardRefreshPromiseRef.current
+    const requestVersion = workspaceLoadRef.current
     const operation = repository.loadDashboard()
       .then((data) => {
+        if (workspaceLoadRef.current !== requestVersion) return
         setDashboard(data)
         setDashboardUpdatedAt(Date.now())
       })
@@ -1425,6 +2416,48 @@ function App() {
       })
     dashboardRefreshPromiseRef.current = operation
     return operation
+  }, [])
+
+  const handleOpenArticle = useCallback((articleId: string, revisionId?: string) => {
+    const requestVersion = ++workspaceLoadRef.current
+    openWorkspaceArticle(articleId, revisionId)
+    setLoadingError('')
+    setSaveError('')
+    setSaveStatus('idle')
+    setActionMessage('')
+    setActionOutcome(null)
+    setDashboard(null)
+    setWorkspace(null)
+    setRevision(null)
+    setRecovery(null)
+    setPreview(false)
+    revisionRef.current = null
+    articleRef.current = null
+
+    void repository.loadWorkspace(articleId, revisionId)
+      .then((data) => {
+        if (workspaceLoadRef.current !== requestVersion) return
+        setWorkspace(data)
+        setRevision(data.revision)
+        revisionRef.current = data.revision
+        articleRef.current = data.article
+        const stored = recoveryStorage.getItem(recoveryKey(data.revision.id))
+        if (stored && canEditArticle(data.article, data.review.currentEmployee)
+          && data.revision.state === 'Draft'
+          && (data.article.workflowState === 'Draft' || data.article.workflowState === 'Changes Requested')) {
+          try {
+            const parsed = parseRecovery(stored, data.revision.id)
+            if (parsed.id === data.revision.id) setRecovery(parsed)
+          } catch {
+            setRecoveryWarning('A damaged local recovery copy was ignored. The saved Creator draft is unchanged.')
+            recoveryStorage.removeItem(recoveryKey(data.revision.id))
+          }
+        }
+      })
+      .catch((error) => {
+        if (workspaceLoadRef.current !== requestVersion) return
+        setLoadingError(errorMessage(error, 'The workspace could not be loaded.'))
+      })
   }, [])
 
   const saveNow = useCallback((): Promise<boolean> => {
@@ -1440,15 +2473,20 @@ function App() {
         const current = revisionRef.current
         if (!current) break
         const savingVersion = changeVersionRef.current
+        const savingTaxonomyVersion = taxonomyVersionRef.current
+        const shouldSaveTaxonomy = taxonomyDirtyRef.current
         setSaveStatus('saving')
         setSaveError('')
         try {
-          const saved = await repository.saveDraft(saveInput(current))
+          const saved = await repository.saveDraft(saveInput(current, articleRef.current || undefined, shouldSaveTaxonomy))
+          if (shouldSaveTaxonomy && savingTaxonomyVersion === taxonomyVersionRef.current) {
+            taxonomyDirtyRef.current = false
+          }
           if (savingVersion === changeVersionRef.current) {
             revisionRef.current = saved
             setRevision(saved)
             setSaveStatus('saved')
-            localStorage.removeItem(recoveryKey(saved.id))
+            recoveryStorage.removeItem(recoveryKey(saved.id))
             setRecovery(null)
           } else {
             const latest = revisionRef.current
@@ -1460,7 +2498,7 @@ function App() {
               }
               revisionRef.current = rebased
               setRevision(rebased)
-              localStorage.setItem(recoveryKey(rebased.id), JSON.stringify(saveInput(rebased)))
+              recoveryStorage.setItem(recoveryKey(rebased.id), JSON.stringify(saveInput(rebased, articleRef.current || undefined, taxonomyDirtyRef.current)))
             }
             saveQueuedRef.current = true
           }
@@ -1487,6 +2525,16 @@ function App() {
   }, [changeVersion, saveNow])
 
   useEffect(() => {
+    if (!['dirty', 'saving', 'error'].includes(saveStatus)) return
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnBeforeLeaving)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
+  }, [saveStatus])
+
+  useEffect(() => {
     const textarea = titleTextareaRef.current
     if (!textarea) return
     const resize = () => {
@@ -1504,10 +2552,39 @@ function App() {
     const next = { ...current, ...changes }
     revisionRef.current = next
     setRevision(next)
-    localStorage.setItem(recoveryKey(next.id), JSON.stringify(saveInput(next)))
+    recoveryStorage.setItem(recoveryKey(next.id), JSON.stringify(saveInput(next, articleRef.current || undefined, taxonomyDirtyRef.current)))
     changeVersionRef.current += 1
     setSaveStatus('dirty')
     setChangeVersion(changeVersionRef.current)
+  }, [])
+
+  const updateArticle = useCallback((changes: Partial<Article>) => {
+    const current = articleRef.current
+    if (!current || !revisionRef.current) return
+    const next = { ...current, ...changes }
+    articleRef.current = next
+    setWorkspace((workspace) => workspace ? { ...workspace, article: next } : workspace)
+    taxonomyDirtyRef.current = true
+    taxonomyVersionRef.current += 1
+    recoveryStorage.setItem(recoveryKey(revisionRef.current.id), JSON.stringify(saveInput(revisionRef.current, next, true)))
+    changeVersionRef.current += 1
+    setSaveStatus('dirty')
+    setChangeVersion(changeVersionRef.current)
+  }, [])
+
+  const createWorkspaceTaxonomy = useCallback(async (kind: TaxonomyKind, name: string): Promise<LookupValue> => {
+    const result = await repository.createTaxonomyTerm(kind, name)
+    setWorkspace((current) => {
+      if (!current) return current
+      const key = kind === 'category' ? 'categories' : 'tags'
+      const collection = current[key]
+      const nextCollection = collection.some((term) => term.ID === result.term.ID)
+        ? collection
+        : [...collection, result.term].sort((a, b) => displayLookup(a).localeCompare(displayLookup(b)))
+      return { ...current, [key]: nextCollection }
+    })
+    setActionMessage(result.message || `${displayLookup(result.term)} is ready to use.`)
+    return result.term
   }, [])
 
   const status = useMemo(() => {
@@ -1524,6 +2601,7 @@ function App() {
     setReviewBusy(true)
     setReviewError('')
     setActionMessage('')
+    setActionOutcome(null)
     const saved = await saveNow()
     if (!saved) {
       setReviewError('The latest draft could not be saved. Resolve the save error before submitting.')
@@ -1536,18 +2614,25 @@ function App() {
         reviewMode === 'reviewers' ? selectedReviewerIds : [],
       )
       const submittedRevision = { ...revisionRef.current, state: 'Submitted' as const }
+      const latestArticle = articleRef.current || currentWorkspace.article
+      const submittedArticle = { ...latestArticle, workflowState: result.state }
+      articleRef.current = submittedArticle
       revisionRef.current = submittedRevision
       setRevision(submittedRevision)
       setWorkspace({
         ...currentWorkspace,
-        article: { ...currentWorkspace.article, workflowState: result.state },
+        article: submittedArticle,
         revision: submittedRevision,
       })
       setPreview(true)
       setReviewDialogOpen(false)
-      localStorage.removeItem(recoveryKey(submittedRevision.id))
+      recoveryStorage.removeItem(recoveryKey(submittedRevision.id))
       setRecovery(null)
-      setActionMessage(`${result.message} ${result.assignmentIds.length} assignment${result.assignmentIds.length === 1 ? '' : 's'} created.`)
+      setActionOutcome({
+        title: 'Sent for review',
+        message: `${result.message} ${result.assignmentIds.length} assignment${result.assignmentIds.length === 1 ? '' : 's'} created. The submitted revision is now read-only.`,
+        dashboardLabel: 'Back to dashboard',
+      })
     } catch (error) {
       setReviewError(errorMessage(error, 'The article could not be submitted for review.'))
     } finally {
@@ -1568,6 +2653,7 @@ function App() {
     if (!assignment || !currentEmployee) return
     setReviewActionBusy(true)
     setReviewActionError('')
+    setActionOutcome(null)
     try {
       const result = await repository.claimReviewAssignment(assignment.id)
       updateReviewAssignment({ status: 'Claimed', reviewerId: currentEmployee.id, reviewerName: currentEmployee.displayName })
@@ -1584,6 +2670,7 @@ function App() {
     if (!assignment) return false
     setReviewActionBusy(true)
     setReviewActionError('')
+    setActionOutcome(null)
     try {
       const comment = await repository.addReviewComment(assignment.id, 'General', body)
       setWorkspace((current) => current ? {
@@ -1605,16 +2692,21 @@ function App() {
     if (!assignment) return
     setReviewActionBusy(true)
     setReviewActionError('')
+    setActionOutcome(null)
     try {
       const result = await repository.recordReviewDecision(assignment.id, decision, summary)
       updateReviewAssignment({ status: decision, decision, decisionSummary: summary })
       setWorkspace((current) => current ? {
         ...current,
-        article: {
-          ...current.article,
+        article: (() => {
+          const nextArticle = {
+          ...(articleRef.current || current.article),
           workflowState: result.articleState || current.article.workflowState,
           activeDraftRevisionId: result.newDraftRevisionId || current.article.activeDraftRevisionId,
-        },
+          }
+          articleRef.current = nextArticle
+          return nextArticle
+        })(),
       } : current)
       if (result.articleState === 'Approved' && revisionRef.current) {
         const approved = { ...revisionRef.current, state: 'Approved' as const }
@@ -1627,7 +2719,20 @@ function App() {
       if (result.newDraftRevisionNumber) {
         message += ` Draft revision ${result.newDraftRevisionNumber} was created.`
       }
-      setActionMessage(message)
+      const nextReview = await repository.loadDashboard().then((data) => {
+        const articles = new Map(data.articles.map((article) => [article.id, article]))
+        return data.assignments
+          .filter((item) => item.id !== assignment.id)
+          .filter((item) => activeReviewAssignment(item, articles.get(item.articleId)))
+          .find((item) => assignmentBelongsToCurrentReviewer(item, data.currentEmployee)
+            || (item.status === 'Queued' && data.currentEmployee?.roles.includes('Reviewer')))
+      }).catch(() => undefined)
+      setActionOutcome({
+        title: decision === 'Approved' ? 'Approval recorded' : decision === 'Changes Requested' ? 'Changes requested' : 'Article rejected',
+        message,
+        dashboardLabel: 'Review dashboard',
+        nextReview: nextReview ? { articleId: nextReview.articleId, revisionId: nextReview.revisionId } : undefined,
+      })
       setReviewActionOpen(false)
     } catch (error) {
       setReviewActionError(errorMessage(error, 'The review decision could not be recorded.'))
@@ -1635,6 +2740,37 @@ function App() {
       setReviewActionBusy(false)
     }
   }, [updateReviewAssignment, workspace])
+
+  const publishWorkspaceArticle = useCallback(async () => {
+    const currentWorkspace = workspace
+    if (!currentWorkspace) return
+    setWorkspacePublishBusy(true)
+    setActionMessage('')
+    setActionOutcome(null)
+    setSaveError('')
+    try {
+      const result = await repository.publishArticle(currentWorkspace.article.id)
+      const nextArticle = {
+        ...currentWorkspace.article,
+        workflowState: result.articleState || currentWorkspace.article.workflowState,
+        publishedRevisionId: result.revisionId || currentWorkspace.article.publishedRevisionId,
+        lastPublishedAt: result.publishedAt || currentWorkspace.article.lastPublishedAt,
+        firstPublishedAt: currentWorkspace.article.firstPublishedAt || result.publishedAt,
+      }
+      articleRef.current = nextArticle
+      setWorkspace({ ...currentWorkspace, article: nextArticle })
+      setActionOutcome({
+        title: 'Publication started',
+        message: result.message || `${currentWorkspace.article.workingTitle} was sent for publishing.`,
+        dashboardLabel: 'Publishing dashboard',
+        floating: true,
+      })
+    } catch (error) {
+      setSaveError(errorMessage(error, 'The article could not be published.'))
+    } finally {
+      setWorkspacePublishBusy(false)
+    }
+  }, [workspace])
 
   if (loadingError) {
     return (
@@ -1648,7 +2784,7 @@ function App() {
   }
 
   if (!workspace || !revision) {
-    if (dashboard) return <EditorialDashboard data={dashboard} onRefresh={refreshDashboard} updatedAt={dashboardUpdatedAt} />
+    if (dashboard) return <EditorialDashboard data={dashboard} onRefresh={refreshDashboard} onOpenArticle={handleOpenArticle} updatedAt={dashboardUpdatedAt} />
     return (
       <main className="loading-page" aria-label="Loading editorial workspace">
         <div className="loading-top" />
@@ -1663,23 +2799,46 @@ function App() {
   const editable = canEditArticle(workspace.article, workspace.review.currentEmployee)
     && (workspace.article.workflowState === 'Draft' || workspace.article.workflowState === 'Changes Requested')
     && revision.state === 'Draft'
+  const workspaceRoles = workspace.review.currentEmployee?.roles || []
+  const canSubmitCurrentArticle = editable && (workspaceRoles.includes('Author') || workspaceRoles.includes('Editorial Admin') || workspaceRoles.includes('CEO'))
+  const canReviewCurrentArticle = workspace.article.workflowState === 'In Review'
+    && workspace.review.assignment
+    && ACTIVE_ASSIGNMENT_STATES.has(workspace.review.assignment.status)
+    && workspace.review.canReview
+  const canPublishCurrentArticle = workspace.article.workflowState === 'Approved'
+    && revision.id === workspace.article.approvedRevisionId
+    && (workspaceRoles.includes('Publisher') || workspaceRoles.includes('Editorial Admin') || workspaceRoles.includes('CEO'))
+  const missingReadinessItems = readinessMissing(workspace.article, revision)
+  const showPromotedFeedback = workspace.article.workflowState === 'Changes Requested' && workspace.feedback.some(reviewFeedbackHasVisibleContent)
 
   const restoreRecovery = async () => {
     if (!recovery) return
     try {
       const document = await repository.hydrateDocument(recovery.document)
-      const { expectedChecksum, expectedVersionToken, ...recoveredFields } = recovery
+      const { expectedChecksum, expectedVersionToken, primaryCategoryId, tagIds, saveTaxonomy, ...recoveredFields } = recovery
       const restored = revisionRef.current
         ? {
           ...revisionRef.current,
           ...recoveredFields,
-          checksum: revisionRef.current.checksum || expectedChecksum || undefined,
-          versionToken: revisionRef.current.versionToken || expectedVersionToken,
+          checksum: expectedChecksum || undefined,
+          versionToken: expectedVersionToken,
           document,
         }
         : null
       revisionRef.current = restored
       setRevision(restored)
+      const recoveredTagIds = tagIds || []
+      const recoveredArticle = saveTaxonomy && articleRef.current ? {
+        ...articleRef.current,
+        primaryCategory: workspace.categories.find((category) => category.ID === primaryCategoryId),
+        tags: workspace.tags.filter((tag) => recoveredTagIds.includes(tag.ID)),
+      } : null
+      if (recoveredArticle) {
+        articleRef.current = recoveredArticle
+        setWorkspace((current) => current ? { ...current, article: recoveredArticle } : current)
+        taxonomyDirtyRef.current = true
+        taxonomyVersionRef.current += 1
+      }
       setRecovery(null)
       setSaveError('')
       setSaveStatus('dirty')
@@ -1694,17 +2853,25 @@ function App() {
     <div className={`workspace${inspectorOpen ? '' : ' inspector-closed'}`}>
       <header className="workspace-header">
         <div className="header-left">
-          <button className="icon-command" type="button" title="Back" aria-label="Back" onClick={() => window.history.back()}>
+          <button className="icon-command" type="button" title="Back to dashboard" aria-label="Back to dashboard" onClick={() => {
+            void (async () => {
+              if (['dirty', 'saving', 'error'].includes(saveStatus) && !await saveNow()) return
+              openDashboard()
+            })()
+          }}>
             <ArrowLeft />
           </button>
           <div className="brand-mark" aria-hidden="true">G</div>
           <div className="document-identity">
-            <strong>GeneDrift Insights</strong>
-            <span>{workspace.article.workflowState}</span>
+            <strong>{revision.title || workspace.article.workingTitle || 'Untitled article'}</strong>
+            <span>
+              <StatusPill state={workspace.article.workflowState} />
+              <em>Revision {revision.number}</em>
+            </span>
           </div>
         </div>
 
-        <div className={`save-state is-${saveStatus}`} aria-live="polite">
+        <div className={`save-state is-${saveStatus}${missingReadinessItems.length ? ' has-missing' : ''}`} aria-live="polite">
           {status.icon}<span>{status.label}</span>
         </div>
 
@@ -1715,28 +2882,32 @@ function App() {
           <button className="icon-command" type="button" title={inspectorOpen ? 'Hide inspector' : 'Show inspector'} aria-label={inspectorOpen ? 'Hide inspector' : 'Show inspector'} onClick={() => setInspectorOpen((value) => !value)}>
             {inspectorOpen ? <PanelRightClose /> : <PanelRightOpen />}
           </button>
-          <button className="save-command" type="button" disabled={!editable || saveStatus === 'saving'} onClick={() => void saveNow()}>
-            <Save /> Save draft
-          </button>
           {editable && (
+            <button className="save-command" type="button" disabled={saveStatus === 'saving'} onClick={() => void saveNow()}>
+              <Save /> Save draft
+            </button>
+          )}
+          {canSubmitCurrentArticle && (
             <button className="submit-review-command header-submit" type="button" disabled={reviewBusy} onClick={() => {
               setReviewError('')
               setReviewDialogOpen(true)
             }}>
-              <Send /> Submit for review
+              <Send /> {workspace.article.workflowState === 'Changes Requested' ? 'Resubmit' : 'Submit for review'}
             </button>
           )}
-          {workspace.article.workflowState === 'In Review'
-            && workspace.review.assignment
-            && ACTIVE_ASSIGNMENT_STATES.has(workspace.review.assignment.status)
-            && workspace.review.canReview && (
+          {canReviewCurrentArticle && (
             <button className="submit-review-command header-submit" type="button" onClick={() => {
               setReviewActionError('')
               setReviewActionOpen(true)
             }}>
               <ClipboardCheck /> Review
             </button>
-            )}
+          )}
+          {canPublishCurrentArticle && (
+            <button className="submit-review-command header-submit" type="button" disabled={workspacePublishBusy} onClick={() => void publishWorkspaceArticle()}>
+              <Send /> {workspacePublishBusy ? 'Publishing' : 'Publish'}
+            </button>
+          )}
         </div>
       </header>
 
@@ -1745,13 +2916,15 @@ function App() {
           <span><RotateCcw /> A local recovery copy is available. Restoring replaces the current draft fields.</span>
           <div>
             <button type="button" onClick={() => {
-              localStorage.removeItem(recoveryKey(revision.id))
+              recoveryStorage.removeItem(recoveryKey(revision.id))
               setRecovery(null)
             }}>Discard</button>
             <button type="button" onClick={() => void restoreRecovery()}>Restore</button>
           </div>
         </div>
       )}
+
+      {recoveryWarning && <div className="error-banner" role="alert"><AlertCircle /> {recoveryWarning}</div>}
 
       {saveError && (
         <div className="error-banner" role="alert"><AlertCircle /> {saveError}</div>
@@ -1761,8 +2934,40 @@ function App() {
         <div className="success-banner" role="status"><Check /> {actionMessage}</div>
       )}
 
+      {actionOutcome && (actionOutcome.floating ? (
+        <FloatingNotice
+          notice={{
+            id: 0,
+            tone: 'success',
+            title: actionOutcome.title,
+            message: actionOutcome.message,
+            actionLabel: actionOutcome.dashboardLabel,
+            onAction: openDashboard,
+          }}
+          onDismiss={() => setActionOutcome(null)}
+        />
+      ) : (
+        <WorkflowOutcome outcome={actionOutcome} onDismiss={() => setActionOutcome(null)} />
+      ))}
+
       <main className="workspace-main">
         <section className="document-column">
+          {showPromotedFeedback && <ReviewFeedbackPanel feedback={workspace.feedback} />}
+          <ArticleWorkflowTimeline article={workspace.article} auditEvents={workspace.auditEvents} />
+          <RevisionComparison current={revision} previous={workspace.previousRevision} />
+          <section className={`readiness-checklist${missingReadinessItems.length ? '' : ' is-ready'}`} aria-label="Publishing readiness">
+            <div>
+              <strong>{missingReadinessItems.length ? 'Before this is ready' : 'Ready for workflow'}</strong>
+              <span>{missingReadinessItems.length ? 'Complete the missing editorial fields below.' : 'Required editorial fields are present.'}</span>
+            </div>
+            {missingReadinessItems.length ? (
+              <ul>
+                {missingReadinessItems.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            ) : (
+              <span className="readiness-ready"><Check /> Ready</span>
+            )}
+          </section>
           <div className="title-area">
             <textarea
               ref={titleTextareaRef}
@@ -1811,8 +3016,15 @@ function App() {
           <Inspector
             article={workspace.article}
             revision={revision}
+            categories={workspace.categories}
+            tags={workspace.tags}
+            feedback={showPromotedFeedback ? [] : workspace.feedback}
             readOnly={!editable}
+            canCreateCategory={editable && (workspaceRoles.includes('Editorial Admin') || workspaceRoles.includes('CEO'))}
+            canCreateTag={editable && (workspaceRoles.includes('Author') || workspaceRoles.includes('Editorial Admin') || workspaceRoles.includes('CEO'))}
             onChange={updateRevision}
+            onArticleChange={updateArticle}
+            onCreateTaxonomy={createWorkspaceTaxonomy}
             onCreateImage={(file, metadata) => repository.createImageAsset(
               file,
               metadata,
@@ -1838,6 +3050,7 @@ function App() {
         mode={reviewMode}
         busy={reviewBusy}
         error={reviewError}
+        missingItems={missingReadinessItems}
         onModeChange={setReviewMode}
         onSelectionChange={setSelectedReviewerIds}
         onClose={() => !reviewBusy && setReviewDialogOpen(false)}

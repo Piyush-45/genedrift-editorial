@@ -62,8 +62,8 @@ function renderNode(node: TipTapNode, mediaById: Map<string, PublishedMediaAsset
     }
     const size = ["small", "medium", "large", "full"].includes(String(node.attrs?.displaySize)) ? node.attrs?.displaySize : "large";
     const alignment = ["left", "center", "right"].includes(String(node.attrs?.alignment)) ? node.attrs?.alignment : "center";
-    const captionParts = [asset.caption, asset.credit].filter(Boolean).map(escapeHtml);
-    return `<figure data-media-id="${escapeHtml(mediaId)}" data-size="${escapeHtml(size)}" data-alignment="${escapeHtml(alignment)}"><img src="${escapeHtml(asset.publishedUrl)}" alt="${escapeHtml(asset.altText)}" loading="lazy">${captionParts.length ? `<figcaption>${captionParts.join(" · ")}</figcaption>` : ""}</figure>`;
+    const caption = asset.caption ? escapeHtml(asset.caption) : "";
+    return `<figure data-media-id="${escapeHtml(mediaId)}" data-size="${escapeHtml(size)}" data-alignment="${escapeHtml(alignment)}"><img src="${escapeHtml(asset.publishedUrl)}" alt="${escapeHtml(asset.altText)}" loading="lazy">${caption ? `<figcaption>${caption}</figcaption>` : ""}</figure>`;
   }
   return renderChildren(node, mediaById);
 }

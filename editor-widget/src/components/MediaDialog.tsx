@@ -1,7 +1,9 @@
+import { useDialogFocus } from '../useDialogFocus'
 import { useEffect, useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ImagePlus, LoaderCircle, X } from 'lucide-react'
 import type { MediaAsset, MediaMetadata } from '../domain'
+import { CreatorImage } from '../creatorImageSource'
 
 type Props = {
   open: boolean
@@ -23,7 +25,6 @@ export function MediaDialog({ open, mode, asset, requireFile = false, busy = fal
   const [previewUrl, setPreviewUrl] = useState('')
   const [altText, setAltText] = useState('')
   const [caption, setCaption] = useState('')
-  const [credit, setCredit] = useState('')
   const [validation, setValidation] = useState('')
 
   useEffect(() => {
@@ -32,7 +33,6 @@ export function MediaDialog({ open, mode, asset, requireFile = false, busy = fal
     setPreviewUrl(asset?.previewUrl ?? '')
     setAltText(asset?.altText ?? '')
     setCaption(asset?.caption ?? '')
-    setCredit(asset?.credit ?? '')
     setValidation('')
   }, [asset, open])
 
@@ -40,6 +40,7 @@ export function MediaDialog({ open, mode, asset, requireFile = false, busy = fal
     if (previewUrl.startsWith('blob:') && previewUrl !== asset?.previewUrl) URL.revokeObjectURL(previewUrl)
   }, [asset?.previewUrl, open, previewUrl])
 
+  const dialogRef = useDialogFocus(open, busy, onClose)
   if (!open) return null
 
   const canChooseFile = !asset
@@ -69,26 +70,35 @@ export function MediaDialog({ open, mode, asset, requireFile = false, busy = fal
       setValidation('Alt text is required for accessible publishing.')
       return
     }
-    onSubmit(file, { altText: altText.trim(), caption: caption.trim(), credit: credit.trim() })
+    onSubmit(file, { altText: altText.trim(), caption: caption.trim() })
   }
+
+  const normalizedAltText = altText.trim()
+  const normalizedCaption = caption.trim()
+  const hasChanges = Boolean(file)
+    || normalizedAltText !== (asset?.altText ?? '').trim()
+    || normalizedCaption !== (asset?.caption ?? '').trim()
 
   return createPortal(
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy) onClose()
     }}>
-      <section className="media-dialog" role="dialog" aria-modal="true" aria-labelledby={`${inputId}-title`}>
+      <section ref={dialogRef} tabIndex={-1} className="media-dialog" role="dialog" aria-modal="true" aria-labelledby={`${inputId}-title`}>
         <header>
           <div>
-            <h2 id={`${inputId}-title`}>{asset ? 'Edit image details' : mode === 'cover' ? 'Add cover image' : 'Insert image'}</h2>
+            <h2 id={`${inputId}-title`}>{asset ? 'Edit alt text and caption' : mode === 'cover' ? 'Add cover image' : 'Insert image'}</h2>
             <p>{mode === 'cover' ? 'Shown on article listings and at the top of the published article.' : 'Placed at the current cursor position.'}</p>
           </div>
           <button className="icon-command" type="button" title="Close" aria-label="Close" disabled={busy} onClick={onClose}><X /></button>
         </header>
 
         <div className="media-dialog-body">
-          <label className={`media-dropzone${previewUrl ? ' has-preview' : ''}${canChooseFile ? '' : ' is-readonly'}`} htmlFor={canChooseFile ? inputId : undefined}>
-            {previewUrl ? <img src={previewUrl} alt="Selected preview" /> : <><ImagePlus /><strong>Choose image</strong><span>JPG, PNG, WebP or GIF · up to 10 MB</span></>}
-          </label>
+          <div className="media-preview-column">
+            <label className={`media-dropzone${previewUrl ? ' has-preview' : ''}${canChooseFile ? '' : ' is-readonly'}`} htmlFor={canChooseFile ? inputId : undefined}>
+              {previewUrl ? <CreatorImage src={previewUrl} alt="Selected preview" /> : <><ImagePlus /><strong>Choose image</strong><span>JPG, PNG, WebP or GIF · up to 10 MB</span></>}
+            </label>
+            {normalizedCaption && <p className="media-caption-preview"><span>Caption preview</span>{normalizedCaption}</p>}
+          </div>
           {canChooseFile && <input id={inputId} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => chooseFile(event.target.files?.[0])} />}
 
           <div className="media-fields">
@@ -96,10 +106,8 @@ export function MediaDialog({ open, mode, asset, requireFile = false, busy = fal
               <input value={altText} maxLength={250} placeholder="Describe what the image shows" onChange={(event) => setAltText(event.target.value)} />
             </label>
             <label className="field-label">Caption
-              <textarea value={caption} maxLength={500} rows={3} onChange={(event) => setCaption(event.target.value)} />
-            </label>
-            <label className="field-label">Credit
-              <input value={credit} maxLength={250} placeholder="Photographer, organization, or source" onChange={(event) => setCredit(event.target.value)} />
+              <textarea value={caption} maxLength={500} rows={4} placeholder="Optional text shown below the image" onChange={(event) => setCaption(event.target.value)} />
+              <span className="field-count">Optional · {caption.length}/500</span>
             </label>
             {asset && mode === 'cover' && <p className="media-edit-note">Use Replace to upload a different cover image.</p>}
           </div>
@@ -108,9 +116,9 @@ export function MediaDialog({ open, mode, asset, requireFile = false, busy = fal
         {(validation || error) && <div className="dialog-error" role="alert">{validation || error}</div>}
         <footer>
           <button className="secondary-command" type="button" disabled={busy} onClick={onClose}>Cancel</button>
-          <button className="save-command" type="button" disabled={busy} onClick={submit}>
+          <button className="save-command" type="button" disabled={busy || Boolean(asset && !hasChanges)} onClick={submit}>
             {busy ? <LoaderCircle className="spin-soft" /> : <ImagePlus />}
-            {asset ? 'Save details' : mode === 'cover' ? 'Use as cover' : 'Insert image'}
+            {busy ? 'Saving…' : asset ? 'Save details' : mode === 'cover' ? 'Use as cover' : 'Insert image'}
           </button>
         </footer>
       </section>

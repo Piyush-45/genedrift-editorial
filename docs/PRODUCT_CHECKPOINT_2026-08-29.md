@@ -1,8 +1,17 @@
 # GeneDrift Product Checkpoint — 2026-08-29
 
 Status: Development is functional but **not fully verified or production-ready**.
-Do not mark the integration verified until the complete Development matrix, a
-fresh Creator DS export, and the negative role tests pass.
+Do not mark the integration verified until the remaining Development matrix,
+fresh Creator DS export audit, direct role/security evidence, media-format
+validation, accessibility/public-site QA, and measured scale evidence pass.
+
+2026-09-01 amendment: read `docs/CURRENT_CHECKPOINT_2026-09-01.md` first for the
+latest state. Separate-role visual testing, scheduled publication, too-soon
+schedule rejection, retraction, public published visibility, and dashboard final
+polish have since passed live functional checks. Remaining release gates are now
+fresh Creator DS export audit, duplicate/idempotency stress evidence, fresh
+regulated-review confidence, media-format validation, accessibility/public-site
+QA, and measured 1,800-post scale evidence.
 
 ## 1. Built and working
 
@@ -34,8 +43,10 @@ fresh Creator DS export, and the negative role tests pass.
   busy panels, two-line long titles, responsive layout, and grouped actions.
 - Publishing controls are hidden from users without Publisher or Editorial
   Admin authority.
-- The redesigned package is built and locally checked; it still needs upload to
-  Creator and live role-by-role confirmation.
+- The redesigned package has been uploaded, live role-checked, and polished.
+  Latest widget artifact:
+  `genedrift-editor-widget-final-polish-v0.4.5.zip`
+  (`1210fe55854a2aba1ebffa403c8c87e8a5097ea641e2d17ecbacb0bff0fae8ab`).
 
 ### Catalyst publication boundary
 
@@ -54,9 +65,9 @@ fresh Creator DS export, and the negative role tests pass.
 Run these in order and keep screenshots/row exports with article, revision,
 request, publication, pointer, callback, and Creator job IDs.
 
-1. **Upload the current dashboard ZIP** and test Mine/Queue/All, search, every
-   filter, metric shortcuts, Clear filters, Refresh, panel scrolling, long titles,
-   and narrow-screen layout.
+1. **Fresh Creator DS audit:** export the current live Creator app, record its
+   SHA-256, and compare schema/functions/reports/roles/sharing/menu/widget
+   package against expected setup.
 2. **Finish scheduled-publication evidence** for the 09:35 IST success: capture
    `GD_Publication_Requests`, `GD_Publication_Attempts`,
    `GD_Published_Versions`, `GD_Published_Pointers`, `GD_Callback_Outbox`, the
@@ -68,12 +79,10 @@ request, publication, pointer, callback, and Creator job IDs.
 4. **Complete media tests:** JPEG, PNG, GIF and WebP; checksum/signature/size/
    dimension rejection; duplicate-media reuse; and proof that only media
    referenced by the approved revision is handed off.
-5. **Run negative role tests using separate accounts:** Author-only,
-   Reviewer-only, Publisher-only, and non-super-admin Editorial Admin. Include
-   self-review, opening another author's draft, review without assignment,
-   publishing without permission, and direct API attempts.
-6. **Export a fresh cleaned Creator DS**, record its SHA-256, and audit functions,
-   reports, fields, profiles, sharing, and menu exposure against the repository.
+5. **Run remaining security evidence:** direct API attempts for role denial,
+   secret rotation, and browser-bundle secret inspection.
+6. **Run public-site/accessibility and measured scale evidence** before claiming
+   the product is release-ready.
 
 Only after all six groups pass should Development be marked verified or promoted.
 

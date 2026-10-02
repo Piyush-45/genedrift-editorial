@@ -427,7 +427,7 @@ application "GeneDrift Editorial Platform"
 			success message = "Audit event saved."
 			Event_Details ( type = section row = 1 column = 0 width = medium )
 			must have unique Event_UUID ( type = text displayname = "Event UUID" maxchar = 64 row = 1 column = 1 width = medium )
-			must have Entity_Type ( type = picklist displayname = "Entity Type" values = {"Article","Revision","Review","Publication","Media","Role"} row = 2 column = 1 width = medium )
+			must have Entity_Type ( type = picklist displayname = "Entity Type" values = {"Article","Revision","Review","Publication","Media","Role","Taxonomy"} row = 2 column = 1 width = medium )
 			must have Entity_UUID ( type = text displayname = "Entity UUID" maxchar = 64 row = 3 column = 1 width = medium )
 			must have Event_Type ( type = text displayname = "Event Type" maxchar = 150 row = 4 column = 1 width = medium )
 			Actor_Employee ( type = picklist displayname = "Actor Employee" values = Demo_Employees.ID displayformat = [Display_Name] sortorder = ascending row = 5 column = 1 width = medium )

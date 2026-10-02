@@ -26,10 +26,10 @@ export function documentText(document: JSONContent): string {
   const visit = (node: JSONContent) => {
     if (node.text) values.push(node.text)
     node.content?.forEach(visit)
-    if (node.type === 'paragraph' || node.type === 'heading') values.push('\n')
+    if (['paragraph', 'heading', 'hardBreak', 'tableCell', 'tableHeader'].includes(node.type || '')) values.push('\n')
   }
   visit(document)
-  return values.join(' ').replace(/\s+/g, ' ').trim()
+  return values.join('').replace(/\s+/g, ' ').trim()
 }
 
 export function metricsFor(document: JSONContent) {
@@ -72,4 +72,39 @@ export function errorMessage(error: unknown, fallback: string): string {
     }
   }
   return fallback
+}
+
+export function parseProductTimestamp(value?: string) {
+  if (!value) return 0
+  const direct = Date.parse(value)
+  if (!Number.isNaN(direct)) return direct
+  const normalized = value.replace(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/, '$1 $2 $3')
+  const fallback = Date.parse(normalized)
+  return Number.isNaN(fallback) ? 0 : fallback
+}
+
+export function formatProductTimestamp(value?: string | number) {
+  if (!value) return ''
+  const date = typeof value === 'number' ? new Date(value) : new Date(parseProductTimestamp(value))
+  if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : ''
+  const elapsed = Date.now() - date.getTime()
+  if (elapsed >= 0 && elapsed < 24 * 60 * 60 * 1000) {
+    const minutes = Math.max(1, Math.floor(elapsed / 60_000))
+    if (minutes < 60) return `${minutes}m ago`
+    return `${Math.floor(minutes / 60)}h ago`
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+export function formatRefreshTimestamp(value?: number) {
+  if (!value) return 'just now'
+  const elapsed = Date.now() - value
+  if (elapsed >= 0 && elapsed < 60_000) return 'just now'
+  return formatProductTimestamp(value)
 }

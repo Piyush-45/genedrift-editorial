@@ -219,6 +219,10 @@ export class MockEditorialRepository implements EditorialRepository {
 
   async loadDashboard(): Promise<DashboardData> {
     await new Promise((resolve) => window.setTimeout(resolve, 250))
+    if (new URLSearchParams(window.location.search).get('demo') === 'admin') {
+      const { demoDashboard } = await import('./mockDashboardDemo')
+      return demoDashboard()
+    }
     return {
       currentEmployee: {
         id: eligibleReviewers[0].id,

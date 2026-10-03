@@ -4,6 +4,10 @@ import {
   AlertCircle,
   ArchiveRestore,
   ArrowLeft,
+  ArrowRight,
+  CircleCheck,
+  Globe,
+  PenLine,
   CalendarClock,
   Check,
   ChevronDown,
@@ -30,6 +34,9 @@ import {
 } from 'lucide-react'
 import type { Article, AuditEvent, CurrentEmployee, DashboardData, LookupValue, MediaAsset, MediaMetadata, PublicationJob, ReviewAssignment, ReviewComment, ReviewFeedback, Revision, SaveRevisionInput, TaxonomyKind, WorkspaceData } from './domain'
 import { ArticleEditor } from './components/ArticleEditor'
+import { Avatar, EmptyState, RowMenu, Section, StageBadge, When, hasLiveVersionBehind, relativeTime, stageOf } from './dashboard/parts'
+import type { MenuAction, StageTone } from './dashboard/parts'
+import './dashboard/dashboard.css'
 import { Inspector } from './components/Inspector'
 import { DialogFrame } from './components/DialogFrame'
 import { SubmitReviewDialog } from './components/SubmitReviewDialog'
@@ -1047,7 +1054,10 @@ function EditorialDashboard({
   onOpenArticle: (articleId: string, revisionId?: string) => void
   updatedAt: number
 }) {
-  const [scope, setScope] = useState<'mine' | 'queue' | 'all'>('mine')
+  const [scope, setScope] = useState<'mine' | 'queue' | 'all'>('all')
+  const [stageFilter, setStageFilter] = useState('all')
+  const [ownership, setOwnership] = useState<'mine' | 'everyone'>('everyone')
+  const [reviewTab, setReviewTab] = useState<'todo' | 'queue' | 'done'>('todo')
   const [view, setView] = useState<DashboardView>('all')
   const [query, setQuery] = useState('')
   const [stateFilter, setStateFilter] = useState<DashboardStateFilter>('all')
@@ -1685,436 +1695,615 @@ function EditorialDashboard({
     }
   }
 
+  /* ------------------------------------------------------------------ *
+   * View model for the redesigned dashboard (v0.7).
+   * One rule throughout: show the stage, who owns it, when it last moved,
+   * and the single next action. Everything else is one click away.
+   * ------------------------------------------------------------------ */
+  const firstName = currentEmployee?.displayName.split(/\s+/)[0] || ''
+  const hourNow = new Date().getHours()
+  const greeting = hourNow < 12 ? 'Good morning' : hourNow < 17 ? 'Good afternoon' : 'Good evening'
+  const canPublish = isPublisher || showAll
+  const publishLocked = publishBusyId !== '' || scheduleBusy
+  const latestJobByArticle = data.publicationJobs.reduce((jobs, job) => {
+    const current = jobs.get(job.articleId)
+    if (!current || timestampValue(job.requestedAt) >= timestampValue(current.requestedAt)) jobs.set(job.articleId, job)
+    return jobs
+  }, new Map<string, PublicationJob>())
+  const failedJobFor = (article: Article) => {
+    const job = latestJobByArticle.get(article.id)
+    return job && job.status === 'Failed' && article.workflowState === 'Approved' ? job : undefined
+  }
+  const retryNeeded = (article: Article) => canPublish && publicationNeedsReconciliation(article.id)
+  const activityOf = (article: Article) => Math.max(
+    latestActivityByArticleId.get(article.id) || 0,
+    timestampValue(article.lastPublishedAt),
+    timestampValue(article.scheduledAt),
+    timestampValue(article.archivedAt),
+  )
+  const byActivity = (a: Article, b: Article) => activityOf(b) - activityOf(a) || compareRecordIdsNewestFirst(a.id, b.id)
+  const stageFor = (article: Article) => stageOf(article, {
+    pending: publicationPending(article.id),
+    needsRetry: retryNeeded(article),
+    retracting: activePublicationJobByArticleId.get(article.id)?.action === 'Unpublish',
+  })
+  const openArticle = (article: Article) => onOpenArticle(article.id)
+  const isMyAssignment = (assignment: ReviewAssignment) => assignmentBelongsToCurrentReviewer(assignment, currentEmployee)
+  const authorName = (article?: Article) => (article ? displayLookup(article.primaryAuthor) : '')
+  const tidyText = (value?: string) => (value || '').trim().replace(/\s+/g, ' ')
+
+  type Need = {
+    key: string
+    title: string
+    reason: string
+    tone: 'danger' | 'warn' | 'review' | 'ready'
+    at?: string
+    person?: string
+    onOpen: () => void
+    primary?: { label: string; onClick: () => void; icon?: ReactNode; disabled?: boolean }
+    secondary?: { label: string; onClick: () => void; icon?: ReactNode; disabled?: boolean }
+  }
+  const needs: Need[] = []
+  if (canPublish) {
+    for (const article of data.articles) {
+      if (retryNeeded(article)) {
+        needs.push({
+          key: `retry-${article.id}`,
+          title: article.workingTitle,
+          reason: 'Sent to the website but not confirmed yet. Retry to finish publishing.',
+          tone: 'danger',
+          at: activePublicationJobByArticleId.get(article.id)?.requestedAt,
+          person: authorName(article),
+          onOpen: () => openArticle(article),
+          primary: { label: publishBusyId === article.id ? 'Retrying' : 'Retry', icon: <RotateCcw />, disabled: publishLocked, onClick: () => void reconcilePublication(article) },
+        })
+      } else if (failedJobFor(article)) {
+        const job = failedJobFor(article)
+        needs.push({
+          key: `failed-${article.id}`,
+          title: article.workingTitle,
+          reason: `Publishing failed${job?.errorCode ? ` (${job.errorCode.toLowerCase().replace(/_/g, ' ')})` : ''}. Open it to check, or try again.`,
+          tone: 'danger',
+          at: job?.requestedAt,
+          person: authorName(article),
+          onOpen: () => openArticle(article),
+          primary: { label: publishBusyId === article.id ? 'Publishing' : 'Try again', icon: <Send />, disabled: publishLocked, onClick: () => void publishArticle(article) },
+        })
+      }
+    }
+  }
+  for (const assignment of inboxAssignments) {
+    const article = articlesById.get(assignment.articleId)
+    const open = () => onOpenArticle(assignment.articleId, assignment.revisionId)
+    if (isMyAssignment(assignment) && (assignment.status === 'Assigned' || assignment.status === 'Claimed')) {
+      needs.push({
+        key: `review-${assignment.id}`,
+        title: article?.workingTitle || assignment.articleTitle || 'Article',
+        reason: assignment.status === 'Claimed' ? 'You started this review. Record your decision.' : `${authorName(article) || 'An author'} asked you to review this.`,
+        tone: 'review',
+        at: assignment.claimedAt || assignment.assignedAt,
+        person: authorName(article),
+        onOpen: open,
+        primary: { label: 'Review', icon: <ClipboardCheck />, onClick: open },
+      })
+    } else if (assignment.status === 'Queued' && (isReviewer || showAll) && !reviewerRevisionParticipation.has(assignment.revisionId)
+      && !(article && lookupBelongsToEmployee(article.primaryAuthor, currentEmployee))
+      && !needs.some((need) => need.key === `queue-${assignment.revisionId}`)) {
+      needs.push({
+        key: `queue-${assignment.revisionId}`,
+        title: article?.workingTitle || assignment.articleTitle || 'Article',
+        reason: 'Waiting for any available reviewer.',
+        tone: 'review',
+        at: assignment.assignedAt,
+        person: authorName(article),
+        onOpen: open,
+        primary: { label: 'Open', onClick: open },
+      })
+    }
+  }
+  for (const article of visibleArticles) {
+    if (article.workflowState === 'Changes Requested' && articleIsMine(article)) {
+      const request = validAssignments
+        .filter((assignment) => assignment.articleId === article.id && assignment.status === 'Changes Requested')
+        .sort((a, b) => latestAssignmentTime(b) - latestAssignmentTime(a))[0]
+      needs.push({
+        key: `changes-${article.id}`,
+        title: article.workingTitle,
+        reason: request?.decisionSummary?.trim()
+          ? `${request.reviewerName || 'Reviewer'}: “${tidyText(request.decisionSummary)}”`
+          : 'A reviewer asked for changes.',
+        tone: 'warn',
+        at: request?.decidedAt,
+        person: request?.reviewerName,
+        onOpen: () => openArticle(article),
+        primary: { label: 'Revise', icon: <PenLine />, onClick: () => openArticle(article) },
+      })
+    }
+  }
+  if (canPublish) {
+    for (const article of data.articles) {
+      if (article.workflowState !== 'Approved' || publicationPending(article.id) || failedJobFor(article) || retryNeeded(article)) continue
+      needs.push({
+        key: `ready-${article.id}`,
+        title: article.workingTitle,
+        reason: approvedReviewerNames(article, validAssignments).length
+          ? `Approved by ${approvedReviewerNames(article, validAssignments).join(' and ')}. Ready to publish.`
+          : 'Approved and ready to publish.',
+        tone: 'ready',
+        at: validAssignments.filter((assignment) => assignment.articleId === article.id && assignment.status === 'Approved')
+          .map((assignment) => assignment.decidedAt).sort().pop(),
+        person: authorName(article),
+        onOpen: () => openArticle(article),
+        primary: { label: publishBusyId === article.id ? 'Publishing' : 'Publish', icon: <Send />, disabled: publishLocked, onClick: () => void publishArticle(article) },
+        secondary: { label: 'Schedule', icon: <CalendarClock />, disabled: publishLocked, onClick: () => openScheduleDialog(article) },
+      })
+    }
+  }
+
+  const STAGE_FILTERS: Array<{ key: string; label: string; test: (article: Article) => boolean }> = [
+    { key: 'all', label: 'All', test: () => true },
+    { key: 'draft', label: 'Drafts', test: (article) => article.workflowState === 'Draft' },
+    { key: 'review', label: 'In review', test: (article) => article.workflowState === 'In Review' || article.workflowState === 'Changes Requested' },
+    { key: 'ready', label: 'Ready', test: (article) => article.workflowState === 'Approved' || article.workflowState === 'Scheduled' },
+    { key: 'live', label: 'Live', test: (article) => article.workflowState === 'Published' || hasLiveVersionBehind(article) },
+    { key: 'withdrawn', label: 'Withdrawn', test: (article) => article.workflowState === 'Unpublished' },
+    { key: 'rejected', label: 'Rejected', test: (article) => article.workflowState === 'Rejected' },
+  ]
+  const nonArchived = visibleArticles.filter((article) => article.workflowState !== 'Archived')
+  const ownedArticles = nonArchived.filter((article) => !(showAll && ownership === 'mine') || articleIsMine(article))
+  const matchesSearch = (article?: Article, extra: string[] = []) => !queryText || [
+    article?.workingTitle || '',
+    authorName(article),
+    article ? displayLookup(article.primaryCategory) : '',
+    ...extra,
+  ].some((value) => value.toLowerCase().includes(queryText))
+  const searchableArticles = ownedArticles.filter((article) => matchesSearch(article) && matchesCategory(article))
+  const activeStage = STAGE_FILTERS.find((filter) => filter.key === stageFilter) || STAGE_FILTERS[0]
+  const articleRows = searchableArticles.filter(activeStage.test).sort(byActivity)
+
+  const pipeline = [
+    { key: 'draft', label: 'Drafts', value: nonArchived.filter((article) => article.workflowState === 'Draft').length },
+    { key: 'review', label: 'In review', value: nonArchived.filter((article) => article.workflowState === 'In Review' || article.workflowState === 'Changes Requested').length },
+    { key: 'ready', label: 'Ready to publish', value: nonArchived.filter((article) => article.workflowState === 'Approved' || article.workflowState === 'Scheduled').length },
+    { key: 'live', label: 'Live on the site', value: nonArchived.filter((article) => article.workflowState === 'Published' || hasLiveVersionBehind(article)).length },
+  ]
+  const myWriting = visibleArticles
+    .filter((article) => articleIsMine(article) && (article.workflowState === 'Draft' || article.workflowState === 'Changes Requested'))
+    .sort(byActivity)
+
+  const ACTIVITY_VERBS: Record<string, string> = {
+    'Submitted for Review': 'submitted',
+    'Review Approved': 'approved',
+    'Review Changes Requested': 'asked for changes on',
+    'Review Rejected': 'rejected',
+    'Review Claimed': 'started reviewing',
+    'Catalyst Article Published': 'published',
+    'Catalyst Article Retracted': 'withdrew',
+    'Article Scheduled': 'scheduled',
+    'New Version Started': 'started a new version of',
+    'New Version Discarded': 'discarded the new version of',
+    'Draft Moved to Trash': 'moved to Trash',
+    'Draft Restored': 'restored',
+    'Catalyst Publication Failed': 'could not publish',
+  }
+  const assignmentsByUuid = new Map(validAssignments.map((assignment) => [assignment.uuid, assignment]))
+  const articleForEvent = (event: AuditEvent) => articlesByUuidForActivity.get(event.entityUuid)
+    || data.articles.find((article) => event.entityUuid.startsWith(`REV-${article.uuid}`))
+    || articlesById.get(assignmentsByUuid.get(event.entityUuid)?.articleId || '')
+  const activity = visibleAuditEvents
+    .filter((event) => ACTIVITY_VERBS[event.eventType])
+    .sort((a, b) => timestampValue(b.occurredAt) - timestampValue(a.occurredAt))
+    .slice(0, 8)
+
+  const reviewTodo = inboxAssignments.filter((assignment) => isMyAssignment(assignment) && assignment.status !== 'Queued')
+  const reviewQueue = inboxAssignments.filter((assignment) => assignment.status === 'Queued' && !reviewerRevisionParticipation.has(assignment.revisionId))
+  const reviewDone = reviewHistory
+  const reviewRowsRaw = reviewTab === 'todo' ? reviewTodo : reviewTab === 'queue' ? reviewQueue : reviewDone
+  const reviewRows = reviewRowsRaw.filter((assignment) => {
+    const article = articlesById.get(assignment.articleId)
+    return matchesSearch(article, [assignment.reviewerName || '', assignment.articleTitle || '']) && matchesCategory(article)
+  })
+
+  const publishingSource = data.articles.filter((article) => canPublish || articleIsMine(article))
+    .filter((article) => matchesSearch(article) && matchesCategory(article))
+  const pubAttention = publishingSource.filter((article) => retryNeeded(article) || failedJobFor(article))
+  const pubReady = publishingSource.filter((article) => article.workflowState === 'Approved' && !publicationPending(article.id) && !failedJobFor(article) && !retryNeeded(article))
+  const pubRunning = publishingSource.filter((article) => publicationPending(article.id) && !retryNeeded(article))
+  const pubScheduled = publishingSource.filter((article) => article.workflowState === 'Scheduled' && !publicationPending(article.id))
+  const pubLive = publishingSource.filter((article) => article.workflowState === 'Published' && !publicationPending(article.id)).sort((a, b) => timestampValue(b.lastPublishedAt) - timestampValue(a.lastPublishedAt))
+  const pubWithdrawn = publishingSource.filter((article) => article.workflowState === 'Unpublished').sort(byActivity)
+  const trashRows = visibleArticles.filter((article) => article.workflowState === 'Archived' && matchesSearch(article)).sort(byActivity)
+
+  const tabs: Array<{ key: DashboardView; label: string; count?: number; show: boolean }> = [
+    { key: 'all', label: 'Overview', count: needs.length, show: true },
+    { key: 'articles', label: 'Articles', count: nonArchived.length, show: true },
+    { key: 'reviews', label: 'Reviews', count: reviewTodo.length + (isReviewer || showAll ? reviewQueue.length : 0), show: showReviewNavigation },
+    { key: 'publishing', label: 'Publishing', count: pubAttention.length + pubReady.length, show: showPublishingNavigation },
+    { key: 'archive', label: 'Trash', count: visibleArticles.filter((article) => article.workflowState === 'Archived').length, show: showAll || isAuthor },
+  ]
+
+  const rowActions = (article: Article) => {
+    const pending = publicationPending(article.id)
+    const busy = publishBusyId === article.id
+    const editable = canEditArticle(article, currentEmployee) && (article.workflowState === 'Draft' || article.workflowState === 'Changes Requested')
+    let primary: { label: string; onClick: () => void; icon?: ReactNode; strong?: boolean; disabled?: boolean }
+    if (retryNeeded(article)) primary = { label: busy ? 'Retrying' : 'Retry', icon: <RotateCcw />, strong: true, disabled: publishLocked, onClick: () => void reconcilePublication(article) }
+    else if (canPublish && article.workflowState === 'Approved' && !pending) primary = { label: busy ? 'Publishing' : 'Publish', icon: <Send />, strong: true, disabled: publishLocked, onClick: () => void publishArticle(article) }
+    else if (article.workflowState === 'Archived' && canEditArticle(article, currentEmployee)) primary = { label: archiveBusyId === article.id ? 'Restoring' : 'Restore', icon: <ArchiveRestore />, disabled: archiveBusyId !== '', onClick: () => void restoreDraft(article) }
+    else if (editable) primary = { label: 'Edit', icon: <PenLine />, onClick: () => openArticle(article) }
+    else primary = { label: 'Open', onClick: () => openArticle(article) }
+    const menu: MenuAction[] = []
+    if (primary.label !== 'Open' && primary.label !== 'Edit') menu.push({ label: 'Open', icon: <FileText />, onClick: () => openArticle(article) })
+    if (canPublish && article.workflowState === 'Approved' && !pending) menu.push({ label: 'Schedule', icon: <CalendarClock />, disabled: publishLocked, onClick: () => openScheduleDialog(article) })
+    if (canPublish && article.workflowState === 'Published' && !pending) menu.push({ label: 'Withdraw from site', icon: <EyeOff />, danger: true, disabled: retractBusy || publishLocked, onClick: () => openRetractDialog(article) })
+    if (editable && !article.publishedRevisionId) menu.push({ label: 'Move to Trash', icon: <Trash2 />, danger: true, disabled: archiveBusyId !== '', onClick: () => openArchiveDialog(article) })
+    return { primary, menu }
+  }
+
+  const stageNote = (article: Article) => {
+    if (article.workflowState === 'Scheduled') return `Goes live ${relativeTime(article.scheduledAt)}`
+    if (hasLiveVersionBehind(article)) return 'New version in progress'
+    return ''
+  }
+
+  const renderArticleTable = ({ rows, empty, whenLabel }: { rows: Article[]; empty: ReactNode; whenLabel?: (article: Article) => string | undefined }) => (
+    rows.length === 0 ? <>{empty}</> : (
+      <ul className="ed-table" role="list">
+        <li className="ed-row is-head" aria-hidden="true">
+          <span>Article</span><span>Stage</span><span>Author</span><span>Updated</span><span />
+        </li>
+        {rows.map((article) => {
+          const { primary, menu } = rowActions(article)
+          const note = stageNote(article)
+          return (
+            <li key={article.id} className="ed-row">
+              <div className="ed-cell-title">
+                <button type="button" className="ed-title-link" onClick={() => openArticle(article)}>{article.workingTitle || 'Untitled article'}</button>
+                <span>{displayLookup(article.primaryCategory) === 'Unassigned' ? 'No category' : displayLookup(article.primaryCategory)}</span>
+              </div>
+              <div className="ed-cell-stage">
+                <StageBadge stage={stageFor(article)} liveBehind={hasLiveVersionBehind(article)} />
+                {note && <small>{note}</small>}
+              </div>
+              <div className="ed-cell-person"><Avatar name={authorName(article)} size={24} /><span>{authorName(article)}</span></div>
+              <div className="ed-cell-when"><When value={whenLabel?.(article) || activityOf(article) || undefined} /></div>
+              <div className="ed-cell-actions">
+                <button type="button" className={primary.strong ? 'ed-btn is-primary' : 'ed-btn'} disabled={primary.disabled} onClick={primary.onClick}>
+                  {primary.icon}{primary.label}
+                </button>
+                {menu.length ? <RowMenu actions={menu} /> : <span className="ed-menu-spacer" aria-hidden="true" />}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    )
+  )
+
+  const REVIEW_STATUS: Record<string, { label: string; tone: StageTone }> = {
+    Queued: { label: 'Open to reviewers', tone: 'review' },
+    Assigned: { label: 'Assigned', tone: 'review' },
+    Claimed: { label: 'In progress', tone: 'progress' },
+    Approved: { label: 'Approved', tone: 'live' },
+    'Changes Requested': { label: 'Changes requested', tone: 'warn' },
+    Rejected: { label: 'Rejected', tone: 'danger' },
+    Cancelled: { label: 'Cancelled', tone: 'muted' },
+  }
+
+  const toolbar = (placeholder: string) => (
+    <div className="ed-toolbar">
+      <label className="ed-search">
+        <Search aria-hidden="true" />
+        <span className="sr-only">Search</span>
+        <input value={query} placeholder={placeholder} onChange={(event) => setQuery(event.target.value)} />
+        {query && <button type="button" aria-label="Clear search" onClick={() => setQuery('')}><X /></button>}
+      </label>
+      {categoryOptions.length > 1 && (
+        <label className="ed-select">
+          <span className="sr-only">Category</span>
+          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+            <option value="all">All categories</option>
+            {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select>
+          <ChevronDown aria-hidden="true" />
+        </label>
+      )}
+      {showAll && view === 'articles' && (
+        <div className="ed-segment" role="group" aria-label="Whose articles">
+          <button type="button" aria-pressed={ownership === 'everyone'} className={ownership === 'everyone' ? 'is-active' : ''} onClick={() => setOwnership('everyone')}>Everyone</button>
+          <button type="button" aria-pressed={ownership === 'mine'} className={ownership === 'mine' ? 'is-active' : ''} onClick={() => setOwnership('mine')}>Mine</button>
+        </div>
+      )}
+    </div>
+  )
+
+  const goToStage = (key: string) => {
+    changeView('articles')
+    setStageFilter(key)
+  }
+
   return (
-    <main className="dashboard-shell">
+    <main className="ed">
       {publishingNotice && <FloatingNotice notice={publishingNotice} onDismiss={() => setPublishingNotice(null)} />}
       {data.warnings?.map((message) => <div key={message} className="error-banner" role="alert"><AlertCircle /> {message}</div>)}
-      <header className="dashboard-header">
-        <div>
-          <div className="dashboard-kicker"><LayoutDashboard /> GeneDrift Insights</div>
-          <h1>Editorial command center</h1>
-          <p>{currentEmployee ? `${currentEmployee.displayName.split(/\s+/)[0]}, here’s your editorial workspace.` : 'Your editorial workspace.'}</p>
-          <div className="role-badges">
-            {roles.map((role) => <RoleBadge key={role} role={role} />)}
-            {isAuthor && isReviewer && <span className="role-note"><ShieldCheck /> Self-review blocked</span>}
+
+      <header className="ed-top">
+        <div className="ed-top-title">
+          <span className="ed-brand" aria-hidden="true">G</span>
+          <div>
+            <h1>Editorial</h1>
+            <p>{firstName ? `${greeting}, ${firstName}` : 'GeneDrift Insights'}</p>
           </div>
         </div>
-        {canCreateArticle && <button type="button" className="submit-review-command" onClick={() => {
-          setCreateTitle('')
-          setCreateCategoryId('')
-          setCreatePolicyId(defaultApprovalPolicyId(data))
-          setCreateCategoryName('')
-          setCreateError('')
-          setCreateOpen(true)
-        }}>
-          <Plus /> New article
-        </button>}
+        <div className="ed-top-actions">
+          <button
+            type="button"
+            className={`ed-sync${liveRefreshError ? ' is-error' : ''}`}
+            disabled={refreshBusy}
+            onClick={() => void refreshDashboard()}
+            title={liveRefreshError || `Updates automatically every ${formatRefreshInterval(dashboardRefreshDelayMs)}. Click to refresh now.`}
+          >
+            <RotateCcw className={refreshBusy || liveRefreshBusy ? 'is-spinning' : ''} />
+            <span>{liveRefreshError ? 'Not updating' : refreshBusy || liveRefreshBusy ? 'Updating' : `Updated ${relativeTime(updatedAt)}`}</span>
+          </button>
+          {canCreateArticle && (
+            <button type="button" className="ed-btn is-primary is-large" onClick={() => {
+              setCreateTitle('')
+              setCreateCategoryId('')
+              setCreatePolicyId(defaultApprovalPolicyId(data))
+              setCreateCategoryName('')
+              setCreateError('')
+              setCreateOpen(true)
+            }}>
+              <Plus /> New article
+            </button>
+          )}
+        </div>
       </header>
 
-      <div className="dashboard-control-stack">
-        <nav className="dashboard-workspace-nav" aria-label="Editorial workspace">
-          <button type="button" aria-pressed={view === 'all'} className={view === 'all' ? 'is-active' : ''} onClick={() => { setScope('mine'); changeView('all') }}>
-            <LayoutDashboard /><span>Today</span>{priorityCount > 0 && <em>{priorityCount}</em>}
+      <nav className="ed-tabs" aria-label="Editorial sections">
+        {tabs.filter((tab) => tab.show).map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            aria-current={view === tab.key ? 'page' : undefined}
+            className={view === tab.key ? 'is-active' : ''}
+            onClick={() => { changeView(tab.key); setStageFilter('all') }}
+          >
+            {tab.label}
+            {!!tab.count && <span className={`ed-tab-count${tab.key === 'all' ? ' is-alert' : ''}`}>{tab.count}</span>}
           </button>
-          <button type="button" aria-pressed={view === 'articles'} className={view === 'articles' ? 'is-active' : ''} onClick={() => { setScope('mine'); changeView('articles') }}>
-            <FileText /><span>Articles</span><em>{visibleArticles.filter((article) => article.workflowState !== 'Archived').length}</em>
-          </button>
-          {showReviewNavigation && (
-            <button type="button" aria-pressed={view === 'reviews'} className={view === 'reviews' ? 'is-active' : ''} onClick={() => { setScope('mine'); changeView('reviews') }}>
-              <Inbox /><span>Reviews</span>{inboxAssignments.length > 0 && <em>{inboxAssignments.length}</em>}
-            </button>
-          )}
-          {showPublishingNavigation && (
-            <button type="button" aria-pressed={view === 'publishing'} className={view === 'publishing' ? 'is-active' : ''} onClick={() => { setScope(showAll ? 'all' : 'queue'); changeView('publishing') }}>
-              <Send /><span>Publishing</span>{publishingQueue.length > 0 && <em>{publishingQueue.length}</em>}
-            </button>
-          )}
-          <button type="button" aria-pressed={view === 'archive'} className={view === 'archive' ? 'is-active' : ''} onClick={() => { setScope(showAll ? 'all' : 'mine'); changeView('archive') }}>
-            <Trash2 /><span>Archive</span>{archivedArticles.length > 0 && <em>{archivedArticles.length}</em>}
-          </button>
-        </nav>
-
-      <section className={`dashboard-commandbar${view === 'all' ? ' is-today' : ''}`} aria-label="Dashboard filters">
-        <div className="dashboard-command-primary">
-          <div className="dashboard-scope" role="group" aria-label="Dashboard scope">
-            <button type="button" className={scope === 'mine' ? 'is-active' : ''} onClick={() => setScope('mine')}>My work</button>
-            {(view === 'all' || view === 'reviews' || view === 'publishing') && (
-              <button type="button" className={scope === 'queue' ? 'is-active' : ''} onClick={() => setScope('queue')}>
-                {view === 'publishing' ? 'Publishing queue' : 'Shared queue'}
-              </button>
-            )}
-            <button type="button" className={scope === 'all' ? 'is-active' : ''} disabled={!showAll} onClick={() => setScope('all')}>All workspace</button>
-          </div>
-          {view === 'all' ? (
-            <div className="dashboard-today-context" aria-live="polite">
-              <strong>{todayTitle}</strong>
-              <span>{todayDetail}</span>
-            </div>
-          ) : (
-            <label className="dashboard-search">
-              <Search />
-              <span className="sr-only">Search this view</span>
-              <input value={query} placeholder={`Search ${view === 'archive' ? 'archived articles' : view}`} onChange={(event) => setQuery(event.target.value)} />
-              {query && <button type="button" className="search-clear" aria-label="Clear search" onClick={() => setQuery('')}><X /></button>}
-            </label>
-          )}
-          <button type="button" className="dashboard-refresh" disabled={refreshBusy} onClick={() => void refreshDashboard()}>
-            <RotateCcw /> {refreshBusy ? 'Refreshing' : 'Refresh'}
-          </button>
-          <button type="button" className={`dashboard-filter-trigger${filterCount > 0 ? ' has-filters' : ''}`} aria-expanded={filtersOpen} onClick={() => setFiltersOpen((open) => !open)}>
-            <SlidersHorizontal /> Filters · {filterCount}
-          </button>
-          {canResetTestContent && (
-            <button type="button" className="dashboard-reset-trigger" disabled={resetBusy} onClick={openResetDialog}>
-              <Trash2 /> Reset test content
-            </button>
-          )}
-        </div>
-
-        <div className="dashboard-results" aria-live="polite">
-          <span><strong>{scopedArticles.length}</strong> articles</span>
-          <span><strong>{scopedAssignments.length}</strong> review items</span>
-          {filtersActive && <em>Filtered view</em>}
-          <span className={`dashboard-live-status${liveRefreshError ? ' is-error' : ''}`} title={liveRefreshError || 'Dashboard data updates automatically'}>
-            <span className={`dashboard-live-dot${liveRefreshBusy ? ' is-refreshing' : ''}`} aria-hidden="true" />
-            {liveRefreshError || (liveRefreshBusy
-              ? 'Updating live data…'
-              : `Live · checks every ${formatRefreshInterval(dashboardRefreshDelayMs)} · last checked ${formatClockTime(updatedAt)}`)}
-          </span>
-        </div>
-
-        {filtersOpen && (
-          <div className="dashboard-filter-drawer">
-            <label className="dashboard-filter">
-              <span>State</span>
-              <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value as DashboardStateFilter)}>
-                {currentStateOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-              <ChevronDown aria-hidden="true" />
-            </label>
-            <label className="dashboard-filter">
-              <span>Category</span>
-              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-                <option value="all">All categories</option>
-                {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
-              </select>
-              <ChevronDown aria-hidden="true" />
-            </label>
-            <label className="dashboard-filter">
-              <span>Person</span>
-              <select value={personFilter} onChange={(event) => setPersonFilter(event.target.value)}>
-                <option value="all">All people</option>
-                {personOptions.map((person) => <option key={person} value={person}>{person}</option>)}
-              </select>
-              <ChevronDown aria-hidden="true" />
-            </label>
-            <label className="dashboard-filter">
-              <span>Date</span>
-              <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as DashboardDateFilter)}>
-                <option value="all">Any time</option>
-                <option value="today">Today</option>
-                <option value="week">Last 7 days</option>
-              </select>
-              <ChevronDown aria-hidden="true" />
-            </label>
-            <label className="dashboard-filter">
-              <span>Sort</span>
-              <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as DashboardSort)}>
-                <option value="recent">Most recent</option>
-                <option value="title">Title A–Z</option>
-                <option value="state">Workflow state</option>
-              </select>
-              <ChevronDown aria-hidden="true" />
-            </label>
-            <button type="button" className="clear-filters" disabled={!filtersActive} onClick={clearFilters}>Clear filters</button>
-          </div>
-        )}
-      </section>
-      </div>
+        ))}
+      </nav>
 
       {(dashboardNotice || dashboardError) && (
-        <p className={`dashboard-alert${dashboardError ? ' is-error' : ''}`}>{dashboardError || dashboardNotice}</p>
+        <p className={`ed-alert${dashboardError ? ' is-error' : ''}`} role="status">{dashboardError || dashboardNotice}</p>
       )}
 
       {view === 'all' && (
-        <section className="metric-strip" aria-label="Work requiring attention">
-          {(isAuthor || showAll) && (
-            <DashboardMetric
-              icon={<FileText />}
-              label="Continue writing"
-              value={myActiveArticleCount}
-              detail={changesRequestedCount ? `${changesRequestedCount} returned for changes` : 'Your active article work'}
-              onClick={() => { setScope('mine'); changeView('articles') }}
-            />
-          )}
-          {showReviewNavigation && (
-            <DashboardMetric
-              icon={<Inbox />}
-              label="Your reviews"
-              value={assignedToMeCount}
-              detail="Assigned and waiting for action"
-              onClick={() => { setScope('mine'); changeView('reviews') }}
-            />
-          )}
-          {(isReviewer || showAll) && (
-            <DashboardMetric
-              icon={<ShieldCheck />}
-              label="Shared queue"
-              value={sharedQueueCount}
-              detail="Available review assignments"
-              onClick={() => { setScope('queue'); changeView('reviews') }}
-            />
-          )}
-          {(isPublisher || showAll) ? (
-            <DashboardMetric
-              icon={needsPublicationAttentionCount ? <AlertCircle /> : <Send />}
-              label={needsPublicationAttentionCount ? 'Publishing attention' : 'Ready to publish'}
-              value={needsPublicationAttentionCount || readyToPublishCount}
-              detail={needsPublicationAttentionCount ? `${failedPublicationCount} failed or stalled` : 'Approved content awaiting action'}
-              onClick={() => { setScope(showAll ? 'all' : 'queue'); changeView('publishing') }}
-            />
-          ) : reviewerOnly ? (
-            <DashboardMetric
-              icon={<Check />}
-              label={approvedLabel}
-              value={approvedCount}
-              detail="Completed approvals"
-              onClick={() => { setScope('mine'); setView('reviews'); setStateFilter('approved') }}
-            />
-          ) : null}
-        </section>
+        <div className="ed-overview">
+          <Section
+            title="Needs you"
+            count={needs.length || undefined}
+            hint={needs.length ? 'Work waiting on you, most urgent first.' : undefined}
+          >
+            {needs.length === 0 ? (
+              <EmptyState icon={<CircleCheck />} title="You’re all caught up" detail="Nothing is waiting on you right now. New reviews and approvals will appear here." />
+            ) : (
+              <ul className="ed-needs" role="list">
+                {needs.map((need) => (
+                  <li key={need.key} className={`ed-need is-${need.tone}`}>
+                    <span className="ed-need-mark" aria-hidden="true" />
+                    <div className="ed-need-main">
+                      <button type="button" className="ed-title-link" onClick={need.onOpen}>{need.title || 'Untitled article'}</button>
+                      <p>{need.reason}</p>
+                    </div>
+                    <div className="ed-need-meta">
+                      {need.person && <Avatar name={need.person} size={22} />}
+                      <When value={need.at} />
+                    </div>
+                    <div className="ed-need-actions">
+                      {need.secondary && (
+                        <button type="button" className="ed-btn" disabled={need.secondary.disabled} onClick={need.secondary.onClick}>{need.secondary.icon}{need.secondary.label}</button>
+                      )}
+                      {need.primary && (
+                        <button type="button" className={`ed-btn${need.tone === 'ready' || need.tone === 'danger' ? ' is-primary' : ' is-soft'}`} disabled={need.primary.disabled} onClick={need.primary.onClick}>
+                          {need.primary.icon}{need.primary.label}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+
+          {(showAll || isAuthor || isPublisher) && <section className="ed-pipeline" aria-label="Where articles are">
+            {pipeline.map((stage, index) => (
+              <button key={stage.key} type="button" className="ed-pipe" onClick={() => goToStage(stage.key)}>
+                <strong>{stage.value}</strong>
+                <span>{stage.label}</span>
+                {index < pipeline.length - 1 && <ArrowRight className="ed-pipe-arrow" aria-hidden="true" />}
+              </button>
+            ))}
+          </section>}
+
+          <div className={`ed-split${isAuthor || showAll ? '' : ' is-single'}`}>
+            {(isAuthor || showAll) && (
+              <Section
+                title="Continue writing"
+                action={myWriting.length > 5 ? <button type="button" className="ed-link" onClick={() => goToStage('draft')}>View all</button> : undefined}
+              >
+                {myWriting.length === 0 ? (
+                  <EmptyState icon={<PenLine />} title="No drafts in progress" detail="Start a new article when you’re ready." />
+                ) : (
+                  <ul className="ed-compact" role="list">
+                    {myWriting.slice(0, 5).map((article) => (
+                      <li key={article.id}>
+                        <button type="button" className="ed-compact-item" onClick={() => openArticle(article)}>
+                          <span className="ed-compact-title">{article.workingTitle || 'Untitled article'}</span>
+                          <span className="ed-compact-meta">
+                            <StageBadge stage={stageFor(article)} liveBehind={hasLiveVersionBehind(article)} />
+                            <When value={activityOf(article) || undefined} />
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Section>
+            )}
+            <Section title="Recent activity">
+              {activity.length === 0 ? (
+                <EmptyState icon={<History />} title="No activity yet" detail="Submissions, reviews and publishing will show up here." />
+              ) : (
+                <ul className="ed-activity" role="list">
+                  {activity.map((event) => {
+                    const article = articleForEvent(event)
+                    return (
+                      <li key={event.id}>
+                        <Avatar name={event.actorName || 'System'} size={26} />
+                        <p>
+                          <strong>{event.actorName || 'Someone'}</strong> {ACTIVITY_VERBS[event.eventType]}{' '}
+                          {article ? (
+                            <button type="button" className="ed-inline-link" onClick={() => openArticle(article)}>{article.workingTitle}</button>
+                          ) : <span>an article</span>}
+                        </p>
+                        <When value={event.occurredAt} />
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </Section>
+          </div>
+        </div>
       )}
 
-      <div className={`dashboard-grid${view === 'all' ? '' : ' is-focused'}`}>
-        {showReviewPanels && (
-          <DashboardPanel title="Review inbox" icon={<Inbox />} empty={inboxAssignments.length === 0} emptyMessage={emptyMessage} aside={<span>{inboxAssignments.length} items · {sharedQueueCount} queue</span>} wide={view === 'reviews'}>
-            <ul className="dashboard-list">
-              {panelItems('review-inbox', inboxAssignments).map((assignment) => (
-                <DashboardRow key={assignment.id} assignment={assignment} article={articlesById.get(assignment.articleId)} onOpenArticle={onOpenArticle} />
-              ))}
-            </ul>
-            {!expandedPanels.has('review-inbox') && inboxAssignments.length > panelLimit && (
-              <button type="button" className="panel-view-all" onClick={() => expandPanel('review-inbox')}>View all {inboxAssignments.length} →</button>
+      {view === 'articles' && (
+        <div className="ed-view">
+          {toolbar('Search by title, author or category')}
+          <div className="ed-chips" role="group" aria-label="Filter by stage">
+            {STAGE_FILTERS.map((filter) => {
+              const count = searchableArticles.filter(filter.test).length
+              if (filter.key !== 'all' && count === 0) return null
+              return (
+                <button key={filter.key} type="button" aria-pressed={stageFilter === filter.key} className={stageFilter === filter.key ? 'is-active' : ''} onClick={() => setStageFilter(filter.key)}>
+                  {filter.label}<span>{count}</span>
+                </button>
+              )
+            })}
+          </div>
+          <div className="ed-card">
+            {renderArticleTable({ rows: articleRows, empty: <EmptyState icon={<FileText />} title={queryText || stageFilter !== 'all' ? 'No articles match' : 'No articles yet'} detail={queryText || stageFilter !== 'all' ? 'Try a different search or stage.' : 'Create the first article to get started.'} /> })}
+          </div>
+        </div>
+      )}
+
+      {view === 'reviews' && (
+        <div className="ed-view">
+          {toolbar('Search reviews')}
+          <div className="ed-chips" role="group" aria-label="Review lists">
+            {([
+              ['todo', 'Assigned to me', reviewTodo.length],
+              ...((isReviewer || showAll) ? [['queue', 'Open to reviewers', reviewQueue.length]] : []),
+              ['done', 'Completed', reviewDone.length],
+            ] as Array<[typeof reviewTab, string, number]>).map(([key, label, count]) => (
+              <button key={key} type="button" aria-pressed={reviewTab === key} className={reviewTab === key ? 'is-active' : ''} onClick={() => setReviewTab(key)}>
+                {label}<span>{count}</span>
+              </button>
+            ))}
+          </div>
+          <div className="ed-card">
+            {reviewRows.length === 0 ? (
+              <EmptyState
+                icon={<Inbox />}
+                title={reviewTab === 'todo' ? 'No reviews assigned to you' : reviewTab === 'queue' ? 'Nothing waiting for a reviewer' : 'No completed reviews yet'}
+                detail={reviewTab === 'todo' && reviewQueue.length ? `${reviewQueue.length} article${reviewQueue.length === 1 ? ' is' : 's are'} open to any reviewer.` : undefined}
+                action={reviewTab === 'todo' && reviewQueue.length && (isReviewer || showAll) ? <button type="button" className="ed-btn" onClick={() => setReviewTab('queue')}>See open reviews</button> : undefined}
+              />
+            ) : (
+              <ul className="ed-table is-reviews" role="list">
+                <li className="ed-row is-head" aria-hidden="true">
+                  <span>Article</span><span>Status</span><span>Reviewer</span><span>{reviewTab === 'done' ? 'Decided' : 'Waiting since'}</span><span />
+                </li>
+                {reviewRows.map((assignment) => {
+                  const article = articlesById.get(assignment.articleId)
+                  const status = REVIEW_STATUS[assignment.status] || { label: assignment.status, tone: 'muted' as StageTone }
+                  const open = () => onOpenArticle(assignment.articleId, assignment.revisionId)
+                  const when = reviewTab === 'done' ? assignment.decidedAt : assignment.claimedAt || assignment.assignedAt
+                  return (
+                    <li key={assignment.id} className="ed-row">
+                      <div className="ed-cell-title">
+                        <button type="button" className="ed-title-link" onClick={open}>{article?.workingTitle || assignment.articleTitle || 'Article'}</button>
+                        <span>{reviewTab === 'done' && assignment.decisionSummary?.trim() ? `“${tidyText(assignment.decisionSummary)}”` : `by ${authorName(article) || 'Unknown author'}`}</span>
+                      </div>
+                      <div className="ed-cell-stage"><StageBadge stage={status} /></div>
+                      <div className="ed-cell-person">
+                        {assignment.reviewerName ? <><Avatar name={assignment.reviewerName} size={24} /><span>{assignment.reviewerName}</span></> : <span className="ed-faint">Anyone</span>}
+                      </div>
+                      <div className="ed-cell-when"><When value={when} /></div>
+                      <div className="ed-cell-actions">
+                        <button type="button" className={reviewTab === 'todo' ? 'ed-btn is-primary' : 'ed-btn'} onClick={open}>
+                          {reviewTab === 'todo' ? <><ClipboardCheck />Review</> : reviewTab === 'queue' ? 'Open' : 'View'}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
             )}
-          </DashboardPanel>
-        )}
+          </div>
+        </div>
+      )}
 
-        {showArticlePanels && (
-          <DashboardPanel
-            title={view === 'archive' ? 'Archived articles' : view === 'articles' ? 'All articles' : 'Continue your work'}
-            icon={view === 'archive' ? <Trash2 /> : <FileText />}
-            empty={articlePanelItems.length === 0}
-            emptyMessage={view === 'archive' && !filtersActive ? 'Archive is empty. Removed drafts will remain recoverable here.' : emptyMessage}
-            aside={<span>{articlePanelItems.length} {view === 'archive' ? 'recoverable' : view === 'articles' ? 'shown' : 'active'}</span>}
-            wide={view === 'articles' || view === 'archive'}
-          >
-            <ul className="dashboard-list">
-              {panelItems('article-work', articlePanelItems).map((article) => (
-                <ArticleStatusRow
-                  key={article.id}
-                  article={article}
-                  note={articlePanelNote(article)}
-                  statusDetail={articlePanelStatusDetail(article)}
-                  secondaryAction={view === 'archive' ? {
-                    label: 'Restore',
-                    busyLabel: 'Restoring',
-                    disabled: archiveBusyId !== '',
-                    onClick: () => void restoreDraft(article),
-                    icon: <ArchiveRestore />,
-                  } : undefined}
-                  secondaryBusy={view === 'archive' && archiveBusyId === article.id}
-                  overflowActions={view !== 'archive' && canEditArticle(article, currentEmployee)
-                    && !article.publishedRevisionId
-                    && (article.workflowState === 'Draft' || article.workflowState === 'Changes Requested') ? [{
-                      label: 'Move to Trash',
-                      disabled: archiveBusyId !== '',
-                      onClick: () => openArchiveDialog(article),
-                      icon: <Trash2 />,
-                    }] : undefined}
-                  onOpenArticle={onOpenArticle}
-                />
-              ))}
-            </ul>
-            {!expandedPanels.has('article-work') && articlePanelItems.length > panelLimit && (
-              <button type="button" className="panel-view-all" onClick={() => expandPanel('article-work')}>View all {articlePanelItems.length} →</button>
-            )}
-          </DashboardPanel>
-        )}
+      {view === 'publishing' && (
+        <div className="ed-view">
+          {toolbar('Search publishing')}
+          {pubAttention.length > 0 && (
+            <Section title="Needs attention" count={pubAttention.length} hint="Publishing that didn’t finish. Retry, or open the article to check." tone="attention">
+              <div className="ed-card">{renderArticleTable({ rows: pubAttention, empty: null })}</div>
+            </Section>
+          )}
+          <Section title="Ready to publish" count={pubReady.length} hint="Approved by review. Publish now or pick a time.">
+            <div className="ed-card">
+              {renderArticleTable({ rows: pubReady, empty: <EmptyState icon={<Send />} title="Nothing waiting to publish" detail="Approved articles will appear here." /> })}
+            </div>
+          </Section>
+          {pubRunning.length > 0 && (
+            <Section title="Publishing now" count={pubRunning.length} hint="Being sent to the website. This usually takes under a minute.">
+              <div className="ed-card">{renderArticleTable({ rows: pubRunning, empty: null })}</div>
+            </Section>
+          )}
+          {pubScheduled.length > 0 && (
+            <Section title="Scheduled" count={pubScheduled.length}>
+              <div className="ed-card">{renderArticleTable({ rows: pubScheduled, empty: null, whenLabel: (article) => article.scheduledAt })}</div>
+            </Section>
+          )}
+          <Section title="Live on the site" count={pubLive.length}>
+            <div className="ed-card">
+              {renderArticleTable({ rows: pubLive, whenLabel: (article) => article.lastPublishedAt, empty: <EmptyState icon={<Globe />} title="Nothing live yet" /> })}
+            </div>
+          </Section>
+          {pubWithdrawn.length > 0 && (
+            <Section title="Withdrawn" count={pubWithdrawn.length} hint="Taken off the website. History is kept.">
+              <div className="ed-card">{renderArticleTable({ rows: pubWithdrawn, empty: null })}</div>
+            </Section>
+          )}
+        </div>
+      )}
 
-        {showPublishingPanels && (isPublisher || showAll) && (
-          <DashboardPanel
-            title="Publishing queue"
-            icon={<Send />}
-            empty={publishingQueue.length === 0}
-            emptyMessage={emptyMessage}
-            aside={<span>{[
-              publishingQueue.filter((article) => publicationNeedsReconciliation(article.id)).length > 0
-                ? `${publishingQueue.filter((article) => publicationNeedsReconciliation(article.id)).length} needs retry`
-                : '',
-              publishingQueue.filter((article) => publicationPending(article.id) && !publicationNeedsReconciliation(article.id)).length > 0
-                ? `${publishingQueue.filter((article) => publicationPending(article.id) && !publicationNeedsReconciliation(article.id)).length} processing`
-                : '',
-              publishingQueue.filter((article) => article.workflowState === 'Scheduled' && !publicationPending(article.id)).length > 0
-                ? `${publishingQueue.filter((article) => article.workflowState === 'Scheduled' && !publicationPending(article.id)).length} scheduled`
-                : '',
-              publishingQueue.filter((article) => article.workflowState === 'Approved' && !publicationPending(article.id)).length > 0
-                ? `${publishingQueue.filter((article) => article.workflowState === 'Approved' && !publicationPending(article.id)).length} ready`
-                : '',
-            ].filter(Boolean).join(' · ') || 'No open work'}</span>}
-            wide={view === 'publishing'}
-          >
-            <ul className="dashboard-list">
-              {panelItems('publishing-queue', publishingQueue).map((article) => {
-                const pending = publicationPending(article.id)
-                const needsReconciliation = publicationNeedsReconciliation(article.id)
-                const statusText = needsReconciliation
-                  ? 'needs retry'
-                  : pending
-                  ? 'processing'
-                  : article.workflowState === 'Scheduled'
-                  ? 'scheduled'
-                  : 'ready to publish'
-                return (
-                  <ArticleStatusRow
-                    key={article.id}
-                    article={article}
-                    statusOverride={needsReconciliation ? 'Needs retry' : pending ? 'Processing' : undefined}
-                    statusDetail={needsReconciliation
-                      ? 'Publication finished, waiting for Creator confirmation.'
-                      : pending
-                      ? 'Publication job is running now.'
-                      : article.workflowState === 'Scheduled'
-                      ? `Scheduled for ${formatDashboardDateTime(article.scheduledAt)}`
-                      : 'Approved and ready for publisher action.'}
-                    note={workflowAttributionLine({
-                      article,
-                      assignments: validAssignments,
-                      auditEvents: data.auditEvents,
-                      activeJob: activePublicationJobByArticleId.get(article.id),
-                      statusText,
-                    })}
-                    secondaryAction={needsReconciliation ? {
-                      label: 'Reconcile',
-                      disabled: publishBusyId !== '' || scheduleBusy,
-                      onClick: () => void reconcilePublication(article),
-                      busyLabel: 'Reconciling',
-                      icon: <RotateCcw />,
-                    } : article.workflowState === 'Approved' && !pending ? {
-                      label: 'Publish',
-                      disabled: publishBusyId !== '' || scheduleBusy,
-                      onClick: () => void publishArticle(article),
-                      busyLabel: 'Publishing',
-                    } : undefined}
-                    tertiaryAction={article.workflowState === 'Approved' && !pending ? {
-                      label: 'Schedule',
-                      disabled: publishBusyId !== '' || scheduleBusy,
-                      onClick: () => openScheduleDialog(article),
-                      icon: <CalendarClock />,
-                    } : undefined}
-                    onOpenArticle={onOpenArticle}
-                    secondaryBusy={publishBusyId === article.id}
-                  />
-                )
-              })}
-            </ul>
-            {!expandedPanels.has('publishing-queue') && publishingQueue.length > panelLimit && (
-              <button type="button" className="panel-view-all" onClick={() => expandPanel('publishing-queue')}>View all {publishingQueue.length} →</button>
-            )}
-          </DashboardPanel>
-        )}
-
-        {view === 'publishing' && (stateFilter === 'published' || publishedArticles.length > 0 || stateFilter === 'all') && (
-          <DashboardPanel title="Published articles" icon={<Check />} empty={publishedArticles.length === 0} emptyMessage={emptyMessage} aside={<span>{publishedArticles.length} published</span>}>
-            <ul className="dashboard-list">
-              {panelItems('published-articles', publishedArticles).map((article) => {
-                const activeJob = activePublicationJobByArticleId.get(article.id)
-                const pending = publicationPending(article.id)
-                const retracting = activeJob?.action === 'Unpublish'
-                  || (optimisticPublicationIds.has(article.id) && retractBusy)
-                return (
-                  <ArticleStatusRow
-                    key={article.id}
-                    article={article}
-                    statusOverride={pending ? (retracting ? 'Retracting' : 'Syncing') : undefined}
-                    statusDetail={pending
-                      ? retracting
-                        ? 'Retraction is being confirmed.'
-                        : 'Creator is confirming the public version.'
-                      : `Published ${formatDashboardDateTime(article.lastPublishedAt)}`}
-                    note={workflowAttributionLine({
-                      article,
-                      assignments: validAssignments,
-                      auditEvents: data.auditEvents,
-                      activeJob,
-                      statusText: pending ? (retracting ? 'retraction processing' : 'syncing') : 'published',
-                    })}
-                    overflowActions={(isPublisher || showAll) && !pending ? [{
-                      label: 'Retract',
-                      disabled: retractBusy || publishBusyId !== '' || scheduleBusy,
-                      onClick: () => openRetractDialog(article),
-                      icon: <EyeOff />,
-                    }] : undefined}
-                    onOpenArticle={onOpenArticle}
-                    secondaryBusy={retractBusy && retractArticleTarget?.id === article.id}
-                  />
-                )
-              })}
-            </ul>
-            {!expandedPanels.has('published-articles') && publishedArticles.length > panelLimit && (
-              <button type="button" className="panel-view-all" onClick={() => expandPanel('published-articles')}>View all {publishedArticles.length} →</button>
-            )}
-          </DashboardPanel>
-        )}
-
-        {view === 'publishing' && (stateFilter === 'unpublished' || unpublishedArticles.length > 0) && (
-          <DashboardPanel title="Retracted articles" icon={<EyeOff />} empty={unpublishedArticles.length === 0} emptyMessage={emptyMessage} aside={<span>{unpublishedArticles.length} retracted</span>}>
-            <ul className="dashboard-list">
-              {panelItems('retracted-articles', unpublishedArticles).map((article) => (
-                <ArticleStatusRow
-                  key={article.id}
-                  article={article}
-                  statusDetail="Removed from public listings. Audit history is retained."
-                  note={workflowAttributionLine({
-                    article,
-                    assignments: validAssignments,
-                    auditEvents: data.auditEvents,
-                    statusText: 'retracted · audit retained',
-                  })}
-                  onOpenArticle={onOpenArticle}
-                />
-              ))}
-            </ul>
-            {!expandedPanels.has('retracted-articles') && unpublishedArticles.length > panelLimit && (
-              <button type="button" className="panel-view-all" onClick={() => expandPanel('retracted-articles')}>View all {unpublishedArticles.length} →</button>
-            )}
-          </DashboardPanel>
-        )}
-
-        {view === 'reviews' && (
-          <DashboardPanel title="Review history" icon={<History />} empty={reviewHistory.length === 0} emptyMessage={emptyMessage} aside={<span>{reviewHistory.length} closed</span>}>
-            <ul className="history-list">
-              {panelItems('review-history', reviewHistory).map((assignment) => (
-                <ReviewHistoryRow key={assignment.id} assignment={assignment} article={articlesById.get(assignment.articleId)} onOpenArticle={onOpenArticle} />
-              ))}
-            </ul>
-            {!expandedPanels.has('review-history') && reviewHistory.length > panelLimit && (
-              <button type="button" className="panel-view-all" onClick={() => expandPanel('review-history')}>View all {reviewHistory.length} →</button>
-            )}
-          </DashboardPanel>
-        )}
-
-        {showAll && view === 'all' && (
-          <AdminOverview
-            queuedCount={validAssignments.filter((assignment) => activeReviewAssignment(assignment, articlesById.get(assignment.articleId)) && assignment.status === 'Queued').length}
-            inReviewCount={data.articles.filter((article) => article.workflowState === 'In Review').length}
-            changesRequestedCount={data.articles.filter((article) => article.workflowState === 'Changes Requested').length}
-            approvedCount={data.articles.filter((article) => article.workflowState === 'Approved').length}
-          />
-        )}
-
-        {view === 'all' && <ActivityTimeline articles={visibleArticles} assignments={scopedAssignments} auditEvents={visibleAuditEvents} />}
-      </div>
-
+      {view === 'archive' && (
+        <div className="ed-view">
+          {toolbar('Search Trash')}
+          <div className="ed-card">
+            {renderArticleTable({ rows: trashRows, whenLabel: (article) => article.archivedAt, empty: <EmptyState icon={<Trash2 />} title="Trash is empty" detail="Drafts you move to Trash stay here and can be restored." /> })}
+          </div>
+          {canResetTestContent && (
+            <button type="button" className="ed-link is-danger" disabled={resetBusy} onClick={openResetDialog}>Reset local test content</button>
+          )}
+        </div>
+      )}
       {createOpen && (
         <div className="dialog-backdrop" role="presentation">
           <DialogFrame busy={createBusy || createCategoryBusy} onClose={() => setCreateOpen(false)} className="review-dialog new-article-dialog" role="dialog" aria-modal="true" aria-labelledby="new-article-title">

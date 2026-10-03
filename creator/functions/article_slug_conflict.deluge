@@ -1,0 +1,51 @@
+string article_slug_conflict(int articleId, string slug)
+{
+	// Returns "" when the slug is free for this article, otherwise a message to
+	// show the editor. Used before review, before publishing and before
+	// scheduling, so two articles can never claim the same web address.
+	cleanSlug = ifnull(slug,"").trim();
+	if(cleanSlug == "")
+	{
+		return "A slug is required.";
+	}
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		return "Article not found.";
+	}
+
+	// Once an article has been published its address is fixed, so links that
+	// people and search engines already hold keep working after a correction.
+	publishedRevisionId = ifnull(article.Published_Revision_ID,"").trim();
+	if(publishedRevisionId != "")
+	{
+		liveRevision = Article_Revisions[ID == publishedRevisionId.toLong()];
+		if(liveRevision.count() > 0)
+		{
+			liveSlug = ifnull(liveRevision.Slug,"").trim();
+			if(liveSlug != "" && liveSlug != cleanSlug)
+			{
+				return "This article is already published at /insights/" + liveSlug + ". Keep that slug so existing links keep working.";
+			}
+		}
+	}
+
+	// Another article holds the slug if it has a revision with that slug that is
+	// in review, approved, or live, unless that article is in Trash or was
+	// rejected without ever going live.
+	holders = Article_Revisions[Slug == cleanSlug && Article != article.ID && (Revision_State == "Submitted" || Revision_State == "Approved" || Revision_State == "Published")];
+	for each holder in holders
+	{
+		holderArticle = Articles[ID == holder.Article.ID];
+		if(holderArticle.count() > 0)
+		{
+			holderState = ifnull(holderArticle.Workflow_State,"");
+			abandoned = holderState == "Archived" || (holderState == "Rejected" && holder.Revision_State != "Published");
+			if(!abandoned)
+			{
+				return "The slug \"" + cleanSlug + "\" is already used by \"" + ifnull(holderArticle.Working_Title,"another article") + "\". Choose a different slug.";
+			}
+		}
+	}
+	return "";
+}

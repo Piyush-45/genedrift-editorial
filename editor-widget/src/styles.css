@@ -3940,3 +3940,70 @@ select:focus-visible,
     animation: none;
   }
 }
+
+/* New version of a locked or published article */
+.version-banner {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 46px;
+  padding: 8px 20px;
+  border-bottom: 1px solid #d9d2ef;
+  background: #f5f2fc;
+  color: #3b2f63;
+  font-size: 13px;
+}
+
+.version-banner span,
+.version-banner div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.version-banner svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+}
+
+.version-banner button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid #b9acdf;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #3b2f63;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.version-banner button.is-primary {
+  border-color: #4b2e83;
+  background: #4b2e83;
+  color: #ffffff;
+}
+
+.version-banner button.is-danger {
+  border-color: #b42318;
+  background: #b42318;
+  color: #ffffff;
+}
+
+.version-banner button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .version-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

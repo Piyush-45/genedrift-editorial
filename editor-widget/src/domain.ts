@@ -260,6 +260,15 @@ export type RetractArticleResult = {
   articleState: string
 }
 
+export type NewRevisionResult = {
+  ok: boolean
+  message: string
+  articleId: string
+  articleState: string
+  revisionId: string
+  revisionNumber: number
+}
+
 export type ArticleLifecycleResult = {
   ok: boolean
   message: string
@@ -319,6 +328,8 @@ export interface EditorialRepository {
   retractArticle(articleId: string, reason: string, replacementPath: string): Promise<RetractArticleResult>
   archiveDraftArticle(articleId: string): Promise<ArticleLifecycleResult>
   restoreArchivedArticle(articleId: string): Promise<ArticleLifecycleResult>
+  startNewRevision(articleId: string, reason: string): Promise<NewRevisionResult>
+  discardNewRevision(articleId: string): Promise<ArticleLifecycleResult>
   resetTestContent(confirmation: string): Promise<WorkspaceResetResult>
   hydrateDocument(document: JSONContent): Promise<JSONContent>
   createImageAsset(file: File, metadata: MediaMetadata, uploadedById: string): Promise<MediaAsset>

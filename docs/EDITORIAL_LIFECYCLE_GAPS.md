@@ -81,3 +81,22 @@ description; `map-article.ts` reads but does not use robots/canonical/social.
 
 All of this is engineering inside the existing design; none of it needs the
 architecture changed.
+
+
+## Status, 3 Oct 2026 (later the same day): fixed in code
+
+| Item | Status |
+|---|---|
+| A1 to A4 | Fixed. `start_new_revision` (Creator) and the widget's Start new version / Discard new version. Retraction works while a correction is in progress (`Public_Status` field). |
+| A5 | Fixed. `article_slug_conflict` runs at submit, publish and schedule; a published article's slug is locked in the widget and in Creator. |
+| B1 | Fixed. Catalyst 0.5.0 renders tables, highlight, sub/superscript and alignment; website sanitiser and CSS updated. |
+| B2 | Fixed. Website keeps and styles image size and alignment. |
+| C1, C2, C3 | Fixed on the website (robots, canonical, Open Graph/Twitter image). |
+| C4 | Fixed. Bylines from Primary Author plus public contributors. |
+| D1, D2 | Fixed. Website `/sitemap.xml` and `/rss.xml`, fed by Catalyst `/v1/public/discoverable`. |
+| D3 | Fixed. The publication callback calls the website's revalidate (`collection: articles`). |
+| E2 | Fixed. Dates go to Catalyst as epoch milliseconds. |
+| E3 | Fixed. Article page shows the first published date and "Updated" date. |
+| C5, C6, E1 | Open (redirects, Site_Settings, retry schedule). |
+
+Rollout steps: `creator/NEW_VERSION_SETUP.md`.

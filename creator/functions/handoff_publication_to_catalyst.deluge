@@ -48,11 +48,16 @@ map handoff_publication_to_catalyst(int jobId)
 		return result;
 	}
 	isRetraction = job.Action == "Unpublish";
+	// Public_Status says whether the website is serving this article right now.
+	// It stays "Live" while a correction is being drafted or reviewed. A blank
+	// value comes from articles published before the field existed.
+	publicStatus = ifnull(article.Public_Status,"");
+	articleIsLive = (publicStatus == "Live") || (publicStatus == "" && article.Workflow_State == "Published");
 	approvedRevisionId = ifnull(article.Approved_Revision_ID,"").trim();
 	if(isRetraction)
 	{
 		approvedRevisionId = ifnull(article.Published_Revision_ID,"").trim();
-		if(article.Workflow_State != "Published" || approvedRevisionId == "" || approvedRevisionId != revision.ID.toString() || revision.Revision_State != "Published" || ifnull(job.Retraction_Reason,"").trim().length() < 3)
+		if(!articleIsLive || approvedRevisionId == "" || approvedRevisionId != revision.ID.toString() || revision.Revision_State != "Published" || ifnull(job.Retraction_Reason,"").trim().length() < 3)
 		{
 			validationMessage = "The exact current published revision is no longer retractable, or the reason is missing.";
 			job.Status = "Failed";
@@ -232,7 +237,9 @@ map handoff_publication_to_catalyst(int jobId)
 			result.put("message",validationMessage);
 			return result;
 		}
-		scheduledAtIso = article.Scheduled_At.toString("yyyy-MM-dd'T'HH:mm:ss") + "+05:30";
+		// Epoch milliseconds are timezone-proof. Catalyst converts them to UTC,
+		// so this stays correct whatever timezone the Creator app is set to.
+		scheduledAtIso = article.Scheduled_At.toLong();
 	}
 	else if(isRetraction)
 	{
@@ -242,14 +249,28 @@ map handoff_publication_to_catalyst(int jobId)
 	jobPayload = Map();
 	jobPayload.put("creatorJobId",job.ID.toString());
 	jobPayload.put("idempotencyKey",job.Idempotency_Key);
-	jobPayload.put("requestedAt",job.Requested_At.toString("yyyy-MM-dd'T'HH:mm:ss") + "+05:30");
+	jobPayload.put("requestedAt",job.Requested_At.toLong());
 	jobPayload.put("scheduledAt",scheduledAtIso);
 	jobPayload.put("requestedByEmployeeId",job.Requested_By.ID.toString());
 
 	articlePayload = Map();
 	articlePayload.put("creatorRecordId",article.ID.toString());
 	articlePayload.put("uuid",article.Article_UUID);
-	articlePayload.put("workflowState",article.Workflow_State);
+	// A retraction always describes the live article. While a correction is in
+	// progress the Creator state is Draft or In Review, but what Catalyst is
+	// asked to withdraw is the published version.
+	if(isRetraction)
+	{
+		articlePayload.put("workflowState","Published");
+	}
+	else
+	{
+		articlePayload.put("workflowState",article.Workflow_State);
+	}
+	if(article.First_Published_At != null)
+	{
+		articlePayload.put("firstPublishedAt",article.First_Published_At.toLong());
+	}
 	articlePayload.put("approvedRevisionId",approvedRevisionId);
 	articlePayload.put("primaryCategory",categoryName);
 	articlePayload.put("tags",tagNames);
@@ -282,7 +303,45 @@ map handoff_publication_to_catalyst(int jobId)
 	}
 	revisionPayload.put("featuredMediaId",featuredMediaId);
 	revisionPayload.put("socialMediaId",socialMediaId);
-	revisionPayload.put("approvedAt",revision.Approved_At.toString("yyyy-MM-dd'T'HH:mm:ss") + "+05:30");
+	revisionPayload.put("approvedAt",revision.Approved_At.toLong());
+
+	// Public bylines: the primary author first, then contributors marked
+	// Show Publicly, in their display order.
+	authorsPayload = List();
+	authorNames = List();
+	if(article.Primary_Author != null)
+	{
+		primaryAuthor = Demo_Employees[ID == article.Primary_Author.ID];
+		if(primaryAuthor.count() > 0 && ifnull(primaryAuthor.Display_Name,"").trim() != "")
+		{
+			authorItem = Map();
+			authorItem.put("name",primaryAuthor.Display_Name.trim());
+			authorItem.put("role",ifnull(primaryAuthor.Job_Title,"").trim());
+			authorsPayload.add(authorItem);
+			authorNames.add(primaryAuthor.Display_Name.trim());
+		}
+	}
+	publicContributors = Article_Contributors[Article == article.ID && Show_Publicly == true] sort by Display_Order;
+	for each contributor in publicContributors
+	{
+		if(contributor.Employee != null && authorsPayload.size() < 20)
+		{
+			contributorEmployee = Demo_Employees[ID == contributor.Employee.ID];
+			if(contributorEmployee.count() > 0)
+			{
+				contributorName = ifnull(contributorEmployee.Display_Name,"").trim();
+				if(contributorName != "" && !authorNames.contains(contributorName))
+				{
+					authorItem = Map();
+					authorItem.put("name",contributorName);
+					authorItem.put("role",ifnull(contributorEmployee.Job_Title,"").trim());
+					authorsPayload.add(authorItem);
+					authorNames.add(contributorName);
+				}
+			}
+		}
+	}
+	revisionPayload.put("authors",authorsPayload);
 
 	payload = Map();
 	payload.put("schemaVersion",2);

@@ -31,6 +31,14 @@ map archive_draft_article(int articleId)
 		result.put("message","Only a draft or changes-requested article can be moved to Trash.");
 		return result;
 	}
+	if(ifnull(article.Published_Revision_ID,"").trim() != "")
+	{
+		// This draft is a new version of an article that has been published.
+		// Trashing it would hide the whole article from the dashboard, so the
+		// draft is discarded instead and the article returns to its published state.
+		result.put("message","This article has a published version. Use Discard new version instead of Trash.");
+		return result;
+	}
 	openAssignments = Review_Assignments[Article == article.ID && (Status == "Queued" || Status == "Assigned" || Status == "Claimed")];
 	if(openAssignments.count() > 0)
 	{

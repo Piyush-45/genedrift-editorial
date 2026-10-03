@@ -511,6 +511,9 @@ function articlePanelNote(article: Article) {
   if (article.workflowState === 'Changes Requested') {
     return [author, 'changes requested'].filter(Boolean).join(' · ')
   }
+  if (article.workflowState === 'Draft' && article.publishedRevisionId) {
+    return [author, 'new version in progress · published version unchanged'].filter(Boolean).join(' · ')
+  }
   if (article.workflowState === 'In Review') {
     return [author, 'waiting for reviewer decision'].filter(Boolean).join(' · ')
   }
@@ -1921,6 +1924,7 @@ function EditorialDashboard({
                   } : undefined}
                   secondaryBusy={view === 'archive' && archiveBusyId === article.id}
                   overflowActions={view !== 'archive' && canEditArticle(article, currentEmployee)
+                    && !article.publishedRevisionId
                     && (article.workflowState === 'Draft' || article.workflowState === 'Changes Requested') ? [{
                       label: 'Move to Trash',
                       disabled: archiveBusyId !== '',
@@ -2347,6 +2351,9 @@ function App() {
   const [reviewActionBusy, setReviewActionBusy] = useState(false)
   const [reviewActionError, setReviewActionError] = useState('')
   const [workspacePublishBusy, setWorkspacePublishBusy] = useState(false)
+  const [newVersionBusy, setNewVersionBusy] = useState(false)
+  const [discardConfirm, setDiscardConfirm] = useState(false)
+  const [discardBusy, setDiscardBusy] = useState(false)
   const revisionRef = useRef<Revision | null>(null)
   const articleRef = useRef<Article | null>(null)
   const changeVersionRef = useRef(0)
@@ -2772,6 +2779,38 @@ function App() {
     }
   }, [workspace])
 
+  const startNewVersion = async () => {
+    const currentWorkspace = workspace
+    if (!currentWorkspace) return
+    setNewVersionBusy(true)
+    setSaveError('')
+    try {
+      const result = await repository.startNewRevision(currentWorkspace.article.id, '')
+      handleOpenArticle(currentWorkspace.article.id, result.revisionId)
+    } catch (error) {
+      setSaveError(errorMessage(error, 'A new version could not be started.'))
+    } finally {
+      setNewVersionBusy(false)
+    }
+  }
+
+  const discardNewVersion = async () => {
+    const currentWorkspace = workspace
+    if (!currentWorkspace) return
+    setDiscardBusy(true)
+    setSaveError('')
+    try {
+      await repository.discardNewRevision(currentWorkspace.article.id)
+      recoveryStorage.removeItem(recoveryKey(revisionRef.current?.id || ''))
+      setDiscardConfirm(false)
+      handleOpenArticle(currentWorkspace.article.id)
+    } catch (error) {
+      setSaveError(errorMessage(error, 'The new version could not be discarded.'))
+    } finally {
+      setDiscardBusy(false)
+    }
+  }
+
   if (loadingError) {
     return (
       <main className="state-page">
@@ -2808,6 +2847,21 @@ function App() {
   const canPublishCurrentArticle = workspace.article.workflowState === 'Approved'
     && revision.id === workspace.article.approvedRevisionId
     && (workspaceRoles.includes('Publisher') || workspaceRoles.includes('Editorial Admin') || workspaceRoles.includes('CEO'))
+  const manager = canEditArticle(workspace.article, workspace.review.currentEmployee)
+  const hasPublishedVersion = Boolean(workspace.article.publishedRevisionId)
+  const lockedState = workspace.article.workflowState
+  const canStartNewVersion = manager && ['Approved', 'Published', 'Unpublished', 'Rejected'].includes(lockedState)
+  const canDiscardNewVersion = manager && hasPublishedVersion && ['Draft', 'Changes Requested', 'Rejected'].includes(lockedState)
+  const lockedReason = lockedState === 'Published'
+    ? 'This version is live on the website and is locked.'
+    : lockedState === 'Unpublished'
+      ? 'This article was withdrawn from the website and is locked.'
+      : lockedState === 'Approved'
+        ? 'This version is approved and locked. Starting a new version replaces the approval, so it will need review again.'
+        : 'This version was rejected and is locked.'
+  // Once an article has gone live its address is fixed, so links people
+  // already hold keep working after a correction.
+  const slugLocked = hasPublishedVersion
   const missingReadinessItems = readinessMissing(workspace.article, revision)
   const showPromotedFeedback = workspace.article.workflowState === 'Changes Requested' && workspace.feedback.some(reviewFeedbackHasVisibleContent)
 
@@ -2950,6 +3004,40 @@ function App() {
         <WorkflowOutcome outcome={actionOutcome} onDismiss={() => setActionOutcome(null)} />
       ))}
 
+      {canStartNewVersion && (
+        <div className="version-banner" role="status">
+          <span><GitBranch /> {lockedReason} To make changes, start a new version. Your changes go live only after the new version is reviewed, approved and published.</span>
+          <div>
+            {canDiscardNewVersion && lockedState === 'Rejected' && (
+              <button type="button" disabled={discardBusy || newVersionBusy} onClick={() => void discardNewVersion()}>
+                {discardBusy ? 'Returning' : 'Back to published version'}
+              </button>
+            )}
+            <button type="button" className="is-primary" disabled={newVersionBusy || discardBusy} onClick={() => void startNewVersion()}>
+              {newVersionBusy ? 'Starting' : 'Start new version'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {canDiscardNewVersion && lockedState !== 'Rejected' && revision.state === 'Draft' && (
+        <div className="version-banner" role="status">
+          <span><GitBranch /> You are editing a new version. The published version stays on the website until this one is approved and published.</span>
+          <div>
+            {discardConfirm ? (
+              <>
+                <button type="button" disabled={discardBusy} onClick={() => setDiscardConfirm(false)}>Keep editing</button>
+                <button type="button" className="is-danger" disabled={discardBusy} onClick={() => void discardNewVersion()}>
+                  {discardBusy ? 'Discarding' : 'Discard these changes'}
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => setDiscardConfirm(true)}>Discard new version</button>
+            )}
+          </div>
+        </div>
+      )}
+
       <main className="workspace-main">
         <section className="document-column">
           {showPromotedFeedback && <ReviewFeedbackPanel feedback={workspace.feedback} />}
@@ -2979,7 +3067,7 @@ function App() {
               readOnly={preview || !editable}
               onChange={(event) => {
                 const title = event.target.value
-                const shouldUpdateSlug = revision.slug === slugify(revision.title)
+                const shouldUpdateSlug = !slugLocked && revision.slug === slugify(revision.title)
                 updateRevision({ title, ...(shouldUpdateSlug ? { slug: slugify(title) } : {}) })
               }}
             />
@@ -2989,7 +3077,8 @@ function App() {
                 aria-label="Article slug"
                 value={revision.slug}
                 maxLength={180}
-                readOnly={preview || !editable}
+                readOnly={preview || !editable || slugLocked}
+                title={slugLocked ? 'The web address is fixed once an article has been published.' : undefined}
                 onChange={(event) => updateRevision({ slug: slugify(event.target.value) })}
               />
             </div>

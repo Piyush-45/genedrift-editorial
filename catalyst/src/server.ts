@@ -11,7 +11,7 @@ import { sha256Hex, verifyRequestSignature } from "./security";
 
 type RawRequest = Request & { rawBody?: Buffer };
 
-const SERVICE_VERSION = "0.4.2";
+const SERVICE_VERSION = "0.5.0";
 const SCHEDULER_PAYLOAD_VERSION = 4;
 const app = express();
 app.disable("x-powered-by");
@@ -287,6 +287,24 @@ app.get("/v1/public/taxonomy", async (req, res, next) => {
     const { publicContent } = createService(req);
     const result = await publicContent.list({ page: 1, limit: 1 });
     sendCacheableJson(req, res, { ok: true, ...result.facets }, 60);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Compact list of indexable articles for the website's own sitemap and RSS,
+// which combine articles with the site's other pages under its own domain.
+app.get("/v1/public/discoverable", async (req, res, next) => {
+  try {
+    const { publicContent } = createService(req);
+    const articles = (await publicContent.discoverableArticles()).map((article) => ({
+      slug: article.slug,
+      title: article.title,
+      excerpt: article.excerpt,
+      primaryCategory: article.primaryCategory,
+      publishedAt: article.publishedAt
+    }));
+    sendCacheableJson(req, res, { ok: true, articles }, 60);
   } catch (error) {
     next(error);
   }

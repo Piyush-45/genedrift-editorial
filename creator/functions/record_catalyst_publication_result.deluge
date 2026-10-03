@@ -47,6 +47,11 @@ map record_catalyst_publication_result(string eventId, string requestId, string 
 	}
 	publishedMedia = List();
 	isRetraction = job.Action == "Unpublish";
+	// Public_Status tracks what the website serves, independently of the
+	// editorial state, so a correction can be drafted while the article is live.
+	publicStatus = ifnull(article.Public_Status,"");
+	articleIsLive = (publicStatus == "Live") || (publicStatus == "" && article.Workflow_State == "Published");
+
 	mediaApprovalStillCurrent = !isRetraction && ifnull(article.Approved_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Approved" && (article.Workflow_State == "Approved" || article.Workflow_State == "Scheduled");
 	if(status == "Succeeded" && mediaApprovalStillCurrent)
 	{
@@ -117,13 +122,20 @@ map record_catalyst_publication_result(string eventId, string requestId, string 
 		job.Next_Retry_At = null;
 		if(isRetraction)
 		{
-			retractionStillCurrent = article.Workflow_State == "Published" && ifnull(article.Published_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Published";
-			alreadyAppliedSuccess = article.Workflow_State == "Unpublished" && ifnull(article.Published_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Published" && job.Catalyst_Publication_ID == publicationId;
+			retractionStillCurrent = articleIsLive && ifnull(article.Published_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Published";
+			alreadyAppliedSuccess = (article.Workflow_State == "Unpublished" || publicStatus == "Withdrawn") && ifnull(article.Published_Revision_ID,"").trim() == revision.ID.toString() && revision.Revision_State == "Published" && job.Catalyst_Publication_ID == publicationId;
 			callbackStateAligned = retractionStillCurrent || alreadyAppliedSuccess;
 			if(retractionStillCurrent)
 			{
-				article.Workflow_State = "Unpublished";
-				article.Scheduled_At = null;
+				article.Public_Status = "Withdrawn";
+				// Only a resting Published article moves to Unpublished. A correction
+				// in progress keeps its editorial state, so the author's draft and
+				// any review in flight are not disturbed.
+				if(article.Workflow_State == "Published")
+				{
+					article.Workflow_State = "Unpublished";
+					article.Scheduled_At = null;
+				}
 				job.Error_Code = "";
 				job.Error_Summary = "";
 				eventType = "Catalyst Article Retracted";
@@ -166,6 +178,7 @@ map record_catalyst_publication_result(string eventId, string requestId, string 
 				}
 				revision.Revision_State = "Published";
 				article.Workflow_State = "Published";
+				article.Public_Status = "Live";
 				article.Published_Revision_ID = revision.ID.toString();
 				article.Scheduled_At = null;
 				if(article.First_Published_At == null)
@@ -249,6 +262,41 @@ map record_catalyst_publication_result(string eventId, string requestId, string 
 		Event_Metadata = metadata.toString()
 		Occurred_At = now
 	];
+
+	// Tell the website straight away, so a publish, correction or retraction
+	// shows within seconds instead of waiting for the website's cache to expire.
+	// Best effort: if the website is unreachable its cache still expires on its own.
+	if(status == "Succeeded" && callbackStateAligned)
+	{
+		try
+		{
+			websiteBaseUrl = ifnull(thisapp.variables.Publishing.Website_Base_URL,"").toString().trim();
+			revalidateSecret = ifnull(thisapp.variables.Publishing.Revalidate_Secret,"").toString().trim();
+			if(websiteBaseUrl != "" && revalidateSecret != "")
+			{
+				if(websiteBaseUrl.endsWith("/"))
+				{
+					websiteBaseUrl = websiteBaseUrl.subString(0,websiteBaseUrl.length() - 1);
+				}
+				revalidateHeaders = Map();
+				revalidateHeaders.put("Content-Type","application/json");
+				revalidateHeaders.put("Authorization","Bearer " + revalidateSecret);
+				revalidateBody = Map();
+				revalidateBody.put("collection","articles");
+				revalidateBody.put("slug",ifnull(revision.Slug,""));
+				revalidateResponse = invokeurl
+				[
+					url :websiteBaseUrl + "/api/revalidate"
+					type :POST
+					body :revalidateBody.toString()
+					headers:revalidateHeaders
+				];
+			}
+		}
+		catch (revalidateError)
+		{
+		}
+	}
 
 	if(status == "Succeeded" || status == "Failed")
 	{

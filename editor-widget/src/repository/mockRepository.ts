@@ -3,6 +3,7 @@ import type {
   ArticleDraftInput,
   ArticleDraftResult,
   ArticleLifecycleResult,
+  NewRevisionResult,
   AuditEvent,
   DashboardData,
   EditorialRepository,
@@ -532,6 +533,45 @@ export class MockEditorialRepository implements EditorialRepository {
       articleId,
       articleState: 'Draft',
     }
+  }
+
+  async startNewRevision(articleId: string, reason: string): Promise<NewRevisionResult> {
+    await new Promise((resolve) => window.setTimeout(resolve, 350))
+    if (article.id !== articleId) throw new Error('Mock article was not found.')
+    if (!['Approved', 'Published', 'Unpublished', 'Rejected'].includes(article.workflowState)) {
+      throw new Error('A new version can be started only from an approved, published, unpublished or rejected article.')
+    }
+    const current = await loadRevision()
+    const next: Revision = {
+      ...current,
+      id: makeOpaqueId('revision'),
+      uuid: `REV-${article.uuid}-${String(current.number + 1).padStart(4, '0')}`,
+      number: current.number + 1,
+      state: 'Draft',
+    }
+    next.versionToken = revisionVersionToken(next)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...next, featuredMedia: undefined }))
+    if (article.workflowState === 'Approved') article.approvedRevisionId = undefined
+    article.workflowState = 'Draft'
+    article.activeDraftRevisionId = next.id
+    void reason
+    return {
+      ok: true,
+      message: 'New version started. The published article stays live until this version is published.',
+      articleId,
+      articleState: 'Draft',
+      revisionId: next.id,
+      revisionNumber: next.number,
+    }
+  }
+
+  async discardNewRevision(articleId: string): Promise<ArticleLifecycleResult> {
+    await new Promise((resolve) => window.setTimeout(resolve, 300))
+    if (article.id !== articleId) throw new Error('Mock article was not found.')
+    if (!article.publishedRevisionId) throw new Error('This article has never been published. Use Trash to remove the draft.')
+    article.workflowState = 'Published'
+    article.activeDraftRevisionId = undefined
+    return { ok: true, message: 'New version discarded.', articleId, articleState: 'Published' }
   }
 
   async resetTestContent(confirmation: string): Promise<WorkspaceResetResult> {

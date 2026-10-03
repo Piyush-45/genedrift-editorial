@@ -60,7 +60,8 @@ function handoff(overrides: { action?: "publish" | "schedule" | "retract"; sched
       robotsDirective: "Index Follow",
       wordCount: 12,
       readingTimeMinutes: 1,
-      approvedAt: "2026-08-26T09:55:00.000Z"
+      approvedAt: "2026-08-26T09:55:00.000Z",
+      authors: []
     },
     media: [],
     retraction: action === "retract" ? { reason: "Material accuracy concern", replacementPath: "/insights" } : null
@@ -864,4 +865,90 @@ test("Catalyst index rebuild enumerates every pointer through the paginated SDK 
   const pointers = await new CatalystPublicationStore(app as never).listPointers();
   assert.equal(pointers.length, 1800);
   assert.equal(queryUsed, false, "an unpaginated SELECT would silently cap the rebuild");
+});
+
+test("renders tables, highlight, sub/superscript and alignment into sanitised public HTML", async () => {
+  const { renderAndSanitizeDocument } = await import("../src/snapshot");
+  const h = handoff();
+  h.revision.editorDocument = {
+    type: "doc",
+    content: [
+      { type: "heading", attrs: { level: 2, textAlign: "center" }, content: [{ type: "text", text: "Centred" }] },
+      { type: "paragraph", attrs: { textAlign: "left" }, content: [
+        { type: "text", text: "H" },
+        { type: "text", text: "2", marks: [{ type: "subscript" }] },
+        { type: "text", text: "O and x" },
+        { type: "text", text: "2", marks: [{ type: "superscript" }] },
+        { type: "text", text: " key", marks: [{ type: "highlight" }] },
+        { type: "text", text: " mail", marks: [{ type: "link", attrs: { href: "mailto:info@example.com" } }] }
+      ] },
+      { type: "paragraph", attrs: { textAlign: "javascript" }, content: [{ type: "text", text: "bad align" }] },
+      { type: "table", content: [
+        { type: "tableRow", content: [
+          { type: "tableHeader", attrs: { colspan: 1, rowspan: 1 }, content: [{ type: "paragraph", content: [{ type: "text", text: "Market" }] }] },
+          { type: "tableHeader", content: [{ type: "paragraph", content: [{ type: "text", text: "Timeline" }] }] }
+        ] },
+        { type: "tableRow", content: [
+          { type: "tableCell", attrs: { colspan: 2, rowspan: 1, colwidth: [200] }, content: [{ type: "paragraph", content: [{ type: "text", text: "India <b>" }] }] }
+        ] }
+      ] }
+    ]
+  } as any;
+  const html = renderAndSanitizeDocument(h, []);
+  assert.match(html, /<h2 data-align="center">Centred<\/h2>/);
+  assert.match(html, /<p>H<sub>2<\/sub>O and x<sup>2<\/sup><mark> key<\/mark>/);
+  assert.match(html, /href="mailto:info@example.com"/);
+  assert.match(html, /<p>bad align<\/p>/);
+  assert.match(html, /<table><thead><tr><th><p>Market<\/p><\/th><th><p>Timeline<\/p><\/th><\/tr><\/thead><tbody><tr><td colspan="2"><p>India &lt;b&gt;<\/p><\/td><\/tr><\/tbody><\/table>/);
+  assert.doesNotMatch(html, /colwidth|style=/);
+});
+
+test("accepts epoch-millisecond dates and exposes bylines and first-published date", async () => {
+  const { publicationHandoffSchema } = await import("../src/domain");
+  const raw: any = handoff();
+  raw.job.requestedAt = Date.parse("2026-08-26T10:00:00.000Z");
+  raw.revision.approvedAt = Date.parse("2026-08-26T09:55:00.000Z");
+  raw.article.firstPublishedAt = Date.parse("2026-01-02T03:04:05.000Z");
+  raw.revision.authors = [{ name: "Asha Rao", role: "Regulatory Lead" }, { name: "Ben Cole" }];
+  const parsed = publicationHandoffSchema.parse(raw);
+  assert.equal(parsed.job.requestedAt, "2026-08-26T10:00:00.000Z");
+  assert.equal(parsed.revision.approvedAt, "2026-08-26T09:55:00.000Z");
+
+  const legacy = publicationHandoffSchema.parse(handoff());
+  assert.deepEqual(legacy.revision.authors, []);
+
+  const h = harness();
+  const accepted = await h.service.acceptHandoff(parsed);
+  await h.service.processPublication(accepted.request.requestId);
+  const resolved = await new PublicContentService(h.store, h.objects).resolveSlug("article-revision-1");
+  assert.equal(resolved.status, "published");
+  if (resolved.status === "published") {
+    assert.equal(resolved.article.firstPublishedAt, "2026-01-02T03:04:05.000Z");
+    assert.deepEqual(resolved.article.revision.authors, [{ name: "Asha Rao", role: "Regulatory Lead" }, { name: "Ben Cole", role: "" }]);
+  }
+});
+
+test("a correction published over a retracted article serves again with the original first-published date", async () => {
+  const h = harness();
+  const first = await h.service.acceptHandoff(handoff());
+  await h.service.processPublication(first.request.requestId);
+  const retract = await h.service.acceptHandoff(handoff({ action: "retract" }));
+  await h.service.processPublication(retract.request.requestId);
+  const publicContent = new PublicContentService(h.store, h.objects);
+  assert.equal((await publicContent.resolveSlug("article-revision-1")).status, "retracted");
+
+  h.setNow("2026-08-27T10:00:00.000Z");
+  const correction = handoff({ revisionNumber: 2 });
+  correction.revision.slug = "article-revision-1";
+  correction.article.firstPublishedAt = "2026-08-26T10:00:00.000Z";
+  const accepted = await h.service.acceptHandoff(correction);
+  const done = await h.service.processPublication(accepted.request.requestId);
+  assert.equal(done.status, "Succeeded");
+  const resolved = await publicContent.resolveSlug("article-revision-1");
+  assert.equal(resolved.status, "published");
+  if (resolved.status === "published") {
+    assert.equal(resolved.article.revision.number, 2);
+    assert.equal(resolved.article.firstPublishedAt, "2026-08-26T10:00:00.000Z");
+    assert.equal(resolved.article.publishedAt, "2026-08-27T10:00:00.000Z");
+  }
 });

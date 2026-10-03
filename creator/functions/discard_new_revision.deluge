@@ -1,0 +1,97 @@
+map discard_new_revision(int articleId)
+{
+	// Throws away an unsubmitted new version of an article that has been
+	// published before, and returns the article to its published state. The
+	// discarded draft is kept as Superseded, so nothing is lost from history.
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	actorIsAdmin = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	if(actor.ID != article.Owner.ID && actor.ID != article.Primary_Author.ID && actorIsAdmin.count() == 0)
+	{
+		result.put("message","Only the article owner, primary author, or an Editorial Admin can discard a new version.");
+		return result;
+	}
+	publishedRevisionId = ifnull(article.Published_Revision_ID,"").trim();
+	if(publishedRevisionId == "")
+	{
+		result.put("message","This article has never been published. Use Trash to remove the draft.");
+		return result;
+	}
+	previousState = ifnull(article.Workflow_State,"");
+	if(previousState != "Draft" && previousState != "Changes Requested" && previousState != "Rejected")
+	{
+		result.put("message","Only a new version that is not in review or approved can be discarded.");
+		return result;
+	}
+	openAssignments = Review_Assignments[Article == article.ID && (Status == "Queued" || Status == "Assigned" || Status == "Claimed")];
+	if(openAssignments.count() > 0)
+	{
+		result.put("message","This version still has an open review assignment.");
+		return result;
+	}
+	openJobs = Publication_Jobs[Article == article.ID && (Status == "Queued" || Status == "Processing")];
+	if(openJobs.count() > 0)
+	{
+		result.put("message","A publication job for this article is still running. Wait for it to finish, then try again.");
+		return result;
+	}
+
+	discardedNumbers = List();
+	drafts = Article_Revisions[Article == article.ID && Revision_State == "Draft"];
+	for each draftRevision in drafts
+	{
+		draftRevision.Revision_State = "Superseded";
+		discardedNumbers.add(draftRevision.Revision_Number);
+	}
+
+	publicStatus = ifnull(article.Public_Status,"");
+	restoredState = "Unpublished";
+	if(publicStatus == "Live")
+	{
+		restoredState = "Published";
+	}
+	article.Workflow_State = restoredState;
+	article.Active_Draft_Revision_ID = "";
+
+	metadata = Map();
+	metadata.put("articleId",article.ID);
+	metadata.put("discardedRevisionNumbers",discardedNumbers);
+	metadata.put("publishedRevisionId",publishedRevisionId);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-DISCARD-" + article.ID + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Article"
+		Entity_UUID = article.Article_UUID
+		Event_Type = "New Version Discarded"
+		Actor_Employee = actor.ID
+		Previous_State = previousState
+		New_State = restoredState
+		Event_Summary = actor.Display_Name + " discarded the unpublished new version."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	result.put("ok",true);
+	result.put("message","New version discarded. The article is back to its published version.");
+	result.put("articleId",article.ID);
+	result.put("articleState",restoredState);
+	return result;
+}

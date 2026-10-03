@@ -3,6 +3,19 @@ import { z } from "zod";
 const nonEmpty = z.string().trim().min(1);
 const uuidLike = z.string().trim().min(8).max(128);
 
+// Creator datetimes arrive either as ISO-8601 text with an offset, or as epoch
+// milliseconds (Deluge `toLong()`), which is timezone-proof. Both normalise to
+// an ISO string so downstream code and stored documents never see two shapes.
+const instant = z.union([
+  z.string().datetime({ offset: true }),
+  z.number().int().positive().max(8_640_000_000_000_000)
+]).transform((value) => typeof value === "number" ? new Date(value).toISOString() : value);
+
+export const bylineSchema = z.object({
+  name: z.string().trim().min(1).max(250),
+  role: z.string().trim().max(250).optional().default("")
+});
+
 export const mediaAssetSchema = z.object({
   creatorRecordId: nonEmpty,
   mediaId: uuidLike,
@@ -37,8 +50,8 @@ export const publicationHandoffSchema = z.object({
   job: z.object({
     creatorJobId: nonEmpty,
     idempotencyKey: z.string().trim().min(8).max(150),
-    requestedAt: z.string().datetime({ offset: true }),
-    scheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
+    requestedAt: instant,
+    scheduledAt: instant.nullable().optional(),
     requestedByEmployeeId: nonEmpty
   }),
   article: z.object({
@@ -47,7 +60,10 @@ export const publicationHandoffSchema = z.object({
     workflowState: z.enum(["Approved", "Scheduled", "Published"]),
     approvedRevisionId: nonEmpty,
     primaryCategory: z.string().max(250).optional().default(""),
-    tags: z.array(z.string().max(250)).max(100).default([])
+    tags: z.array(z.string().max(250)).max(100).default([]),
+    // First time this article ever went live (Creator Articles.First_Published_At).
+    // Lets the website show "Published" and "Updated" separately after a correction.
+    firstPublishedAt: instant.nullable().optional()
   }),
   revision: z.object({
     creatorRecordId: nonEmpty,
@@ -70,7 +86,9 @@ export const publicationHandoffSchema = z.object({
     readingTimeMinutes: z.number().int().nonnegative(),
     featuredMediaId: uuidLike.nullable().optional(),
     socialMediaId: uuidLike.nullable().optional(),
-    approvedAt: z.string().datetime({ offset: true })
+    approvedAt: instant,
+    // Public bylines in display order. Optional so older Creator handoffs still validate.
+    authors: z.array(bylineSchema).max(20).optional().default([])
   }),
   media: z.array(mediaAssetSchema).max(200).default([]),
   retraction: z.object({

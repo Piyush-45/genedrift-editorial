@@ -50,6 +50,12 @@ map schedule_approved_article(int articleId, string scheduledAtText)
 		result.put("message","The approved revision is not ready to schedule.");
 		return result;
 	}
+	slugConflict = thisapp.article_slug_conflict(article.ID,revision.Slug);
+	if(slugConflict != "")
+	{
+		result.put("message",slugConflict);
+		return result;
+	}
 
 	existingOpenJob = Publication_Jobs[Article == article.ID && Revision == revision.ID && (Action == "Schedule" || Action == "Publish") && (Status == "Queued" || Status == "Processing")];
 	if(existingOpenJob.count() > 0)

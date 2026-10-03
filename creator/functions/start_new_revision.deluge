@@ -1,0 +1,209 @@
+map start_new_revision(int articleId, string reason)
+{
+	// Opens a new editable draft from an article that is no longer editable:
+	// approved, published, unpublished or rejected. The draft is a copy of the
+	// most relevant revision. Anything live on the website stays live, unchanged,
+	// until the new version is reviewed, approved and published.
+	result = Map();
+	result.put("ok",false);
+
+	actor = Demo_Employees[Work_Email == zoho.loginuserid && Status == "Active"];
+	if(actor.count() == 0)
+	{
+		actor = Demo_Employees[Creator_Username == zoho.loginuser && Status == "Active"];
+	}
+	if(actor.count() == 0)
+	{
+		result.put("message","Your Creator login is not mapped to an active editorial employee.");
+		return result;
+	}
+
+	article = Articles[ID == articleId];
+	if(article.count() == 0)
+	{
+		result.put("message","Article not found.");
+		return result;
+	}
+	actorIsAdmin = Editorial_Role_Assignments[Employee == actor.ID && Editorial_Role == "Editorial Admin" && Active == true];
+	if(actor.ID != article.Owner.ID && actor.ID != article.Primary_Author.ID && actorIsAdmin.count() == 0)
+	{
+		result.put("message","Only the article owner, primary author, or an Editorial Admin can start a new version.");
+		return result;
+	}
+
+	previousState = ifnull(article.Workflow_State,"");
+	if(previousState == "Scheduled")
+	{
+		result.put("message","This article is scheduled. It must publish, or the schedule must be cleared, before a new version can start.");
+		return result;
+	}
+	if(previousState != "Approved" && previousState != "Published" && previousState != "Unpublished" && previousState != "Rejected")
+	{
+		result.put("message","A new version can be started only from an approved, published, unpublished or rejected article.");
+		return result;
+	}
+	openJobs = Publication_Jobs[Article == article.ID && (Status == "Queued" || Status == "Processing")];
+	if(openJobs.count() > 0)
+	{
+		result.put("message","A publication job for this article is still running. Wait for it to finish, then try again.");
+		return result;
+	}
+	existingDraft = Article_Revisions[Article == article.ID && Revision_State == "Draft"];
+	if(existingDraft.count() > 0)
+	{
+		result.put("message","This article already has an editable draft. Reload the workspace.");
+		return result;
+	}
+
+	// Pick the revision to copy.
+	sourceRevisionIdText = "";
+	if(previousState == "Approved")
+	{
+		sourceRevisionIdText = ifnull(article.Approved_Revision_ID,"").trim();
+	}
+	else if(previousState == "Published" || previousState == "Unpublished")
+	{
+		sourceRevisionIdText = ifnull(article.Published_Revision_ID,"").trim();
+	}
+	nextRevisionNumber = 1;
+	latestRevisionId = 0;
+	latestRevisionNumber = 0;
+	articleRevisions = Article_Revisions[Article == article.ID];
+	for each articleRevision in articleRevisions
+	{
+		if(articleRevision.Revision_Number != null)
+		{
+			if(articleRevision.Revision_Number >= nextRevisionNumber)
+			{
+				nextRevisionNumber = articleRevision.Revision_Number + 1;
+			}
+			if(articleRevision.Revision_Number > latestRevisionNumber)
+			{
+				latestRevisionNumber = articleRevision.Revision_Number;
+				latestRevisionId = articleRevision.ID;
+			}
+		}
+	}
+	if(sourceRevisionIdText == "" && latestRevisionId > 0)
+	{
+		// Rejected: carry on from the revision the reviewer saw last.
+		sourceRevisionIdText = latestRevisionId.toString();
+	}
+	if(sourceRevisionIdText == "")
+	{
+		result.put("message","No revision was found to copy.");
+		return result;
+	}
+	source = Article_Revisions[ID == sourceRevisionIdText.toLong() && Article == article.ID];
+	if(source.count() == 0)
+	{
+		result.put("message","The revision to copy is missing.");
+		return result;
+	}
+
+	cleanReason = ifnull(reason,"").trim();
+	if(cleanReason.length() > 1000)
+	{
+		result.put("message","The reason must be within 1,000 characters.");
+		return result;
+	}
+	changeSummary = "New version started from revision " + source.Revision_Number;
+	if(cleanReason != "")
+	{
+		changeSummary = changeSummary + ": " + cleanReason;
+	}
+	changeSummary = changeSummary + ".";
+
+	revisionSuffix = nextRevisionNumber.toString();
+	if(nextRevisionNumber < 10)
+	{
+		revisionSuffix = "000" + nextRevisionNumber;
+	}
+	else if(nextRevisionNumber < 100)
+	{
+		revisionSuffix = "00" + nextRevisionNumber;
+	}
+	else if(nextRevisionNumber < 1000)
+	{
+		revisionSuffix = "0" + nextRevisionNumber;
+	}
+	newRevisionUuid = "REV-" + article.Article_UUID + "-" + revisionSuffix;
+	newRevisionId = insert into Article_Revisions
+	[
+		Revision_UUID = newRevisionUuid
+		Article = article.ID
+		Revision_Number = nextRevisionNumber
+		Revision_State = "Draft"
+		Title = source.Title
+		Slug = source.Slug
+		Excerpt = source.Excerpt
+		Editor_Document = source.Editor_Document
+		Document_Checksum = source.Document_Checksum
+		Referenced_Media_UUIDs = source.Referenced_Media_UUIDs
+		Plain_Text_Extract = source.Plain_Text_Extract
+		Featured_Media = if(source.Featured_Media != null,source.Featured_Media.ID,null)
+		Social_Media = if(source.Social_Media != null,source.Social_Media.ID,null)
+		SEO_Title = source.SEO_Title
+		SEO_Description = source.SEO_Description
+		Canonical_URL_Override = source.Canonical_URL_Override
+		Robots_Directive = ifnull(source.Robots_Directive,"Index Follow")
+		Word_Count = source.Word_Count
+		Reading_Time_Minutes = source.Reading_Time_Minutes
+		Change_Summary = changeSummary
+		Created_By_Employee = actor.ID
+	];
+
+	// An approved revision that was never published is replaced by the new
+	// draft, so it can no longer be published by mistake.
+	if(previousState == "Approved")
+	{
+		source.Revision_State = "Superseded";
+		article.Approved_Revision_ID = "";
+	}
+	// Record what the website is serving before the editorial state changes.
+	if(ifnull(article.Public_Status,"") == "")
+	{
+		if(previousState == "Published")
+		{
+			article.Public_Status = "Live";
+		}
+		else if(previousState == "Unpublished")
+		{
+			article.Public_Status = "Withdrawn";
+		}
+	}
+	article.Workflow_State = "Draft";
+	article.Active_Draft_Revision_ID = newRevisionId.toString();
+
+	metadata = Map();
+	metadata.put("articleId",article.ID);
+	metadata.put("sourceRevisionId",source.ID);
+	metadata.put("sourceRevisionNumber",source.Revision_Number);
+	metadata.put("newDraftRevisionId",newRevisionId);
+	metadata.put("newDraftRevisionNumber",nextRevisionNumber);
+	metadata.put("previousState",previousState);
+	metadata.put("publicStatus",ifnull(article.Public_Status,""));
+	metadata.put("reason",cleanReason);
+	insert into Audit_Events
+	[
+		Event_UUID = "EVT-NEWVERSION-" + newRevisionId + "-" + zoho.currenttime.toLong()
+		Entity_Type = "Revision"
+		Entity_UUID = newRevisionUuid
+		Event_Type = "New Version Started"
+		Actor_Employee = actor.ID
+		Previous_State = previousState
+		New_State = "Draft"
+		Event_Summary = actor.Display_Name + " started revision " + nextRevisionNumber + " from revision " + source.Revision_Number + "."
+		Event_Metadata = metadata.toString()
+		Occurred_At = zoho.currenttime
+	];
+
+	result.put("ok",true);
+	result.put("message","New version started. The published article stays live until this version is published.");
+	result.put("articleId",article.ID);
+	result.put("articleState","Draft");
+	result.put("revisionId",newRevisionId);
+	result.put("revisionNumber",nextRevisionNumber);
+	result.put("revisionUuid",newRevisionUuid);
+	return result;
+}

@@ -4,6 +4,7 @@ import type {
   ArticleDraftInput,
   ArticleDraftResult,
   ArticleLifecycleResult,
+  NewRevisionResult,
   ApprovalPolicyOption,
   AuditEvent,
   CurrentEmployee,
@@ -928,6 +929,20 @@ function taxonomyTermResult(response: ZohoCustomApiResponse): TaxonomyTermResult
   }
 }
 
+function newRevisionResult(response: ZohoCustomApiResponse): NewRevisionResult {
+  const result = customApiValue(response, 'Start new version')
+  const revisionId = text(result.revisionId)
+  if (!revisionId) throw new Error('Creator did not return the new draft revision.')
+  return {
+    ok: true,
+    message: text(result.message) || 'New version started.',
+    articleId: text(result.articleId),
+    articleState: text(result.articleState) || 'Draft',
+    revisionId,
+    revisionNumber: Number(result.revisionNumber || 0),
+  }
+}
+
 function articleLifecycleResult(response: ZohoCustomApiResponse, operation: string): ArticleLifecycleResult {
   const result = customApiValue(response, operation)
   return {
@@ -1267,8 +1282,23 @@ export class CreatorEditorialRepository implements EditorialRepository {
     if (!revisionRecord && article.workflowState === 'In Review') {
       revisionRecord = await findLatestRevisionByState(article.id, 'Submitted')
     }
-    if (!revisionRecord && article.workflowState === 'Approved') {
+    if (!revisionRecord && (article.workflowState === 'Approved' || article.workflowState === 'Scheduled')) {
       revisionRecord = await findLatestRevisionByState(article.id, 'Approved')
+    }
+    if (!revisionRecord && (article.workflowState === 'Published' || article.workflowState === 'Unpublished')) {
+      // Show the version the website serves (or last served), not revision 1,
+      // once an article has been corrected and republished.
+      if (article.publishedRevisionId) {
+        try {
+          revisionRecord = await getRevisionById(article.publishedRevisionId)
+        } catch {
+          // Fall back to the report read model below.
+        }
+      }
+      if (!revisionRecord) revisionRecord = await findLatestRevisionByState(article.id, 'Published')
+    }
+    if (!revisionRecord && article.workflowState === 'Rejected') {
+      revisionRecord = await findLatestRevisionByState(article.id, 'Submitted')
     }
     if (!revisionRecord) revisionRecord = await findFirstRevision(article.id)
 
@@ -1714,6 +1744,28 @@ export class CreatorEditorialRepository implements EditorialRepository {
       payload: { articleId },
     }))
     return articleLifecycleResult(response, 'Restore draft')
+  }
+
+  async startNewRevision(articleId: string, reason: string): Promise<NewRevisionResult> {
+    const response = await creatorCall('Start new version', sdk().DATA.invokeCustomApi({
+      api_name: 'start_new_revision',
+      workspace_name: creatorWorkspaceName(),
+      http_method: 'POST',
+      content_type: 'application/json',
+      payload: { articleId, reason },
+    }))
+    return newRevisionResult(response)
+  }
+
+  async discardNewRevision(articleId: string): Promise<ArticleLifecycleResult> {
+    const response = await creatorCall('Discard new version', sdk().DATA.invokeCustomApi({
+      api_name: 'discard_new_revision',
+      workspace_name: creatorWorkspaceName(),
+      http_method: 'POST',
+      content_type: 'application/json',
+      payload: { articleId },
+    }))
+    return articleLifecycleResult(response, 'Discard new version')
   }
 
   async resetTestContent(_confirmation: string): Promise<WorkspaceResetResult> {

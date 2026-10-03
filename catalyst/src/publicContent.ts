@@ -26,6 +26,7 @@ export type PublicArticleDetail = {
   publicationId: string;
   contentHash: string;
   publishedAt: string;
+  firstPublishedAt: string;
   article: {
     uuid: string;
     primaryCategory: string;
@@ -46,6 +47,7 @@ export type PublicArticleDetail = {
     featuredMediaId?: string | null;
     socialMediaId?: string | null;
     approvedAt: string;
+    authors: Array<{ name: string; role: string }>;
   };
   media: PublicMediaAsset[];
   html: string;
@@ -123,12 +125,22 @@ function publicMedia(asset: CanonicalPublishedDocument["media"][number]): Public
   return safe;
 }
 
+function earliest(candidate: string | null | undefined, fallback: string): string {
+  if (!candidate) return fallback;
+  const candidateMs = Date.parse(candidate);
+  if (!Number.isFinite(candidateMs)) return fallback;
+  return candidateMs < Date.parse(fallback) ? new Date(candidateMs).toISOString() : fallback;
+}
+
 function detail(document: CanonicalPublishedDocument): PublicArticleDetail {
   return {
     schemaVersion: document.schemaVersion,
     publicationId: document.publicationId,
     contentHash: document.contentHash,
     publishedAt: document.publishedAt,
+    // Older documents predate firstPublishedAt; their publish time is the best
+    // available answer, and is exact for any article published only once.
+    firstPublishedAt: earliest(document.article.firstPublishedAt, document.publishedAt),
     article: {
       uuid: document.article.uuid,
       primaryCategory: document.article.primaryCategory,
@@ -148,7 +160,8 @@ function detail(document: CanonicalPublishedDocument): PublicArticleDetail {
       readingTimeMinutes: document.revision.readingTimeMinutes,
       featuredMediaId: document.revision.featuredMediaId,
       socialMediaId: document.revision.socialMediaId,
-      approvedAt: document.revision.approvedAt
+      approvedAt: document.revision.approvedAt,
+      authors: (document.revision.authors ?? []).map((author) => ({ name: author.name, role: author.role ?? "" }))
     },
     media: document.media.map(publicMedia),
     html: document.html

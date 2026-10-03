@@ -40,7 +40,12 @@ map retract_published_article(int articleId, string reason, string replacementPa
 		return result;
 	}
 	publishedRevisionId = ifnull(article.Published_Revision_ID,"").trim();
-	if(article.Workflow_State == "Unpublished")
+	// Public_Status says whether the website is serving this article right now.
+	// It stays "Live" while a correction is being drafted or reviewed. A blank
+	// value comes from articles published before the field existed.
+	publicStatus = ifnull(article.Public_Status,"");
+	articleIsLive = (publicStatus == "Live") || (publicStatus == "" && article.Workflow_State == "Published");
+	if(!articleIsLive && publishedRevisionId != "" && (article.Workflow_State == "Unpublished" || publicStatus == "Withdrawn"))
 	{
 		result.put("ok",true);
 		result.put("message","Article is already retracted.");
@@ -48,9 +53,9 @@ map retract_published_article(int articleId, string reason, string replacementPa
 		result.put("articleState",article.Workflow_State);
 		return result;
 	}
-	if(article.Workflow_State != "Published" || publishedRevisionId == "")
+	if(!articleIsLive || publishedRevisionId == "")
 	{
-		result.put("message","Only the current published article can be retracted.");
+		result.put("message","Only an article that is live on the website can be retracted.");
 		return result;
 	}
 	revision = Article_Revisions[ID == publishedRevisionId.toLong()];

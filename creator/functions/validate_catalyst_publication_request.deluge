@@ -38,7 +38,12 @@ map validate_catalyst_publication_request(string creatorJobId, string idempotenc
 		return result;
 	}
 	isRetraction = job.Action == "Unpublish";
-	if(isRetraction && article.Workflow_State != "Published")
+	// Public_Status says whether the website is serving this article right now.
+	// It stays "Live" while a correction is being drafted or reviewed. A blank
+	// value comes from articles published before the field existed.
+	publicStatus = ifnull(article.Public_Status,"");
+	articleIsLive = (publicStatus == "Live") || (publicStatus == "" && article.Workflow_State == "Published");
+	if(isRetraction && !articleIsLive)
 	{
 		result.put("code","CREATOR_STATE_REVOKED");
 		result.put("message","Article is no longer published.");

@@ -49,6 +49,12 @@ map submit_article_for_review(int articleId, string reviewerIdsCsv)
 		result.put("message","A title and slug are required before review.");
 		return result;
 	}
+	slugConflict = thisapp.article_slug_conflict(article.ID,revision.Slug);
+	if(slugConflict != "")
+	{
+		result.put("message",slugConflict);
+		return result;
+	}
 	if(revision.Editor_Document == null || revision.Plain_Text_Extract == null || revision.Plain_Text_Extract.trim() == "")
 	{
 		result.put("message","Article content must be saved before review.");

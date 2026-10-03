@@ -165,3 +165,56 @@ export function EmptyState({ icon, title, detail, action }: { icon: ReactNode; t
     </div>
   )
 }
+
+/* ---- Lifecycle stepper ----------------------------------------------- */
+
+export const LIFECYCLE_STEPS = ['Write', 'Review', 'Publish', 'Live'] as const
+
+/** Where an article sits on Write → Review → Publish → Live, and how. */
+export function lifecycleOf(state: string): { step: number; mode: 'current' | 'back' | 'stopped' | 'done' | 'withdrawn' } {
+  switch (state) {
+    case 'Draft': return { step: 0, mode: 'current' }
+    case 'In Review': return { step: 1, mode: 'current' }
+    case 'Changes Requested': return { step: 0, mode: 'back' }
+    case 'Rejected': return { step: 1, mode: 'stopped' }
+    case 'Approved':
+    case 'Scheduled': return { step: 2, mode: 'current' }
+    case 'Published': return { step: 3, mode: 'done' }
+    case 'Unpublished': return { step: 3, mode: 'withdrawn' }
+    default: return { step: 0, mode: 'current' }
+  }
+}
+
+export function Stepper({ state, compact }: { state: string; compact?: boolean }) {
+  const { step, mode } = lifecycleOf(state)
+  return (
+    <ol className={`ed-stepper${compact ? ' is-compact' : ''}`} aria-label="Progress">
+      {LIFECYCLE_STEPS.map((label, index) => {
+        const status = index < step || (index === step && mode === 'done')
+          ? 'done'
+          : index === step
+            ? (mode === 'stopped' ? 'stopped' : mode === 'withdrawn' ? 'withdrawn' : mode === 'back' ? 'back' : 'current')
+            : 'todo'
+        return (
+          <li key={label} className={`is-${status}`} aria-current={index === step ? 'step' : undefined}>
+            <span className="ed-step-dot" aria-hidden="true" />
+            {!compact && <span className="ed-step-label">{label}</span>}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+/* ---- Side panel ------------------------------------------------------ */
+
+export function SidePanel({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  return (
+    <div className="ed-panel-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
+      <aside className="ed-panel" role="dialog" aria-modal="true" aria-label={title}
+        onKeyDown={(event) => { if (event.key === 'Escape') onClose() }}>
+        {children}
+      </aside>
+    </div>
+  )
+}
